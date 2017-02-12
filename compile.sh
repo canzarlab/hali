@@ -1,1 +1,1 @@
-c++ newick.cpp main.cpp -Wall -g
+c++ newick.cpp main.cpp PhylogeneticTree.cpp -Wall -Werror -g
