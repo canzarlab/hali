@@ -24,19 +24,18 @@ int main(int argc, char** argv)
 
     int k = 0;
     for (int i = 0; i < n; ++i)
+    {
         for (int j = 0; j < m; ++j)
+        {
             if (C[i * n + j] != 0)
+            {
                 solver->add_entry(i, m * i + j - k, 1. / C[i * n + j]);
-            else
-                ++k;
-
-    k = 0;
-    for (int i = 0; i < n; ++i)
-        for (int j = 0; j < m; ++j)
-            if (C[i * n + j] != 0)
                 solver->add_entry(n + j, i * m + j - k, 1. / C[i * n + j]);
+            }
             else
                 ++k;
+        }
+    }
     delete[] C;
 
     solver->done_adding_entries();
