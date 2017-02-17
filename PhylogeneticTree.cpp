@@ -2,7 +2,7 @@
 #include <lemon/lgf_writer.h>
 #include <lemon/bfs.h>
 
-PhylogeneticTree::PhylogeneticTree(string filename) : _lab(_t), _dst(_t), _clade(_t)
+PhylogeneticTree::PhylogeneticTree(string filename) : _lab(_t), _dst(_t), _n(0), _clade(_t)
 {
     newick_node* root = load_tree(filename.c_str());
     makeTree(root, INVALID);

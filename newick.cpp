@@ -65,10 +65,10 @@ newick_node* load_tree(const char* filename)
     File.seekg(0, ios::end);
     Size = File.tellg();
     File.seekg(0, ios::beg);
-    
+
     string str(Size, 0);
     File.read(&str[0], Size);
-    
+
     size_t itr = 0;
     return parse_tree(str, itr);
 }
