@@ -715,7 +715,7 @@ public:
 	int	 n_remaining	() const			{ return _s1.n_remaining(); }
 	bool empty			() const			{ return _s1.empty(); }
 	void dump 			() const 			{ _s1.dump(); }
-	~_Sampler			() 					{ delete[] _exponent_gaps; }
+	~_Sampler			() 					{ delete[] _exponent_gaps; delete[] _powers; }
 
 	static _Sampler* create(int k, int n, int* initial_exponents = NULL) {
 		return new _Sampler(k, n, initial_exponents);
