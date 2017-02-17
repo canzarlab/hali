@@ -143,8 +143,6 @@ bool _Solver::solve() {
 	int yr[nr];		// y and y-hat from paper
 	int yc[nc];
 
-	assert(yr && yc);
-
 	for (int row = 0;  row < nr;  ++row) {
 		Matrix::Entry** entry = _M.max_entry_in_row(row);
 		if (! entry) {
