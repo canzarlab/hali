@@ -21,7 +21,7 @@ int main(int argc, char** argv)
 
     double epsilon = stod(argv[4]);
     Solver* solver = Solver::create(epsilon);
-    
+
     int k = 0;
     for (int i = 0; i < n; ++i)
         for (int j = 0; j < m; ++j)
