@@ -332,6 +332,11 @@ bool _Solver::solve() {
  	puc->print_stats();
 #endif
 
+	delete pr;
+	delete pc;
+	delete pur;
+	delete puc;
+
 	return true;
 }
 

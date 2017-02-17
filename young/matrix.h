@@ -54,6 +54,7 @@ public:
 	void done_adding_entries();
 
 	~Matrix() {
+		for (auto i = _entries.begin(); i != _entries.end(); ++i) delete *i;
 		for (int i = 0;  i < _n_rows;  ++i)  delete _rows[i];
 		for (int i = 0;  i < _n_cols;  ++i)  delete _cols[i];
 		delete[] _rows;
