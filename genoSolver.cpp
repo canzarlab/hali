@@ -17,17 +17,17 @@
   s.t.  A*x >= b
         x   >= 0
 
- Hence, A here is transposed to our original maximization system matrix. 
+ Hence, A here is transposed to our original maximization system matrix, b is c and c is b. 
 */
 
 Scalar const INF = std::numeric_limits<Scalar>::infinity();
 
 // declares a column-major sparse matrix type of double
-typedef Eigen::SparseMatrix<Scalar> SpMat; // probably boolean matrix would also work.
+typedef Eigen::SparseMatrix<Scalar> SpMat;
 
 class SimpleJRF : public GenoNLP {
 public:
-  SimpleJRF(const SpMat& A, 
+  SimpleJRF(const Matrix& A, 
 	    const Vector& b,
 	    const Vector& c) 
     : _A(A), _b(b), _c(c), _n(A.cols()), _m(A.rows())
@@ -53,8 +53,8 @@ public:
   virtual bool getBoundsConstraints(Scalar* cl, Scalar* cu) 
   {
     // we have equality constraints here
-    Vector::MapType(cl, _m) = Vector::Constant(_m, -INF);
-    Vector::MapType(cu, _m) = _b;
+    Vector::MapType(cu, _m) = Vector::Constant(_m, INF);
+    Vector::MapType(cl, _m) = _b;
     return true;
   };
   
@@ -100,7 +100,7 @@ public:
   }
   
 private:
-  const SpMat& _A;
+  const Matrix& _A;
   const Vector& _b;
   const Vector& _c;
   Index _n;
@@ -108,7 +108,7 @@ private:
 };
 
 
-/*void runExample(int m, int n) {
+void runExample(int m, int n) {
   // generate some random data
   Matrix A = Matrix::Random(m, n);
   Vector xOrig = Vector::Random(n);
@@ -119,7 +119,7 @@ private:
   Vector b = A*xOrig;
   Vector c = Vector::Ones(n);
 
-  SimpleNLP simpleNLP(A, b, c);
+  SimpleJRF simpleNLP(A, b, c);
   AugmentedLagrangian solver(simpleNLP, 15);
 
   solver.solve();
@@ -137,15 +137,7 @@ private:
 }
 
 
-void printUsage() {
-  std::cout << "usage: example3 <m> <n>" << std::endl;
-  std::cout << "\n\tsolves min_x c'*x" << std::endl;
-  std::cout << "\t       s.t.  A*x <= b" << std::endl;
-  std::cout << "\t               x >= 0\n" << std::endl;
-  std::cout << "<m> - number of rows of random A" << std::endl;
-  std::cout << "<n> - number of cols of random A" << std::endl;
-}
-*/
+
 
 int main(int argc, char** argv)
 {
@@ -168,33 +160,80 @@ int main(int argc, char** argv)
     std::vector<T> tripletList;
     
     int k = 0;
+    int nr_rows = 0;
+    int nr_cols = 0;
+    Vector c(n*m); // n*m is pessimistic. c should be resized at the end. 
+    
     for (int i = 0; i < n; ++i)
     {
         for (int j = 0; j < m; ++j)
         {
             if (C[i * n + j] != 0)
             {
-                tripletList.push_back(T(m * i + j - k, i, 1));
-                tripletList.push_back(T(m * i + j - k, n + j, 1));
-//                solver->add_entry(i, m * i + j - k, 1. / C[i * n + j]);
-//                solver->add_entry(n + j, i * m + j - k, 1. / C[i * n + j]);
+//              solver->add_entry(i, m * i + j - k, 1. / C[i * n + j]);
+                tripletList.push_back(T(i, m * i + j - k, 1.));
+//              solver->add_entry(n + j, i * m + j - k, 1. / C[i * n + j]);
+                tripletList.push_back(T(n + j, i * m + j - k, 1.));
+                
+                if (m*i+j-k > nr_cols)	nr_cols = m*i+j-k;
+                if (n+j>nr_rows ) nr_rows = n+j;
+                
+                c(m*i+j-k) = C[i*n+j];
             }
             else
                 ++k;
         }
     }
     
+    nr_rows++;
+    nr_cols++;
+//  cout << "Vector c = " << c << endl;  
+    c.conservativeResize(nr_cols);
+    
+//    cout << "nr_rows = " << nr_rows << " and nr_cols = " << nr_cols << endl;
+//    cout << "c = " << c << endl;
+    
+    
 
     delete[] C;
 
-    SpMat A(n, m); // TODO: set nr_rows and nr_cols
-    // TODO: set vectors c and b (in dual). 
-
+    SpMat A(nr_rows, nr_cols); 
+    
+    cout << "number of rows and columns: " << A.rows() << "   " << A.cols()<< endl;
+    
     A.setFromTriplets(tripletList.begin(), tripletList.end()); 
     
-    
+    Matrix A_dense = Matrix(A);
 
     
+    Vector b = Vector::Ones(nr_rows);
+    assert (A.cols() == c.rows());
+    assert (A.rows() == b.rows());
+   
+   
+//    cout << "Transposed Matrix A = " << A_dense << endl;
+//    cout << "Vector c = " << c << endl;
+//    cout << "Vector b = " << b << endl;
+
+
+//    runExample(100,100);
+   
+    SimpleJRF simpleJRF(A_dense.transpose(), c, b);  
+    AugmentedLagrangian solver(simpleJRF, 15);
+       
+    solver.solve();
+
+    Vector x = Vector::ConstMapType(solver.x(), nr_rows);
+    double f = solver.f();
+             
+//  std::cout << "x = \n" << x.transpose() << std::endl;
+                 
+    std::cout << "norm(A.transpose()*x - b)^2     = " << (A_dense.transpose()*x - c).squaredNorm() << std::endl;
+    std::cout << "minimal x = " << x.minCoeff() << std::endl;
+//  std::cout << "x = " << x.transpose() << std::endl;
+    std::cout << "function value = " << f << std::endl;    
+    
+   
 }
 
 
