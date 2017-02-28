@@ -27,7 +27,7 @@ typedef Eigen::SparseMatrix<Scalar> SpMat;
 
 class SimpleJRF : public GenoNLP {
 public:
-  SimpleJRF(const Matrix& A, 
+  SimpleJRF(const SpMat& A, 
 	    const Vector& b,
 	    const Vector& c) 
     : _A(A), _b(b), _c(c), _n(A.cols()), _m(A.rows())
@@ -100,27 +100,29 @@ public:
   }
   
 private:
-  const Matrix& _A;
+  const SpMat& _A;
   const Vector& _b;
   const Vector& _c;
   Index _n;
   Index _m;
 };
 
-
+/*
 void runExample(int m, int n) {
   // generate some random data
-  Matrix A = Matrix::Random(m, n);
+  Matrix A = Matrix::Random(m, n).cwiseAbs();
   Vector xOrig = Vector::Random(n);
   for (int i = 0; i < n; ++i)
     if (xOrig[i] < 0)
       xOrig[i] = 0;
 		  
-  Vector b = A*xOrig;
+//  Vector b = A*xOrig;
+  Vector b = Vector::Random(m).cwiseAbs();
   Vector c = Vector::Ones(n);
 
   SimpleJRF simpleNLP(A, b, c);
   AugmentedLagrangian solver(simpleNLP, 15);
+  //solver.setParameter("constraintsTol", .5);
 
   solver.solve();
   Vector x = Vector::ConstMapType(solver.x(), n);
@@ -131,13 +133,14 @@ void runExample(int m, int n) {
 
   std::cout << "norm(A*xOrig - b)^2 = " << (A*xOrig - b).squaredNorm() << std::endl;
   std::cout << "norm(A*x - b)^2     = " << (A*x - b).squaredNorm() << std::endl;
+//  cout << "TRALALAL" << A*x -b << endl;
   std::cout << "minimal x = " << x.minCoeff() << std::endl;
   //  std::cout << "x = " << x.transpose() << std::endl;
   std::cout << "function value = " << f << std::endl;
 }
 
 
-
+*/
 
 int main(int argc, char** argv)
 {
@@ -203,7 +206,7 @@ int main(int argc, char** argv)
     
     A.setFromTriplets(tripletList.begin(), tripletList.end()); 
     
-    Matrix A_dense = Matrix(A);
+//    Matrix A_dense = Matrix(A);
 
     
     Vector b = Vector::Ones(nr_rows);
@@ -211,14 +214,14 @@ int main(int argc, char** argv)
     assert (A.rows() == b.rows());
    
    
-//    cout << "Transposed Matrix A = " << A_dense << endl;
-//    cout << "Vector c = " << c << endl;
-//    cout << "Vector b = " << b << endl;
+  //  cout << "Transposed Matrix A = " << A_dense.transpose() << endl;
+  //  cout << "Vector c = " << c << endl;
+  //  cout << "Vector b = " << b << endl;
 
 
-//    runExample(100,100);
-   
-    SimpleJRF simpleJRF(A_dense.transpose(), c, b);  
+//    runExample(5000,500);
+    SpMat A_t = A.transpose(); 
+    SimpleJRF simpleJRF(A_t, c, b);  
     AugmentedLagrangian solver(simpleJRF, 15);
        
     solver.solve();
@@ -228,12 +231,12 @@ int main(int argc, char** argv)
              
 //  std::cout << "x = \n" << x.transpose() << std::endl;
                  
-    std::cout << "norm(A.transpose()*x - b)^2     = " << (A_dense.transpose()*x - c).squaredNorm() << std::endl;
+    std::cout << "norm(A.transpose()*x - b)^2     = " << (A_t*x - c).squaredNorm() << std::endl;
     std::cout << "minimal x = " << x.minCoeff() << std::endl;
 //  std::cout << "x = " << x.transpose() << std::endl;
     std::cout << "function value = " << f << std::endl;    
-    
    
+ 
 }
 
 
