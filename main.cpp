@@ -12,31 +12,51 @@ int main(int argc, char** argv)
 
     PhylogeneticTree t1(argv[1]);
     PhylogeneticTree t2(argv[2]);
+    
     int n = t1.getNumNodes(), m = t2.getNumNodes();
 
     ifstream SimFile(argv[3]);
-    double* C = new double[n * m];
-    for (int i = 0; i < n * m; ++i)
-        SimFile >> C[i];
+    if (!SimFile)
+    {
+        cout << "Failed to open " << argv[3] << endl;
+        return EXIT_FAILURE;
+    }
 
-    double epsilon = stod(argv[4]);
-    Solver* solver = Solver::create(epsilon);
+    vector<vector<double> > C;
+    string line;
+    for (int i = 0; getline(SimFile, line) && !line.empty(); ++i)
+    {
+        istringstream ss(line);
+        if (t1.getNodeId(i + 1) == -1)
+            continue;
+        
+        C.push_back(vector<double>());
+        double w;
+        for (int j = 0; ss >> w; ++j)
+        {
+            if (t2.getNodeId(j + 1) == -1)
+                continue;
+
+            C[i].push_back(w);
+        }
+    }
+    
+    Solver* solver = Solver::create(stod(argv[4]));
 
     int k = 0;
     for (int i = 0; i < n; ++i)
     {
         for (int j = 0; j < m; ++j)
         {
-            if (C[i * n + j] != 0)
+            if (C[i][j] != 0)
             {
-                solver->add_entry(i, m * i + j - k, 1. / C[i * n + j]);
-                solver->add_entry(n + j, i * m + j - k, 1. / C[i * n + j]);
+                solver->add_entry(i, m * i + j - k, 1. / C[i][j]);
+                solver->add_entry(n + j, i * m + j - k, 1. / C[i][j]);
             }
             else
                 ++k;
         }
     }
-    delete[] C;
 
     solver->done_adding_entries();
 

@@ -14,7 +14,7 @@ void PhylogeneticTree::makeTree(newick_node* root, ListDigraph::Node p)
     ListDigraph::Node r = _t.addNode();
     _n++;
     _lab[r] = root->taxon;
-    _map[root->taxon] = _t.id(r);
+    _map[stoi(root->taxon)] = _t.id(r);
     _dst[r] = root->dist;
 
     if (p != INVALID)
@@ -29,7 +29,7 @@ void PhylogeneticTree::makeTree(newick_node* root, ListDigraph::Node p)
         _l.push_front(r);
 }
 
-long PhylogeneticTree::getNodeId(string s) const
+long PhylogeneticTree::getNodeId(int s) const
 {
     auto iter = _map.find(s);
     if (iter != _map.end())

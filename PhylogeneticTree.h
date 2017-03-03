@@ -27,7 +27,7 @@ public:
     long                           getNumNodes()                         const { return _n; }
     string                         getLabel(ListDigraph::Node& x)        const { return _lab[x]; }
     double                         getDistance(ListDigraph::Node& x)     const { return _dst[x]; }
-    long                           getNodeId(string s)                   const;
+    long                           getNodeId(int s)                      const;
     const ListDigraph::Node        getParent(const ListDigraph::Node& x) const;
 
     // Legacy.
@@ -44,7 +44,7 @@ private:
     list<ListDigraph::Node>             _l;   // Leaves.
     ListDigraph::NodeMap<string>        _lab; // Node labels.
     ListDigraph::NodeMap<double>        _dst; // Node distances. I'm not even sure whether the last two containers will be needed.
-    map<string, long>                   _map;
+    map<int, long>                      _map;
     long                                _n;
     ListDigraph::NodeMap<list<string> > _clade;
 
