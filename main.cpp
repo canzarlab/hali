@@ -37,7 +37,7 @@ int main(int argc, char** argv)
             if (t2.getNodeId(j + 1) == -1)
                 continue;
 
-            C[i].push_back(w);
+            C.back().push_back(w);
         }
     }
     
