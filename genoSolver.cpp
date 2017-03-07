@@ -153,11 +153,34 @@ int main(int argc, char** argv)
     PhylogeneticTree t1(argv[1]);
     PhylogeneticTree t2(argv[2]);
     int n = t1.getNumNodes(), m = t2.getNumNodes();
-
+    cout << "Nr. of nodes of T_1: " << n << endl;
+    cout << "Nr. of nodes of T_2: " << m << endl;
     ifstream SimFile(argv[3]);
-    double* C = new double[n * m];
-    for (int i = 0; i < n * m; ++i)
-        SimFile >> C[i];
+    if (!SimFile)
+    {
+        cout << "Failed to open " << argv[3] << endl;
+        return EXIT_FAILURE;
+    }
+                        
+    vector<vector<double> > C;
+    string line;
+    
+    for (int i = 0; getline(SimFile, line) && !line.empty(); ++i)
+    {
+        istringstream ss(line);
+        if (t1.getNodeId(i + 1) == -1)
+            continue;
+
+        C.push_back(vector<double>());
+        double w;
+        for (int j = 0; ss >> w; ++j)
+        {
+            if (t2.getNodeId(j + 1) == -1)
+                continue;
+
+            C.back().push_back(w);
+        }
+    }
 
     typedef Eigen::Triplet<double> T;
     std::vector<T> tripletList;
@@ -171,17 +194,17 @@ int main(int argc, char** argv)
     {
         for (int j = 0; j < m; ++j)
         {
-            if (C[i * n + j] != 0)
+            if (C[i][j] != 0)
             {
-//              solver->add_entry(i, m * i + j - k, 1. / C[i * n + j]);
+//              solver->add_entry(i, m * i + j - k, 1. / C[i][j]);
                 tripletList.push_back(T(i, m * i + j - k, 1.));
-//              solver->add_entry(n + j, i * m + j - k, 1. / C[i * n + j]);
+//              solver->add_entry(n + j, i * m + j - k, 1. / C[i][j]);
                 tripletList.push_back(T(n + j, i * m + j - k, 1.));
                 
                 if (m*i+j-k > nr_cols)	nr_cols = m*i+j-k;
                 if (n+j>nr_rows ) nr_rows = n+j;
                 
-                c(m*i+j-k) = C[i*n+j];
+                c(m*i+j-k) = C[i][j];
             }
             else
                 ++k;
@@ -193,16 +216,12 @@ int main(int argc, char** argv)
 //  cout << "Vector c = " << c << endl;  
     c.conservativeResize(nr_cols);
     
-//    cout << "nr_rows = " << nr_rows << " and nr_cols = " << nr_cols << endl;
+    cout << "nr_rows = " << nr_rows << " and nr_cols = " << nr_cols << endl;
 //    cout << "c = " << c << endl;
     
     
 
-    delete[] C;
-
     SpMat A(nr_rows, nr_cols); 
-    
-    cout << "number of rows and columns: " << A.rows() << "   " << A.cols()<< endl;
     
     A.setFromTriplets(tripletList.begin(), tripletList.end()); 
     
@@ -223,9 +242,9 @@ int main(int argc, char** argv)
     SpMat A_t = A.transpose(); 
     SimpleJRF simpleJRF(A_t, c, b);  
     AugmentedLagrangian solver(simpleJRF, 15);
-       
+    cout << "Solver all set... Go! " << endl;     
     solver.solve();
-
+    cout << "Job done! " << endl;
     Vector x = Vector::ConstMapType(solver.x(), nr_rows);
     double f = solver.f();
              
