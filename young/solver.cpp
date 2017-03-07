@@ -183,7 +183,7 @@ bool _Solver::solve() {
 			pur->remove(row);
 		}
 
-	int N = int(std::ceil(2*std::log(nr*nc) / (_epsilon*_epsilon)));
+	int N = int(std::ceil(2*(std::log(nr) + std::log(nc)) / (_epsilon*_epsilon)));
 	int iteration = 0, empty_iterations = 0;
 
 	std::cout << "N = " << N << std::endl;
