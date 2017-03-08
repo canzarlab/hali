@@ -17,7 +17,7 @@ public:
     _mEqualities(0),
     _mInequalities(0),
     _constraintValues(Vector(genoNLP.getM())),
-    _jacobian(Matrix(genoNLP.getM(), genoNLP.getN())),
+//    _jacobian(Matrix(genoNLP.getM(), genoNLP.getN())),
     _rho(rho),
     _y(y),
     _cl(Vector(genoNLP.getM())),
@@ -319,11 +319,11 @@ SolverStatus AugmentedLagrangian::solve()
   Vector y = Vector::Zero(_genoNLP.getM());
   _genoNLP.getStartingPointDual(y.data());
   //  std::cout << "y= " << y.transpose() << std::endl;
-
   AugmentedNLP augmentedNLP(_genoNLP, rho, y);
   size_t mEqualities = augmentedNLP.mEqualities();
   size_t mInequalities = augmentedNLP.mInequalities();
   std::vector<int> cType = augmentedNLP.cType();
+  
 
   /*
   _genoNLP.getStartingPoint(_x.data());
