@@ -174,12 +174,8 @@ int main(int argc, char** argv)
         C.push_back(vector<double>());
         double w;
         for (int j = 0; ss >> w; ++j)
-        {
-            if (t2.getNodeId(j + 1) == -1)
-                continue;
-
-            C.back().push_back(w);
-        }
+            if (t2.getNodeId(j + 1) != -1)
+                C.back().push_back(w);
     }
 
     typedef Eigen::Triplet<double> T;

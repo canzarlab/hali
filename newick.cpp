@@ -13,7 +13,7 @@ newick_child::~newick_child()
     delete next;
 }
 
-newick_node::newick_node(const string& taxon, float dist, newick_child* child) : child(child), taxon(taxon), dist(dist)
+newick_node::newick_node(const string& taxon, float dist, newick_child* child) : child(child), taxon(taxon), dist(dist), parent(nullptr)
 {
 }
 

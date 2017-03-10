@@ -23,6 +23,7 @@ struct newick_node
     newick_child* child;
     string taxon;
     float dist;
+    newick_node* parent;
 };
 
 newick_node* load_tree(const char* filename);

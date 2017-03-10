@@ -1,6 +1,8 @@
 #include "PhylogeneticTree.h"
 #include "young/solver.h"
+#include <iostream>
 #include <fstream>
+#include <sstream>
 
 int main(int argc, char** argv)
 {
@@ -27,18 +29,14 @@ int main(int argc, char** argv)
     for (int i = 0; getline(SimFile, line) && !line.empty(); ++i)
     {
         istringstream ss(line);
-        if (t1.getNodeId(i + 1) == -1)
+        if (!t1.nodeExists(i + 1))
             continue;
         
         C.push_back(vector<double>());
         double w;
         for (int j = 0; ss >> w; ++j)
-        {
-            if (t2.getNodeId(j + 1) == -1)
-                continue;
-
-            C.back().push_back(w);
-        }
+            if (t2.nodeExists(j + 1))
+                C.back().push_back(w);
     }
     
     Solver* solver = Solver::create(stod(argv[4]));
