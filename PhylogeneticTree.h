@@ -10,14 +10,17 @@ class PhylogeneticTree
 public:
     PhylogeneticTree(string filename);
 
-    long getNumNodes() const { return _n; }
-    bool nodeExists(unsigned n) const { return n < A.size() ? A[n] : false; }   
-    
+    int GetNumNodes() const { return _n; }
+    bool NodeExists(unsigned n) const { return n < B.size() ? B[n] : false; }
+    int GetIndex(newick_node* node) const { return N[stoi(node->taxon)]; }
+    newick_node* GetRoot() const { return root; }
+
+    // TODO: objediniti N i B
+    vector<int> N;
 private:
-    void init(newick_node* node);
+    void Init(newick_node* node);
     
-    vector<bool> A;
-    vector<newick_node*> L;
+    vector<bool> B;
     newick_node* root;
     long _n;
 };
