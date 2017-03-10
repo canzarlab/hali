@@ -152,7 +152,7 @@ int main(int argc, char** argv)
 
     PhylogeneticTree t1(argv[1]);
     PhylogeneticTree t2(argv[2]);
-    int n = t1.getNumNodes(), m = t2.getNumNodes();
+    int n = t1.GetNumNodes(), m = t2.GetNumNodes();
     cout << "Nr. of nodes of T_1: " << n << endl;
     cout << "Nr. of nodes of T_2: " << m << endl;
     ifstream SimFile(argv[3]);
@@ -168,13 +168,13 @@ int main(int argc, char** argv)
     for (int i = 0; getline(SimFile, line) && !line.empty(); ++i)
     {
         istringstream ss(line);
-        if (!t1.nodeExists(i + 1))
+        if (!t1.NodeExists(i + 1))
             continue;
 
         C.push_back(vector<double>());
         double w;
         for (int j = 0; ss >> w; ++j)
-            if (t2.nodeExists(j + 1))
+            if (t2.NodeExists(j + 1))
                 C.back().push_back(w);
     }
 
