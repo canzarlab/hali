@@ -460,18 +460,18 @@ SolverStatus AugmentedLagrangian::solve()
   return status;
 }
 
-/*
-const Vector&  AugmentedLagrangian::x(const Vector& x)
+
+const Vector&  AugmentedLagrangian::x()
 {
   return _x;
 }
-*/
 
+/*
 const Scalar* AugmentedLagrangian::x() const
 {
   return _x.data();
 }
-
+*/
 Scalar AugmentedLagrangian::f() const
 {
   return _f;

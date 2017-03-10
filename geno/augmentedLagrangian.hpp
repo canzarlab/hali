@@ -20,8 +20,8 @@ public:
   SolverStatus solve();
 
   // Set x for warm start.
-  //  const Vector& x(const Vector& x);
-  const Scalar* x() const;
+  const Vector& x();
+  //const Scalar* x() const;
   Scalar f() const;
 
   // Set parameters
