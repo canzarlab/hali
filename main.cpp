@@ -178,8 +178,12 @@ public:
         Vector b = Vector::Ones(nr_rows);        
         SimpleJRF simpleJRF(A, b, c);
         AugmentedLagrangian solver(simpleJRF, 15);
+        solver.setParameter("verbose", false);
+        solver.setParameter("pgtol", 1e-1); // should influence running time a lot
+        solver.setParameter("constraintsTol", 1e-3); 
         solver.solve();
-        x = solver.x();
+//        x = solver.x();
+        x = Vector::ConstMapType(solver.x(), nr_rows);
     }
 
     void CrossingConstraints()
