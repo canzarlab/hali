@@ -166,7 +166,10 @@ public:
                     c(col) = -C[i][j];
                 }
                 else
+                {
+                    K[i * m + j] = -1;
                     ++k;
+                }
             }
         }
         nr_rows++;
@@ -196,7 +199,8 @@ private:
     {
         int i1 = t1.GetIndex(nodel);
         int i2 = t2.GetIndex(noder);
-        return x(K[i1 * t2.GetNumNodes() + i2]);
+        int in = K[i1 * t2.GetNumNodes() + i2];
+        return in == -1 ? 0 : x(in);
     }
 
     void dfs1(newick_node* node)
