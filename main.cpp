@@ -183,7 +183,7 @@ public:
         solver.setParameter("constraintsTol", 1e-3); 
         solver.solve();
 //        x = solver.x();
-        x = Vector::ConstMapType(solver.x(), K.back());
+        x = Vector::ConstMapType(solver.x(), K.back() + 1);
     }
 
     void CrossingConstraints()
