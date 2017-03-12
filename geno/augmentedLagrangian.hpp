@@ -20,8 +20,8 @@ public:
   SolverStatus solve();
 
   // Set x for warm start.
-  const Vector& x();
-  //const Scalar* x() const;
+  //  const Vector& x(const Vector& x);
+  const Scalar* x() const;
   Scalar f() const;
 
   // Set parameters
@@ -43,6 +43,7 @@ private:
 
   Scalar _tol;
   Scalar _tolFun;
+  bool _verbose;
 };
 
 #endif // AUGMENTED_LAGRANGIAN_H

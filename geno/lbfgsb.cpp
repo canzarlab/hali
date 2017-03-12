@@ -523,7 +523,7 @@ SolverStatus LBFGSB::solve() {
 }
 
 
-LBFGSB::LBFGSB(GenoNLP& genoNLP, Index m)
+LBFGSB::LBFGSB(GenoNLP& genoNLP, Index m, bool verbose)
   : _genoNLP(genoNLP),
   _f(std::numeric_limits<Scalar>::infinity()),
   _x(Vector(genoNLP.getN())),
@@ -531,8 +531,8 @@ LBFGSB::LBFGSB(GenoNLP& genoNLP, Index m)
   _ub(Vector(genoNLP.getN())),
   _g(Vector(genoNLP.getN())),
   _funEval(0),
-    _verbose(true),
-    _maxIter(50000),
+  _verbose(verbose),
+  _maxIter(50000),
     //    _maxIter(100),
   _tol(1e-8),
   //_tolFun(1E7 * std::numeric_limits<Scalar>::epsilon()),

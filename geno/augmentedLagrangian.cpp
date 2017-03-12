@@ -305,7 +305,8 @@ AugmentedLagrangian::AugmentedLagrangian(GenoNLP& genoNLP,
     _x(Vector(genoNLP.getN())),
     _maxIter(50),
     _tol(-1),
-    _tolFun(-1)
+    _tolFun(-1),
+    _verbose(false)
 {
 }
 
@@ -350,7 +351,7 @@ SolverStatus AugmentedLagrangian::solve()
   Vector dummyG(_genoNLP.getN());
   rho = 1.0;
 
-  LBFGSB solver(augmentedNLP, _correctionPairs);
+  LBFGSB solver(augmentedNLP, _correctionPairs, _verbose);
   //NEWTONB solver(augmentedNLP, _correctionPairs);
   if (_tol != -1) solver.setParameter("pgtol", _tol);
   if (_tolFun != -1) solver.setParameter("factr", _tolFun);
@@ -364,7 +365,8 @@ SolverStatus AugmentedLagrangian::solve()
   
   for (size_t iter = 0; iter < _maxIter; ++iter) 
   {
-    std::cout << "rho = " << rho << std::endl;
+    if (_verbose)
+      std::cout << "rho = " << rho << std::endl;
 
     augmentedNLP.setParams(rho, y);
     solver.restart();
@@ -460,18 +462,18 @@ SolverStatus AugmentedLagrangian::solve()
   return status;
 }
 
-
-const Vector&  AugmentedLagrangian::x()
+/*
+const Vector&  AugmentedLagrangian::x(const Vector& x)
 {
   return _x;
 }
+*/
 
-/*
 const Scalar* AugmentedLagrangian::x() const
 {
   return _x.data();
 }
-*/
+
 Scalar AugmentedLagrangian::f() const
 {
   return _f;
@@ -499,6 +501,12 @@ bool AugmentedLagrangian::setParameter(std::string parameter, Scalar value)
 		_constraintsTol = value;
 		return true;
 	}
+	if (parameter == "verbose")
+	{
+	        _verbose = value;
+	        return true;
+        }
+	        
 
 	return false;
 }

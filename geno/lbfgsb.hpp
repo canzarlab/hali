@@ -15,7 +15,7 @@ enum SolverStatus {SOLVED = 0, SUBOPTIMAL, UNBOUNDED, INFEASIBLE, NUM_ERROR};
 
 class LBFGSB {
 public:
-  LBFGSB(GenoNLP& genoNLP, Index m);
+  LBFGSB(GenoNLP& genoNLP, Index m, bool verbose = true);
 //  ~LBFGSB();
   
   void restart();
