@@ -169,7 +169,7 @@ public:
             }
         }
         int nr_rows = n + m;
-        int nr_cols = K.back() + 1;
+        int nr_cols = n * m - k;
         c.conservativeResize(nr_cols);
         
         SpMat A(nr_rows, nr_cols);
