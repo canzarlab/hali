@@ -146,7 +146,7 @@ public:
 
         typedef Eigen::Triplet<double> ET;
         vector<ET> Triplets;
-        int n = t1.GetNumNodes(), m = t2.GetNumNodes(), k = 0, nr_rows = 0, nr_cols = 0;
+        int n = t1.GetNumNodes(), m = t2.GetNumNodes(), k = 0;
         K.resize(n * m);
         Vector c(n * m);
         for (int i = 0; i < n; ++i)
@@ -159,10 +159,6 @@ public:
                     K[i * m + j] = col;
                     Triplets.push_back(ET(i, col, 1.));
                     Triplets.push_back(ET(n + j, col, 1.));
-                    
-                    if (col > nr_cols) nr_cols = col;
-                    if (n + j > nr_rows) nr_rows = n + j;
-                    
                     c(col) = -C[i][j];
                 }
                 else
@@ -172,8 +168,8 @@ public:
                 }
             }
         }
-        nr_rows++;
-        nr_cols++;
+        int nr_rows = n + m;
+        int nr_cols = K.back() + 1;
         c.conservativeResize(nr_cols);
         
         SpMat A(nr_rows, nr_cols);
@@ -186,7 +182,7 @@ public:
         solver.setParameter("constraintsTol", 1e-3); 
         solver.solve();
 //        x = solver.x();
-        x = Vector::ConstMapType(solver.x(), K.back() + 1);
+        x = Vector::ConstMapType(solver.x(), nr_cols);
     }
 
     void CrossingConstraints()
