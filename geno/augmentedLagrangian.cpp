@@ -285,7 +285,7 @@ private:
   size_t _mEqualities;
   size_t _mInequalities;
   Vector _constraintValues;
-  Matrix _jacobian;
+//  Matrix _jacobian;
   Scalar _rho;
   Vector _y;
   Vector _cl;
@@ -303,6 +303,7 @@ AugmentedLagrangian::AugmentedLagrangian(GenoNLP& genoNLP,
     _correctionPairs(correctionPairs),
     _f(0),
     _x(Vector(genoNLP.getN())),
+    _y(Vector::Zero(_genoNLP.getM())),
     _maxIter(50),
     _tol(-1),
     _tolFun(-1),
@@ -317,10 +318,10 @@ SolverStatus AugmentedLagrangian::solve()
   //  static const double rhoMax = 10;
     
   Scalar rho = 0;
-  Vector y = Vector::Zero(_genoNLP.getM());
-  _genoNLP.getStartingPointDual(y.data());
+//  Vector y = Vector::Zero(_genoNLP.getM());
+  _genoNLP.getStartingPointDual(_y.data());
   //  std::cout << "y= " << y.transpose() << std::endl;
-  AugmentedNLP augmentedNLP(_genoNLP, rho, y);
+  AugmentedNLP augmentedNLP(_genoNLP, rho, _y);
   size_t mEqualities = augmentedNLP.mEqualities();
   size_t mInequalities = augmentedNLP.mInequalities();
   std::vector<int> cType = augmentedNLP.cType();
@@ -368,7 +369,7 @@ SolverStatus AugmentedLagrangian::solve()
     if (_verbose)
       std::cout << "rho = " << rho << std::endl;
 
-    augmentedNLP.setParams(rho, y);
+    augmentedNLP.setParams(rho, _y);
     solver.restart();
     status = solver.solve();
     if ((status != SOLVED) && (status != SUBOPTIMAL))
@@ -398,14 +399,14 @@ SolverStatus AugmentedLagrangian::solve()
 
     //    y = y + rho * constraintError;
 
-    y.head(mEqualities) +=  rho * constraintError.head(mEqualities);
+    _y.head(mEqualities) +=  rho * constraintError.head(mEqualities);
 
     //safeguard Lagrange multiplier for equality constraints
     for (size_t i = 0; i < mEqualities; ++i) {
-      if (y(i) < lambdaMin)
-	y(i) = lambdaMin;
-      if (y(i) > lambdaMax)
-	y(i) = lambdaMax;
+      if (_y(i) < lambdaMin)
+	_y(i) = lambdaMin;
+      if (_y(i) > lambdaMax)
+	_y(i) = lambdaMax;
     }
 
 
@@ -414,33 +415,33 @@ SolverStatus AugmentedLagrangian::solve()
     // compute new Lagrange multiplier and safeguard it
     for (size_t i = 0; i < mInequalities; ++i) {
       if (cType[i+mEqualities] == 2) {
-	y(i+mEqualities) += rho * constraintError(i+mEqualities);
-        if (y(i+mEqualities) > 0)
-          y(i+mEqualities) = 0;
+	_y(i+mEqualities) += rho * constraintError(i+mEqualities);
+        if (_y(i+mEqualities) > 0)
+          _y(i+mEqualities) = 0;
       }
 
       if (cType[i+mEqualities] == 3) {
-	double yLB = std::min(0.0, y(i+mEqualities));
-	double yUB = std::max(0.0, y(i+mEqualities));
+	double yLB = std::min(0.0, _y(i+mEqualities));
+	double yUB = std::max(0.0, _y(i+mEqualities));
 	yLB += rho * (constraintValues(i+mEqualities) - cl(i));
 	yUB += rho * (constraintValues(i+mEqualities) - cu(i));
 	yLB = std::min(0.0, yLB);
 	yUB = std::max(0.0, yUB);
 
-	y(i+mEqualities) = yLB + yUB;
+	_y(i+mEqualities) = yLB + yUB;
 
       }
 
       if (cType[i+mEqualities] == 4) {
-        y(i+mEqualities) += rho * constraintError(i+mEqualities);
- 	if (y(i+mEqualities) < 0)
-	  y(i+mEqualities) = 0;
+        _y(i+mEqualities) += rho * constraintError(i+mEqualities);
+ 	if (_y(i+mEqualities) < 0)
+	  _y(i+mEqualities) = 0;
       }
 
-      if (y(i+mEqualities) < muMin)
-        y(i+mEqualities) = muMin;
-      if (y(i+mEqualities) > muMax)
-	y(i+mEqualities) = muMax;
+      if (_y(i+mEqualities) < muMin)
+        _y(i+mEqualities) = muMin;
+      if (_y(i+mEqualities) > muMax)
+	_y(i+mEqualities) = muMax;
     }
     
     //    double factor = constraintErrorNorm;
@@ -451,7 +452,7 @@ SolverStatus AugmentedLagrangian::solve()
 
     //    std::cout << "factor = " << factor << std::endl;
     for (size_t i = 0; i < mInequalities; ++i) {
-      factor = std::max(std::abs(std::max(constraintError(mEqualities + i), -y(mEqualities + i) / rho)), factor);
+      factor = std::max(std::abs(std::max(constraintError(mEqualities + i), -_y(mEqualities + i) / rho)), factor);
     }
     if (factor > tau * oldFactor) {
       rho *= gamma;
@@ -474,6 +475,11 @@ const Scalar* AugmentedLagrangian::x() const
   return _x.data();
 }
 
+const Scalar* AugmentedLagrangian::y() const
+{
+  return _y.data();
+}
+  
 Scalar AugmentedLagrangian::f() const
 {
   return _f;

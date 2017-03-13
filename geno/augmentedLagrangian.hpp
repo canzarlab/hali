@@ -22,6 +22,7 @@ public:
   // Set x for warm start.
   //  const Vector& x(const Vector& x);
   const Scalar* x() const;
+  const Scalar* y() const;
   Scalar f() const;
 
   // Set parameters
@@ -39,6 +40,7 @@ private:
   size_t _correctionPairs;
   Scalar _f;
   Vector _x;
+  Vector _y;
   size_t _maxIter;
 
   Scalar _tol;
