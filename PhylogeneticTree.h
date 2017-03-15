@@ -17,6 +17,7 @@ public:
 
     // TODO: objediniti N i B
     vector<int> N;
+    vector<newick_node*> L;
 private:
     void Init(newick_node* node);
     

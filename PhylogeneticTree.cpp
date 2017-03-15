@@ -13,6 +13,9 @@ void PhylogeneticTree::Init(newick_node* node)
     if (id >= B.size())
         B.resize(id + 1, false);
     B[id] = true;
+
+    if (!node->child)
+        L.push_back(node);
     
     for (newick_child* child = node->child; child; child = child->next)
     {

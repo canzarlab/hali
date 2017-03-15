@@ -7,7 +7,8 @@
 #include "geno/genoNLP.hpp"
 #include "geno/augmentedLagrangian.hpp"
 
-Scalar const INF = std::numeric_limits<Scalar>::infinity();
+Scalar const INF = numeric_limits<Scalar>::infinity();
+#define EPS 1e-9
 
 // declares a column-major sparse matrix type of double
 typedef Eigen::SparseMatrix<Scalar> SpMat;
@@ -43,8 +44,8 @@ public:
     virtual bool getBoundsConstraints(Scalar* cl, Scalar* cu) 
     {
         // we have equality constraints here
-        Vector::MapType(cu, _m) = _b;
-        Vector::MapType(cl, _m) = Vector::Constant(_m, -INF);
+        Vector::MapType(cl, _m) = _b;
+        Vector::MapType(cu, _m) = Vector::Constant(_m, INF);
         return true;
     };
   
@@ -101,12 +102,17 @@ private:
 
 class LP
 {
+    typedef PhylogeneticTree Tree;
+    typedef Eigen::Triplet<double> ET;
     typedef vector<vector<double> > DPT;
 public:
-    LP(const char* p1, const char* p2) : t1(p1), t2(p2)
+    LP(const char* p1, const char* p2) : t1(p1), t2(p2), ncr(0), c(t1.GetNumNodes() * t2.GetNumNodes())
     {
         DP.resize(t1.GetNumNodes());
         for (auto& v : DP)
+            v.resize(t2.GetNumNodes());
+        K.resize(t1.GetNumNodes());
+        for (auto& v : K)
             v.resize(t2.GetNumNodes());
     }
 
@@ -123,7 +129,7 @@ public:
             exit(EXIT_FAILURE);
         }
 
-        vector<vector<double> > C;
+        int n = t1.GetNumNodes(), m = t2.GetNumNodes(), cnt = 0;
         string line;
         for (int i = 0, k = 0; getline(SimFile, line) && !line.empty(); ++i)
         {
@@ -131,72 +137,114 @@ public:
             if (!t1.NodeExists(i + 1))
                 continue;
 
-            t1.N[i] = k++;        
-            C.push_back(vector<double>());
+            t1.N[i] = k;
             double w;
             for (int j = 0, l = 0; ss >> w; ++j)
             {
                 if (!t2.NodeExists(j + 1))
                     continue;
 
-                t2.N[j] = l++;
-                C.back().push_back(w);
-            }
-        }
-
-        typedef Eigen::Triplet<double> ET;
-        vector<ET> Triplets;
-        int n = t1.GetNumNodes(), m = t2.GetNumNodes(), k = 0;
-        K.resize(n * m);
-        Vector c(n * m);
-        for (int i = 0; i < n; ++i)
-        {
-            for (int j = 0; j < m; ++j)
-            {
-                if (C[i][j] != 0)
+                t2.N[j] = l;
+                if (w != 0)
                 {
-                    int col = i * m + j - k;
-                    K[i * m + j] = col;
-                    Triplets.push_back(ET(i, col, 1.));
-                    Triplets.push_back(ET(n + j, col, 1.));
-                    c(col) = -C[i][j];
+                    int col = k * m + l - cnt;
+                    K[k][l] = col;
+                    Triplets.push_back(ET(k, col, 1.));
+                    Triplets.push_back(ET(n + l, col, 1.));
+                    c(col) = w;
                 }
                 else
                 {
-                    K[i * m + j] = -1;
-                    ++k;
+                    K[k][l] = -1;
+                    ++cnt;
                 }
+                ++l;
             }
+            ++k;
         }
         int nr_rows = n + m;
-        int nr_cols = n * m - k;
+        int nr_cols = n * m - cnt;
         c.conservativeResize(nr_cols);
         
         SpMat A(nr_rows, nr_cols);
         A.setFromTriplets(Triplets.begin(), Triplets.end());
+        SpMat A_t = A.transpose();
         Vector b = Vector::Ones(nr_rows);        
-        SimpleJRF simpleJRF(A, b, c);
+        SimpleJRF simpleJRF(A_t, c, b);
         AugmentedLagrangian solver(simpleJRF, 15);
         solver.setParameter("verbose", false);
         solver.setParameter("pgtol", 1e-1); // should influence running time a lot
         solver.setParameter("constraintsTol", 1e-3); 
         solver.solve();
-//        x = solver.x();
-        x = Vector::ConstMapType(solver.x(), nr_cols);
+        cout << solver.f() << endl;
+        x = Vector::ConstMapType(solver.y(), nr_cols);
     }
 
     void CrossingConstraints()
     {
         dfs1(t1.GetRoot());
+        for (auto node : t1.L)
+        {
+            vector<int> P;
+            f(P, node, t2.GetRoot());
+
+            int n = t1.GetNumNodes(), m = t2.GetNumNodes();
+            double sum = 0;
+            for (auto k : P)
+                sum += DP[k / m][k % m];
+
+            if (sum - EPS > 1)
+            {
+                for (auto k : P)
+                    Triplets.push_back(ET(n + m + ncr + 1, k, 1.));
+                ncr++;
+            }
+        }
+        cout << ncr << endl;
     }
-        
+
 private:
-    double GetWeight(newick_node* nodel, newick_node* noder)
+    int GetCol(newick_node* nodel, newick_node* noder)
     {
         int i1 = t1.GetIndex(nodel);
         int i2 = t2.GetIndex(noder);
-        int in = K[i1 * t2.GetNumNodes() + i2];
-        return in == -1 ? 0 : x(in);
+        return K[i1][i2];
+    }
+
+    double& GetDP(newick_node* nodel, newick_node* noder)
+    {
+        int i1 = t1.GetIndex(nodel);
+        int i2 = t2.GetIndex(noder);
+        return DP[i1][i2];
+    }
+
+    double GetWeight(newick_node* nodel, newick_node* noder)
+    {
+        int in = GetCol(nodel, noder);
+        return in == -1 ? 0 : -x(in);
+    }
+
+    double GetWeightParent(newick_node* nodel, newick_node* noder)
+    {
+        if (newick_node* parent = nodel->parent)
+            return GetDP(parent, noder);
+        return 0;
+    }
+
+    pair<newick_node*, double> GetMaxChild(newick_node* nodel, newick_node* noder)
+    {
+        double mx = 0;
+        newick_node* mc = nullptr;
+        for (newick_child* child = noder->child; child; child = child->next)
+        {
+            double cw = GetDP(nodel, child->node);
+            if (cw > mx)
+            {
+                mx = cw;
+                mc = child->node;
+            }
+        }
+        return make_pair(mc, mx);
     }
 
     void dfs1(newick_node* node)
@@ -205,19 +253,38 @@ private:
         for (newick_child* child = node->child; child; child = child->next)
             dfs1(child->node);
     }
-    
+
     double dfs2(newick_node* node, newick_node* nodel)
     {
         double mx = 0;
         for (newick_child* child = node->child; child; child = child->next)
             mx = max(mx, dfs2(child->node, nodel));
-        return DP[t1.GetIndex(nodel)][t2.GetIndex(node)] = mx + GetWeight(nodel, node);
+        mx = max(mx, GetWeightParent(nodel, node));
+        return GetDP(nodel, node) = mx + GetWeight(nodel, node);
+    }
+
+    void f(vector<int>& P, newick_node* nodel, newick_node* noder)
+    {        
+        double pw = GetWeightParent(nodel, noder), cw;
+        newick_node* child;
+        tie(child, cw) = GetMaxChild(nodel, noder);
+        P.push_back(GetCol(nodel, noder));
+
+        if (nodel->parent && (!child || pw > cw))
+            f(P, nodel->parent, noder);
+        else if (child && (!nodel->parent || cw >= pw))
+            f(P, nodel, child);
+        else
+            assert(!nodel->parent && !child);
     }
 
     DPT DP;
+    vector<ET> Triplets;
     Vector x;
-    vector<int> K;
+    vector<vector<int> > K;
     PhylogeneticTree t1, t2;
+    int ncr;
+    Vector c;
 };
 
 int main(int argc, char** argv)
