@@ -12,6 +12,10 @@ Scalar const INF = numeric_limits<Scalar>::infinity();
 
 // declares a column-major sparse matrix type of double
 typedef Eigen::SparseMatrix<Scalar> SpMat;
+typedef PhylogeneticTree Tree;
+typedef Eigen::Triplet<double> ET;
+typedef vector<vector<double> > DPT;
+
 
 class SimpleJRF : public GenoNLP
 {
@@ -100,115 +104,51 @@ private:
     Index _m;
 };
 
-class LP
+class CrossingConstraint
 {
-    typedef PhylogeneticTree Tree;
-    typedef Eigen::Triplet<double> ET;
-    typedef vector<vector<double> > DPT;
 public:
-    LP(const char* p1, const char* p2) : t1(p1), t2(p2), ncr(0), c(t1.GetNumNodes() * t2.GetNumNodes())
+    CrossingConstraint(Tree& t1, Tree& t2, vector<vector<int> >& K, Vector& x, bool swp) : t1(t1), t2(t2), K(K), x(x), swp(swp)
     {
         DP.resize(t1.GetNumNodes());
         for (auto& v : DP)
             v.resize(t2.GetNumNodes());
-        K.resize(t1.GetNumNodes());
-        for (auto& v : K)
-            v.resize(t2.GetNumNodes());
     }
 
-    ~LP()
+    int AddTriplets(vector<ET>& Triplets, int nr_rows)
     {
-    }
-
-    void MatchingConstraints(const char* path)
-    {
-        ifstream SimFile(path);
-        if (!SimFile)
-        {
-            cout << "Failed to open " << path << endl;
-            exit(EXIT_FAILURE);
-        }
-
-        int n = t1.GetNumNodes(), m = t2.GetNumNodes(), cnt = 0;
-        string line;
-        for (int i = 0, k = 0; getline(SimFile, line) && !line.empty(); ++i)
-        {
-            istringstream ss(line);
-            if (!t1.NodeExists(i + 1))
-                continue;
-
-            t1.N[i] = k;
-            double w;
-            for (int j = 0, l = 0; ss >> w; ++j)
-            {
-                if (!t2.NodeExists(j + 1))
-                    continue;
-
-                t2.N[j] = l;
-                if (w != 0)
-                {
-                    int col = k * m + l - cnt;
-                    K[k][l] = col;
-                    Triplets.push_back(ET(k, col, 1.));
-                    Triplets.push_back(ET(n + l, col, 1.));
-                    c(col) = w;
-                }
-                else
-                {
-                    K[k][l] = -1;
-                    ++cnt;
-                }
-                ++l;
-            }
-            ++k;
-        }
-        int nr_rows = n + m;
-        int nr_cols = n * m - cnt;
-        c.conservativeResize(nr_cols);
-        
-        SpMat A(nr_rows, nr_cols);
-        A.setFromTriplets(Triplets.begin(), Triplets.end());
-        SpMat A_t = A.transpose();
-        Vector b = Vector::Ones(nr_rows);        
-        SimpleJRF simpleJRF(A_t, c, b);
-        AugmentedLagrangian solver(simpleJRF, 15);
-        solver.setParameter("verbose", false);
-        solver.setParameter("pgtol", 1e-1); // should influence running time a lot
-        solver.setParameter("constraintsTol", 1e-3); 
-        solver.solve();
-        cout << solver.f() << endl;
-        x = Vector::ConstMapType(solver.y(), nr_cols);
-    }
-
-    void CrossingConstraints()
-    {
-        dfs1(t1.GetRoot());
+        int ncr = 0;
+        DFSLeft(t1.GetRoot());
         for (auto node : t1.L)
         {
-            vector<int> P;
-            f(P, node, t2.GetRoot());
+            vector<pair<newick_node*, newick_node*> > P;
+            Reconstruct(P, node, t2.GetRoot());
 
-            int n = t1.GetNumNodes(), m = t2.GetNumNodes();
             double sum = 0;
             for (auto k : P)
-                sum += DP[k / m][k % m];
+                sum += GetWeight(k.first, k.second);
 
-            if (sum - EPS > 1)
+            if (sum - EPS > 1.0)
             {
                 for (auto k : P)
-                    Triplets.push_back(ET(n + m + ncr + 1, k, 1.));
+                {
+                    int col = GetCol(k.first, k.second);
+                    if (col != -1)
+                        Triplets.push_back(ET(nr_rows + ncr, col, 1.));
+                }
                 ncr++;
             }
         }
-        cout << ncr << endl;
+        return ncr;
     }
 
-private:
+    int GetCol(int i, int j)
+    {
+        return swp ? K[j][i] : K[i][j];
+    }
+
     int GetCol(newick_node* nodel, newick_node* noder)
     {
-        int i1 = t1.GetIndex(nodel);
-        int i2 = t2.GetIndex(noder);
-        return K[i1][i2];
+        return GetCol(t1.GetIndex(nodel), t2.GetIndex(noder));
     }
 
     double& GetDP(newick_node* nodel, newick_node* noder)
@@ -247,44 +187,142 @@ private:
         return make_pair(mc, mx);
     }
 
-    void dfs1(newick_node* node)
+    void DFSLeft(newick_node* node)
     {
-        dfs2(t2.GetRoot(), node);
+        DFSRight(t2.GetRoot(), node);
         for (newick_child* child = node->child; child; child = child->next)
-            dfs1(child->node);
+            DFSLeft(child->node);
     }
 
-    double dfs2(newick_node* node, newick_node* nodel)
+    double DFSRight(newick_node* node, newick_node* nodel)
     {
         double mx = 0;
         for (newick_child* child = node->child; child; child = child->next)
-            mx = max(mx, dfs2(child->node, nodel));
+            mx = max(mx, DFSRight(child->node, nodel));
         mx = max(mx, GetWeightParent(nodel, node));
         return GetDP(nodel, node) = mx + GetWeight(nodel, node);
     }
 
-    void f(vector<int>& P, newick_node* nodel, newick_node* noder)
-    {        
+    void Reconstruct(vector<pair<newick_node*, newick_node*> >& P, newick_node* nodel, newick_node* noder)
+    {
         double pw = GetWeightParent(nodel, noder), cw;
         newick_node* child;
         tie(child, cw) = GetMaxChild(nodel, noder);
-        P.push_back(GetCol(nodel, noder));
-
+        P.emplace_back(nodel, noder);
         if (nodel->parent && (!child || pw > cw))
-            f(P, nodel->parent, noder);
+            Reconstruct(P, nodel->parent, noder);
         else if (child && (!nodel->parent || cw >= pw))
-            f(P, nodel, child);
+            Reconstruct(P, nodel, child);
         else
             assert(!nodel->parent && !child);
     }
 
+private:
     DPT DP;
+    Tree& t1;
+    Tree& t2;
+    vector<vector<int> >& K;
+    Vector& x;
+    bool swp;
+};
+
+class LP
+{
+public:
+    LP(const char* p1, const char* p2) : t1(p1), t2(p2), c(t1.GetNumNodes() * t2.GetNumNodes()), nr_rows(0), nr_cols(0)
+    {
+        K.resize(t1.GetNumNodes());
+        for (auto& v : K)
+            v.resize(t2.GetNumNodes());
+    }
+
+    ~LP()
+    {
+    }
+
+    void MatchingConstraints(const char* path)
+    {
+        ifstream SimFile(path);
+        if (!SimFile)
+        {
+            cout << "Failed to open " << path << endl;
+            exit(EXIT_FAILURE);
+        }
+
+        int n = t1.GetNumNodes(), m = t2.GetNumNodes(), cnt = 0;
+        string line;
+        for (int i = 0, k = 0; getline(SimFile, line) && !line.empty(); ++i)
+        {
+            istringstream ss(line);
+            if (!t1.NodeExists(i + 1))
+                continue;
+
+            t1.N[i + 1] = k;
+            double w;
+            for (int j = 0, l = 0; ss >> w; ++j)
+            {
+                if (!t2.NodeExists(j + 1))
+                    continue;
+
+                t2.N[j + 1] = l;
+                if (w != 0)
+                {
+                    int col = k * m + l - cnt;
+                    K[k][l] = col;
+                    Triplets.push_back(ET(k, col, 1.));
+                    Triplets.push_back(ET(n + l, col, 1.));
+                    c(col) = w;
+                }
+                else
+                {
+                    K[k][l] = -1;
+                    ++cnt;
+                }
+                ++l;
+            }
+            ++k;
+        }
+        nr_rows = n + m;
+        nr_cols = n * m - cnt;
+        c.conservativeResize(nr_cols);
+        Solve();
+    }
+
+    void CrossingConstraints()
+    {
+        cout << nr_rows << endl;
+        CrossingConstraint cc12(t1, t2, K, x, false);
+        nr_rows += cc12.AddTriplets(Triplets, nr_rows);
+        cout << nr_rows << endl;
+        CrossingConstraint cc21(t2, t1, K, x, true);
+        nr_rows += cc21.AddTriplets(Triplets, nr_rows);
+        cout << nr_rows << endl;
+        Solve();
+    }
+
+    void Solve()
+    {
+        SpMat A(nr_rows, nr_cols);
+        A.setFromTriplets(Triplets.begin(), Triplets.end());
+        SpMat A_t = A.transpose();
+        Vector b = Vector::Ones(nr_rows);        
+        SimpleJRF simpleJRF(A_t, c, b);
+        AugmentedLagrangian solver(simpleJRF, 15);
+        solver.setParameter("verbose", false);
+        //    solver.setParameter("pgtol", 1e-1); // should influence running time a lot
+        //  solver.setParameter("constraintsTol", 1e-3); 
+        solver.solve();
+        cout << solver.f() << endl;
+        x = Vector::ConstMapType(solver.y(), nr_cols);
+    }
+
+private:
     vector<ET> Triplets;
     Vector x;
     vector<vector<int> > K;
-    PhylogeneticTree t1, t2;
-    int ncr;
+    Tree t1, t2;
     Vector c;
+    int nr_rows, nr_cols;
 };
 
 int main(int argc, char** argv)

@@ -16,7 +16,7 @@ void PhylogeneticTree::Init(newick_node* node)
 
     if (!node->child)
         L.push_back(node);
-    
+
     for (newick_child* child = node->child; child; child = child->next)
     {
         child->node->parent = node;
