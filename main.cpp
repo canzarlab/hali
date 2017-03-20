@@ -8,7 +8,7 @@
 #include "geno/augmentedLagrangian.hpp"
 
 Scalar const INF = numeric_limits<Scalar>::infinity();
-#define EPS 1e-9
+#define EPS 1e-5
 
 // declares a column-major sparse matrix type of double
 typedef Eigen::SparseMatrix<Scalar> SpMat;
@@ -309,8 +309,8 @@ public:
         SimpleJRF simpleJRF(A_t, c, b);
         AugmentedLagrangian solver(simpleJRF, 15);
         solver.setParameter("verbose", false);
-        //    solver.setParameter("pgtol", 1e-1); // should influence running time a lot
-        //  solver.setParameter("constraintsTol", 1e-3); 
+        solver.setParameter("pgtol", 1e-1); // should influence running time a lot
+        solver.setParameter("constraintsTol", 1e-3);
         solver.solve();
         cout << solver.f() << endl;
         x = Vector::ConstMapType(solver.y(), nr_cols);
@@ -335,5 +335,6 @@ int main(int argc, char** argv)
 
     LP lp(argv[1], argv[2]);
     lp.MatchingConstraints(argv[3]);
-    lp.CrossingConstraints();    
+    for (int i = 0; i < 20; ++i)
+        lp.CrossingConstraints();
 }
