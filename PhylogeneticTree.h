@@ -9,6 +9,7 @@ class PhylogeneticTree
 {
 public:
     PhylogeneticTree(string filename);
+    ~PhylogeneticTree();
 
     int GetNumNodes() const { return _n; }
     bool NodeExists(unsigned n) const { return n < B.size() ? B[n] : false; }

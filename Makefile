@@ -1,5 +1,5 @@
 CXX = g++
-CFLAGS = -Wall -O2 -g -std=c++11
+CFLAGS = -Wall -g -std=c++11
 INCL = -I Eigen
 BINARIES = solver
 GENO_OBJS = main.o geno/augmentedLagrangian.o geno/lbfgsb.o geno/lineSearch.o
@@ -21,6 +21,6 @@ geno/%.o: geno/%.cpp
 
 %.o: %.cpp $(HEADERS)
 	$(CXX) -c $< $(CFLAGS) $(INCL)
-	
+
 solver: $(GENO_OBJS) PhylogeneticTree.o newick.o
 	$(CXX) -o $@ $^ $(CFLAGS)

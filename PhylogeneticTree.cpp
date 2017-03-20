@@ -7,6 +7,11 @@ PhylogeneticTree::PhylogeneticTree(string filename) : _n(0)
     N.resize(B.size());
 }
 
+PhylogeneticTree::~PhylogeneticTree()
+{
+    delete root;
+}
+
 void PhylogeneticTree::Init(newick_node* node)
 {
     unsigned id = stoi(node->taxon);
