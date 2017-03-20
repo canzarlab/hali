@@ -1,4 +1,5 @@
 #include "PhylogeneticTree.h"
+#include "Timer.h" 
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -19,13 +20,16 @@ typedef vector<vector<double> > DPT;
 
 class SimpleJRF : public GenoNLP
 {
-public:
-    SimpleJRF(const SpMat& A, 
+ public:
+    SimpleJRF(const SpMat& A,
               const Vector& b,
-              const Vector& c) 
-        : _A(A), _b(b), _c(c), _n(A.cols()), _m(A.rows())
-    {    
-    }
+              const Vector& c,
+              Vector& x,
+              Vector& y)
+        : _A(A), _b(b), _c(c), _x(x), _y(y), _n(A.cols()), _m(A.rows())
+     {
+     }
+                                                
 
     virtual bool getInfo(Index& n, Index& m)
     {
@@ -55,13 +59,15 @@ public:
   
     virtual bool getStartingPoint(Scalar* x)
     {
-        Vector::MapType(x, _n) = Vector::Zero(_n);
+//        Vector::MapType(x, _n) = Vector::Zero(_n);
+        Vector::MapType(x, _n) = _x;
         return true;
     }
 
     virtual bool getStartingPointDual(Scalar* y) 
     {
-        Vector::MapType(y, _m) = Vector::Zero(_m);
+//        Vector::MapType(y, _m) = Vector::Zero(_m);
+        Vector::MapType(y, _m) = _y;
         return true;
     };
 
@@ -100,6 +106,8 @@ private:
     const SpMat& _A;
     const Vector& _b;
     const Vector& _c;
+    Vector& _x;
+    Vector& _y;
     Index _n;
     Index _m;
 };
@@ -285,18 +293,22 @@ public:
         nr_rows = n + m;
         nr_cols = n * m - cnt;
         c.conservativeResize(nr_cols);
+        x = Vector::Zero(nr_cols);
+        y = Vector::Zero(nr_rows);
         Solve();
     }
 
     void CrossingConstraints()
     {
-        cout << nr_rows << endl;
+//        cout << nr_rows << endl;
         CrossingConstraint cc12(t1, t2, K, x, false);
         nr_rows += cc12.AddTriplets(Triplets, nr_rows);
-        cout << nr_rows << endl;
+//        cout << nr_rows << endl;
         CrossingConstraint cc21(t2, t1, K, x, true);
         nr_rows += cc21.AddTriplets(Triplets, nr_rows);
-        cout << nr_rows << endl;
+//        cout << "Total number of rows: " << nr_rows << endl;
+        
+        y.conservativeResizeLike(Vector::Zero(nr_rows)); // resizes y with 0's, but keeping old values intact.         
         Solve();
     }
 
@@ -305,20 +317,28 @@ public:
         SpMat A(nr_rows, nr_cols);
         A.setFromTriplets(Triplets.begin(), Triplets.end());
         SpMat A_t = A.transpose();
-        Vector b = Vector::Ones(nr_rows);        
-        SimpleJRF simpleJRF(A_t, c, b);
+        Vector b = Vector::Ones(nr_rows);
+//        x = Vector::Zero(nr_cols);
+//        y = Vector::Zero(nr_cols);
+        SimpleJRF simpleJRF(A_t, c, b, y, x);
         AugmentedLagrangian solver(simpleJRF, 15);
         solver.setParameter("verbose", false);
         solver.setParameter("pgtol", 1e-1); // should influence running time a lot
         solver.setParameter("constraintsTol", 1e-3);
+        Timer timeGeno;
+        timeGeno.start();
         solver.solve();
-        cout << solver.f() << endl;
+        timeGeno.stop();
+        cout << "nr_rows = " << nr_rows << " and nr_cols = " << nr_cols << endl;
+        cout << "f = " << solver.f() << " computed in time: " << timeGeno.secs() << " secs" << endl;
         x = Vector::ConstMapType(solver.y(), nr_cols);
+        y = Vector::ConstMapType(solver.x(), nr_rows);
     }
 
 private:
     vector<ET> Triplets;
     Vector x;
+    Vector y;
     vector<vector<int> > K;
     Tree t1, t2;
     Vector c;
@@ -335,6 +355,6 @@ int main(int argc, char** argv)
 
     LP lp(argv[1], argv[2]);
     lp.MatchingConstraints(argv[3]);
-    for (int i = 0; i < 20; ++i)
+    for (int i = 0; i < 1000; ++i)
         lp.CrossingConstraints();
 }
