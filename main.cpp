@@ -186,7 +186,7 @@ public:
         for (newick_child* child = noder->child; child; child = child->next)
         {
             double cw = GetDP(nodel, child->node);
-            if (cw > mx)
+            if (cw >= mx)
             {
                 mx = cw;
                 mc = child->node;
