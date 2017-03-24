@@ -16,7 +16,7 @@ typedef Eigen::SparseMatrix<Scalar> SpMat;
 typedef PhylogeneticTree Tree;
 typedef Eigen::Triplet<double> ET;
 typedef vector<vector<double> > DPT;
-
+typedef vector<pair<newick_node*, newick_node*> > VPN;
 
 class SimpleJRF : public GenoNLP
 {
@@ -112,10 +112,57 @@ private:
     Index _m;
 };
 
-class CrossingConstraint
+class Constraint
+{
+public:   
+    Constraint(Tree& t1, Tree& t2, vector<vector<int> >& K, Vector& x, bool swp) : t1(t1), t2(t2), K(K), x(x), swp(swp)
+    {
+    }
+
+    virtual int AddTriplets(vector<ET>& Triplets, int nr_rows) = 0;
+
+protected:
+    int GetCol(int i, int j)
+    {
+        return swp ? K[j][i] : K[i][j];
+    }
+
+    int GetCol(newick_node* nodel, newick_node* noder)
+    {
+        return GetCol(t1.GetIndex(nodel), t2.GetIndex(noder));
+    }
+
+    double GetWeight(newick_node* nodel, newick_node* noder)
+    {
+        int in = GetCol(nodel, noder);
+        return in == -1 ? 0 : -x(in);
+    }
+
+    bool AddConstraint(vector<ET>& Triplets, int row, VPN& P, double sum)
+    {
+        if (sum - EPS <= 1.0)
+            return false;
+            
+        for (auto k : P)
+        {
+            int col = GetCol(k.first, k.second);
+            if (col != -1)
+                Triplets.push_back(ET(row, col, 1.));
+        }
+        return true;
+    }
+
+    Tree& t1;
+    Tree& t2;
+    vector<vector<int> >& K;
+    Vector& x;
+    bool swp;
+};
+
+class CrossingConstraint : Constraint
 {
 public:
-    CrossingConstraint(Tree& t1, Tree& t2, vector<vector<int> >& K, Vector& x, bool swp) : t1(t1), t2(t2), K(K), x(x), swp(swp)
+    CrossingConstraint(Tree& t1, Tree& t2, vector<vector<int> >& K, Vector& x, bool swp) : Constraint(t1, t2, K, x, swp)
     {
         DP.resize(t1.GetNumNodes());
         for (auto& v : DP)
@@ -128,48 +175,25 @@ public:
         DFSLeft(t1.GetRoot());
         for (auto node : t1.L)
         {
-            vector<pair<newick_node*, newick_node*> > P;
+            VPN P;
             Reconstruct(P, node, t2.GetRoot());
 
             double sum = 0;
             for (auto k : P)
                 sum += GetWeight(k.first, k.second);
 
-            if (sum - EPS > 1.0)
-            {
-                for (auto k : P)
-                {
-                    int col = GetCol(k.first, k.second);
-                    if (col != -1)
-                        Triplets.push_back(ET(nr_rows + ncr, col, 1.));
-                }
+            if (AddConstraint(Triplets, nr_rows + ncr, P, sum))
                 ncr++;
-            }
         }
         return ncr;
     }
 
-    int GetCol(int i, int j)
-    {
-        return swp ? K[j][i] : K[i][j];
-    }
-
-    int GetCol(newick_node* nodel, newick_node* noder)
-    {
-        return GetCol(t1.GetIndex(nodel), t2.GetIndex(noder));
-    }
-
+private:
     double& GetDP(newick_node* nodel, newick_node* noder)
     {
         int i1 = t1.GetIndex(nodel);
         int i2 = t2.GetIndex(noder);
         return DP[i1][i2];
-    }
-
-    double GetWeight(newick_node* nodel, newick_node* noder)
-    {
-        int in = GetCol(nodel, noder);
-        return in == -1 ? 0 : -x(in);
     }
 
     double GetWeightParent(newick_node* nodel, newick_node* noder)
@@ -211,7 +235,7 @@ public:
         return GetDP(nodel, node) = mx + GetWeight(nodel, node);
     }
 
-    void Reconstruct(vector<pair<newick_node*, newick_node*> >& P, newick_node* nodel, newick_node* noder)
+    void Reconstruct(VPN& P, newick_node* nodel, newick_node* noder)
     {
         double pw = GetWeightParent(nodel, noder), cw;
         newick_node* child;
@@ -225,13 +249,50 @@ public:
             assert(!nodel->parent && !child);
     }
 
-private:
     DPT DP;
-    Tree& t1;
-    Tree& t2;
-    vector<vector<int> >& K;
-    Vector& x;
-    bool swp;
+};
+
+class IndependentSetConstraint : Constraint
+{
+public:
+    IndependentSetConstraint(Tree& t1, Tree& t2, vector<vector<int> >& K, Vector& x, bool swp) : Constraint(t1, t2, K, x, swp)
+    {        
+    }
+
+    int AddTriplets(vector<ET>& Triplets, int nr_rows)
+    {
+        int ncr = 0;
+        for (auto node : t1.L)
+        {
+            VPN P;
+            if (AddConstraint(Triplets, nr_rows + ncr, P, DFSLeft(P, node, t2.GetRoot())))
+                ++ncr;
+        }
+        return ncr;
+    }
+
+private:
+    double PathSum(newick_node* nodel, newick_node* noder)
+    {
+        return nodel ? GetWeight(nodel, noder) + PathSum(nodel->parent, noder) : 0;
+    }
+    
+    double DFSLeft(VPN& P, newick_node* nodel, newick_node* noder)
+    {
+        double w = PathSum(nodel, noder), sum = 0;
+        for (newick_child* child = noder->child; child; child = child->next)
+            sum += DFSLeft(P, nodel, child->node);
+
+        if (sum > w)
+        {
+            for (newick_child* child = noder->child; child; child = child->next)
+                P.emplace_back(nodel, child->node);
+        }
+        else
+            P.emplace_back(nodel, noder);
+        
+        return max(w, sum);
+    }
 };
 
 class LP
@@ -295,25 +356,37 @@ public:
         c.conservativeResize(nr_cols);
         x = Vector::Zero(nr_cols);
         y = Vector::Zero(nr_rows);
+
         Solve();
     }
 
     void CrossingConstraints()
     {
-//        cout << nr_rows << endl;
         CrossingConstraint cc12(t1, t2, K, x, false);
         nr_rows += cc12.AddTriplets(Triplets, nr_rows);
-//        cout << nr_rows << endl;
         CrossingConstraint cc21(t2, t1, K, x, true);
         nr_rows += cc21.AddTriplets(Triplets, nr_rows);
-//        cout << "Total number of rows: " << nr_rows << endl;
-        
-        y.conservativeResizeLike(Vector::Zero(nr_rows)); // resizes y with 0's, but keeping old values intact.         
-        Solve();
+
+        Solve();        
     }
 
+    void IndependentSetConstraints()
+    {
+        cout << nr_rows << endl;        
+        IndependentSetConstraint isc12(t1, t2, K, x, false);
+        nr_rows += isc12.AddTriplets(Triplets, nr_rows);
+        cout << nr_rows << endl;
+        IndependentSetConstraint isc21(t2, t1, K, x, true);
+        nr_rows += isc21.AddTriplets(Triplets, nr_rows);
+        
+        Solve();
+    }
+    
     void Solve()
     {
+        cout << "Total number of rows: " << nr_rows << endl;
+        
+        y.conservativeResizeLike(Vector::Zero(nr_rows)); // resizes y with 0's, but keeping old values intact.
         SpMat A(nr_rows, nr_cols);
         A.setFromTriplets(Triplets.begin(), Triplets.end());
         SpMat A_t = A.transpose();
@@ -355,6 +428,6 @@ int main(int argc, char** argv)
 
     LP lp(argv[1], argv[2]);
     lp.MatchingConstraints(argv[3]);
-    for (int i = 0; i < 1000; ++i)
-        lp.CrossingConstraints();
+    lp.CrossingConstraints();
+    //lp.IndependentSetConstraints();
 }
