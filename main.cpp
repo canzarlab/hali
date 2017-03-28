@@ -49,14 +49,14 @@ class SimpleJRF : public GenoNLP
         return true;
     }
  
-    virtual bool getBoundsConstraints(Scalar* cl, Scalar* cu) 
+/*    virtual bool getBoundsConstraints(Scalar* cl, Scalar* cu) 
     {
         // we have equality constraints here
         Vector::MapType(cl, _m) = _b;
         Vector::MapType(cu, _m) = Vector::Constant(_m, INF);
         return true;
     };
-  
+*/  
     virtual bool getStartingPoint(Scalar* x)
     {
 //        Vector::MapType(x, _n) = Vector::Zero(_n);
@@ -102,7 +102,7 @@ class SimpleJRF : public GenoNLP
         return true;
     }
   
-private:
+protected:
     const SpMat& _A;
     const Vector& _b;
     const Vector& _c;
@@ -111,6 +111,46 @@ private:
     Index _n;
     Index _m;
 };
+
+class CoveringJRF : public SimpleJRF
+{
+ public:
+    CoveringJRF(const SpMat& A, 
+                const Vector& b, 
+                const Vector& c, 
+                Vector& x, 
+                Vector& y): SimpleJRF(A, b, c, x, y) { }
+    bool getBoundsConstraints(Scalar* cl, Scalar* cu) override
+    {
+    // we have equality constraints here
+        Vector::MapType(cl, _m) = _b;
+        Vector::MapType(cu, _m) = Vector::Constant(_m, INF);
+        return true;
+    } 
+     
+};
+
+
+class PackingJRF : public SimpleJRF
+{
+ public:
+    PackingJRF(const SpMat& A, 
+                const Vector& b, 
+                const Vector& c, 
+                Vector& x, 
+                Vector& y): SimpleJRF(A, b, c, x, y) { }
+    bool getBoundsConstraints(Scalar* cl, Scalar* cu) override
+    {
+    // we have equality constraints here
+        Vector::MapType(cu, _m) = _b;
+        Vector::MapType(cl, _m) = Vector::Constant(_m, -INF);
+        return true;
+    } 
+};
+
+
+                                   
+
 
 class Constraint
 {
@@ -393,19 +433,23 @@ public:
         Vector b = Vector::Ones(nr_rows);
 //        x = Vector::Zero(nr_cols);
 //        y = Vector::Zero(nr_cols);
-        SimpleJRF simpleJRF(A_t, c, b, y, x);
+//        CoveringJRF simpleJRF(A_t, c, b, y, x);
+        Vector c1 = -c;
+        PackingJRF simpleJRF(A, b, c1, x, y);
         AugmentedLagrangian solver(simpleJRF, 15);
         solver.setParameter("verbose", false);
         solver.setParameter("pgtol", 1e-1); // should influence running time a lot
-        solver.setParameter("constraintsTol", 1e-3);
+        solver.setParameter("constraintsTol", 1e-5);
         Timer timeGeno;
         timeGeno.start();
         solver.solve();
         timeGeno.stop();
         cout << "nr_rows = " << nr_rows << " and nr_cols = " << nr_cols << endl;
         cout << "f = " << solver.f() << " computed in time: " << timeGeno.secs() << " secs" << endl;
-        x = Vector::ConstMapType(solver.y(), nr_cols);
-        y = Vector::ConstMapType(solver.x(), nr_rows);
+        
+        /* when Packing: x->x, y->y, when Covering: y->x, x->y */
+        x = Vector::ConstMapType(solver.x(), nr_cols);
+        y = Vector::ConstMapType(solver.y(), nr_rows);
     }
 
 private:
@@ -428,6 +472,7 @@ int main(int argc, char** argv)
 
     LP lp(argv[1], argv[2]);
     lp.MatchingConstraints(argv[3]);
-    lp.CrossingConstraints();
+    for (int i=0;i<5;i++)
+        lp.CrossingConstraints();
     //lp.IndependentSetConstraints();
 }
