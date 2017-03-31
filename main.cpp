@@ -405,26 +405,26 @@ public:
         c.conservativeResize(nr_cols);
         x = Vector::Zero(nr_cols);
         y = Vector::Zero(nr_rows);
-
-        Solve();
     }
 
-    void CrossingConstraints()
+    int CrossingConstraints()
     {
+        int row_old = nr_rows;
         CrossingConstraint cc12(t1, t2, K, x, false);
         nr_rows += cc12.AddTriplets(Triplets, nr_rows);
         CrossingConstraint cc21(t2, t1, K, x, true);
         nr_rows += cc21.AddTriplets(Triplets, nr_rows);
+        return nr_rows - row_old;
     }
 
-    void IndependentSetConstraints()
+    int IndependentSetConstraints()
     {
-        cout << nr_rows << endl;        
+        int row_old = nr_rows;
         IndependentSetConstraint isc12(t1, t2, K, x, false);
         nr_rows += isc12.AddTriplets(Triplets, nr_rows);
-        cout << nr_rows << endl;
         IndependentSetConstraint isc21(t2, t1, K, x, true);
         nr_rows += isc21.AddTriplets(Triplets, nr_rows);
+        return nr_rows - row_old;
     }
     
     void Solve()
@@ -437,8 +437,8 @@ public:
         SpMat A_t = A.transpose();
         Vector b = Vector::Ones(nr_rows);
 //        x = Vector::Zero(nr_cols);
-//        y = Vector::Zero(nr_cols);
-//        CoveringJRF simpleJRF(A_t, c, b, y, x);
+//        y = Vector::Zero(nr_rows);
+        //CoveringJRF simpleJRF(A_t, c, b, y, x);
         Vector c1 = -c;
         PackingJRF simpleJRF(A, b, c1, x, y);
         AugmentedLagrangian solver(simpleJRF, 15);
@@ -451,7 +451,7 @@ public:
         timeGeno.stop();
         cout << "nr_rows = " << nr_rows << " and nr_cols = " << nr_cols << endl;
         cout << "f = " << solver.f() << " computed in time: " << timeGeno.secs() << " secs" << endl;
-        
+       
         /* when Packing: x->x, y->y, when Covering: y->x, x->y */
         x = Vector::ConstMapType(solver.x(), nr_cols);
         y = Vector::ConstMapType(solver.y(), nr_rows);
@@ -477,10 +477,13 @@ int main(int argc, char** argv)
 
     LP lp(argv[1], argv[2]);
     lp.MatchingConstraints(argv[3]);
-    for (int i = 0; i < 5; i++)
+    int cnt = 1, i;
+    for (i = 0; cnt; i++)
     {
-        lp.CrossingConstraints();
-        lp.IndependentSetConstraints();
         lp.Solve();
+        cnt = lp.CrossingConstraints();
+        cnt += lp.IndependentSetConstraints();
+        cout << "Added " << cnt << " rows." << endl;
     }
+    cout << i + 1;
 }
