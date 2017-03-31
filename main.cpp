@@ -175,14 +175,14 @@ protected:
     double GetWeight(newick_node* nodel, newick_node* noder)
     {
         int in = GetCol(nodel, noder);
-        return in == -1 ? 0 : -x(in);
+        return in == -1 ? 0 : x(in);
     }
 
     bool AddConstraint(vector<ET>& Triplets, int row, VPN& P, double sum)
     {
         if (sum - EPS <= 1.0)
             return false;
-            
+        
         for (auto k : P)
         {
             int col = GetCol(k.first, k.second);
@@ -294,6 +294,8 @@ private:
 
 class IndependentSetConstraint : Constraint
 {
+    typedef list<newick_node*> LN;
+    typedef pair<double, LN> dLN;
 public:
     IndependentSetConstraint(Tree& t1, Tree& t2, vector<vector<int> >& K, Vector& x, bool swp) : Constraint(t1, t2, K, x, swp)
     {        
@@ -304,8 +306,13 @@ public:
         int ncr = 0;
         for (auto node : t1.L)
         {
+            dLN L = DFSRight(node, t2.GetRoot());
             VPN P;
-            if (AddConstraint(Triplets, nr_rows + ncr, P, DFSLeft(P, node, t2.GetRoot())))
+            for (newick_node* noder : L.second)
+                for (newick_node* nodel = node; nodel; nodel = nodel->parent)
+                    P.emplace_back(nodel, noder);
+
+            if (AddConstraint(Triplets, nr_rows + ncr, P, L.first))
                 ++ncr;
         }
         return ncr;
@@ -317,21 +324,23 @@ private:
         return nodel ? GetWeight(nodel, noder) + PathSum(nodel->parent, noder) : 0;
     }
     
-    double DFSLeft(VPN& P, newick_node* nodel, newick_node* noder)
+    dLN DFSRight(newick_node* nodel, newick_node* noder)
     {
         double w = PathSum(nodel, noder), sum = 0;
-        for (newick_child* child = noder->child; child; child = child->next)
-            sum += DFSLeft(P, nodel, child->node);
-
-        if (sum > w)
-        {
-            for (newick_child* child = noder->child; child; child = child->next)
-                P.emplace_back(nodel, child->node);
-        }
-        else
-            P.emplace_back(nodel, noder);
+        LN V;
         
-        return max(w, sum);
+        for (newick_child* child = noder->child; child; child = child->next)
+        {
+            double ww;
+            LN T;
+            tie(ww, T) = DFSRight(nodel, child->node);
+            sum += ww;
+            V.splice(V.begin(), T);
+        }
+        
+        if (sum > w)
+            return make_pair(sum, V);
+        return make_pair(w, LN(1, noder));
     }
 };
 
@@ -406,8 +415,6 @@ public:
         nr_rows += cc12.AddTriplets(Triplets, nr_rows);
         CrossingConstraint cc21(t2, t1, K, x, true);
         nr_rows += cc21.AddTriplets(Triplets, nr_rows);
-
-        Solve();        
     }
 
     void IndependentSetConstraints()
@@ -418,8 +425,6 @@ public:
         cout << nr_rows << endl;
         IndependentSetConstraint isc21(t2, t1, K, x, true);
         nr_rows += isc21.AddTriplets(Triplets, nr_rows);
-        
-        Solve();
     }
     
     void Solve()
@@ -472,7 +477,10 @@ int main(int argc, char** argv)
 
     LP lp(argv[1], argv[2]);
     lp.MatchingConstraints(argv[3]);
-    for (int i=0;i<5;i++)
+    for (int i = 0; i < 5; i++)
+    {
         lp.CrossingConstraints();
-    //lp.IndependentSetConstraints();
+        lp.IndependentSetConstraints();
+        lp.Solve();
+    }
 }
