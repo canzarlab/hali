@@ -429,18 +429,19 @@ public:
     
     void Solve()
     {
-        cout << "Total number of rows: " << nr_rows << endl;
-        
+        cout << "nr_rows = " << nr_rows << " and nr_cols = " << nr_cols << endl;        
         y.conservativeResizeLike(Vector::Zero(nr_rows)); // resizes y with 0's, but keeping old values intact.
         SpMat A(nr_rows, nr_cols);
         A.setFromTriplets(Triplets.begin(), Triplets.end());
         SpMat A_t = A.transpose();
         Vector b = Vector::Ones(nr_rows);
-//        x = Vector::Zero(nr_cols);
-//        y = Vector::Zero(nr_rows);
-        //CoveringJRF simpleJRF(A_t, c, b, y, x);
+
+        x = Vector::Zero(nr_cols);
+        y = Vector::Zero(nr_rows);
+
+        CoveringJRF simpleJRF(A_t, c, b, y, x);
         Vector c1 = -c;
-        PackingJRF simpleJRF(A, b, c1, x, y);
+//        PackingJRF simpleJRF(A, b, c1, x, y);
         AugmentedLagrangian solver(simpleJRF, 15);
         solver.setParameter("verbose", false);
         solver.setParameter("pgtol", 1e-1); // should influence running time a lot
@@ -449,12 +450,60 @@ public:
         timeGeno.start();
         solver.solve();
         timeGeno.stop();
-        cout << "nr_rows = " << nr_rows << " and nr_cols = " << nr_cols << endl;
+
         cout << "f = " << solver.f() << " computed in time: " << timeGeno.secs() << " secs" << endl;
        
-        /* when Packing: x->x, y->y, when Covering: y->x, x->y */
-        x = Vector::ConstMapType(solver.x(), nr_cols);
-        y = Vector::ConstMapType(solver.y(), nr_rows);
+        /* when Packing: x->x, y->y, when Covering: -y -> x, x -> y */
+        x = -Vector::ConstMapType(solver.y(), nr_cols);
+        y = Vector::ConstMapType(solver.x(), nr_rows);
+        
+        Vector t = A_t*y-c;
+        int nr_tight_constr =  nr_cols - (t.array() > 0.1).count();
+        cout << "Number of tight constraints in the dual: " << nr_tight_constr << endl;
+        //idea, truncate matrix A for columns that correspond to non-tight constraints in dual
+        SpMat truncA(nr_rows, nr_tight_constr);
+        Vector truncc(nr_tight_constr);
+        Vector truncx(nr_tight_constr);
+        int truncA_col = 0;
+        for (int i=0; i<nr_cols; i++)
+            if (t(i)> 0.1)
+                x(i) = 0.0;
+            else {
+                for (SpMat::InnerIterator it(A,i); it; ++it)
+                {
+                    truncA.coeffRef(it.row(), truncA_col) = it.value();
+                }
+                truncc(truncA_col) = - c(i);
+                truncx(truncA_col) = x(i);
+                truncA_col ++;
+                
+            }
+            
+        assert(truncA_col == nr_tight_constr);
+
+        cout << "Truncated matrix formed ... resolve" << endl;
+        PackingJRF simpleJRF1(truncA, b, truncc, truncx, y);
+        AugmentedLagrangian solver1(simpleJRF1, 15);
+        solver1.setParameter("verbose", false);
+        solver1.setParameter("pgtol", 1e-1); // should influence running time a lot
+        solver1.setParameter("constraintsTol", 1e-5);
+        Timer timeGeno1;
+        timeGeno1.start();
+        solver1.solve();
+        timeGeno1.stop();
+        cout << "trunc f = " << solver1.f() << " computed in time: " << timeGeno1.secs() << " secs" << endl;
+        
+        // map the solution back to to vector x       
+        truncx = Vector::ConstMapType(solver1.x(), nr_tight_constr);
+        truncA_col = 0;
+        for (int i=0; i<nr_cols; i++)
+            if (t(i)<= 0.1){
+                x(i) = truncx(truncA_col);
+                truncA_col++;
+            }
+            
+        assert(truncA_col == nr_tight_constr);
+
     }
 
 private:
@@ -478,12 +527,26 @@ int main(int argc, char** argv)
     LP lp(argv[1], argv[2]);
     lp.MatchingConstraints(argv[3]);
     int cnt = 1, i;
+    Timer T;
+    T.start();
     for (i = 0; cnt; i++)
-    {
+    {        
+        Timer T_lp, T_cross, T_indep;
+        T_lp.start();
         lp.Solve();
+        T_lp.stop();
+        cout << ">>> Time for solve: \t\t" << T_lp.secs() << " secs" << endl; 
+        T_cross.start();
         cnt = lp.CrossingConstraints();
+        T_cross.stop();
+        cout << ">>> Time for crossing constraints: \t\t" << T_cross.secs() << " secs" << endl;
+        T_indep.start();
         cnt += lp.IndependentSetConstraints();
-        cout << "Added " << cnt << " rows." << endl;
+        T_indep.stop();
+        cout << ">>> Time for independent set constraints: \t\t" << T_indep.secs() << " secs" << endl;
+        cout << "Added " << cnt << " rows." << endl;        
     }
-    cout << i + 1;
+    T.stop();
+    cout << "TOTAL TIME : \t\t" << T.secs() << " secs" << endl;
+    cout << "Total number of iterations: " <<  i + 1 << endl;
 }
