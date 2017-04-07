@@ -13,7 +13,7 @@ newick_child::~newick_child()
     delete next;
 }
 
-newick_node::newick_node(const string& taxon, float dist, newick_child* child) : child(child), taxon(taxon), dist(dist), parent(nullptr)
+newick_node::newick_node(const string& taxon, float dist, newick_child* child) : child(child), taxon(stoi(taxon)), dist(dist), parent(nullptr)
 {
 }
 
@@ -85,10 +85,7 @@ void print_tree(newick_node* root)
             if (child->next)
                 cout << ",";
         }
-        if (!root->taxon.empty())
-            cout << ")" << root->taxon << ":" << root->dist;
-        else
-            cout << "):" << root->dist;
+        cout << ")" << root->taxon << ":" << root->dist;
     }
     else
         cout << root->taxon << ":" << root->dist;

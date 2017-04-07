@@ -13,7 +13,7 @@ public:
 
     int GetNumNodes() const { return _n; }
     bool NodeExists(unsigned n) const { return n < B.size() ? B[n] : false; }
-    int GetIndex(newick_node* node) const { return N[stoi(node->taxon)]; }
+    int GetIndex(newick_node* node) const { return N[node->taxon]; }
     newick_node* GetRoot() const { return root; }
 
     // TODO: objediniti N i B
