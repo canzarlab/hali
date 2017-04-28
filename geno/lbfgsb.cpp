@@ -66,6 +66,7 @@ void LBFGSB::updateB() {
     _index = (_index + 1) % _m;
    } else {
     std::cout << "skipping LBFGS-B update\n";
+    return;
   }
   _Q = Matrix::Identity(_S.cols(), _S.cols());
   if (_S.cols() >= _m) {  // rotate by index % m to the right

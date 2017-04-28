@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <iomanip>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include "geno/genoNLP.hpp"
@@ -149,7 +150,53 @@ class PackingJRF : public SimpleJRF
 };
 
 
-                                   
+/*
+ min c^tx
+     x_i(1-x_i) = 0, forall i=1,...,n
+     Ax <= b
+     x > 0
+*/
+class IntegerPackingJRF : public SimpleJRF {
+ public:
+     IntegerPackingJRF(const SpMat& A, 
+                       const Vector& b,
+                       const Vector& c,
+                       Vector& x, 
+                       Vector& y) : SimpleJRF(A,b,c,x,y){ _m += _n; }
+                       
+     bool getBoundsConstraints(Scalar* cl, Scalar* cu) override
+     {
+         Vector::MapType cLower = Vector::MapType(cl, _m);
+         Vector::MapType cUpper = Vector::MapType(cu, _m);
+         cLower.head(_n) = Vector::Zero(_n);
+         cUpper.head(_n) = Vector::Zero(_n);
+         cUpper.tail(_A.rows()) = _b;
+         cLower.tail(_A.rows()) = Vector::Constant(_A.rows(), -INF);    
+         return true;
+     }
+     bool functionValueConstraints(const Scalar* variablesPtr,
+                                   Scalar* constraintValuesPtr) override
+     {
+          Vector::ConstMapType x = Vector::ConstMapType(variablesPtr, _n);
+          Vector::MapType constraintValues = Vector::MapType(constraintValuesPtr, _m);
+          Vector t = Vector::Ones(_n);
+          constraintValues.head(_n) = x.cwiseProduct(x-t);
+          constraintValues.tail(_A.rows()) = _A * x;
+          return true;
+      }
+      bool gradientConstraintsTimesVector(const Scalar* variablesPtr,
+                                          const Scalar* dualVariablesPtr,
+                                          Scalar* gradientPtr) override
+      {
+           Vector::ConstMapType x = Vector::ConstMapType(variablesPtr, _n);
+           Vector::ConstMapType y = Vector::ConstMapType(dualVariablesPtr, _m);
+           Vector::MapType gradient = Vector::MapType(gradientPtr, _n);
+           gradient = (2*x).cwiseProduct(y.head(_n)) - y.head(_n);
+           gradient += _A.transpose() * y.tail(_A.rows());
+           return true;
+       }
+      
+};                                   
 
 
 class Constraint
@@ -403,8 +450,9 @@ public:
         nr_rows = n + m;
         nr_cols = n * m - cnt;
         c.conservativeResize(nr_cols);
-        x = Vector::Zero(nr_cols);
-        y = Vector::Zero(nr_rows);
+        // set warm_x and warm_y initialy to zeroes
+        warm_x = Vector::Zero(nr_cols);
+        warm_y = Vector::Zero(nr_rows);
     }
 
     int CrossingConstraints()
@@ -430,21 +478,23 @@ public:
     void Solve()
     {
         cout << "nr_rows = " << nr_rows << " and nr_cols = " << nr_cols << endl;        
-        y.conservativeResizeLike(Vector::Zero(nr_rows)); // resizes y with 0's, but keeping old values intact.
+        warm_y.conservativeResizeLike(Vector::Zero(nr_rows)); // resizes y with 0's, but keeping old values intact.
+        
         SpMat A(nr_rows, nr_cols);
         A.setFromTriplets(Triplets.begin(), Triplets.end());
         SpMat A_t = A.transpose();
         Vector b = Vector::Ones(nr_rows);
 
-        x = Vector::Zero(nr_cols);
-        y = Vector::Zero(nr_rows);
+        //x = Vector::Zero(nr_cols);
+        //y = Vector::Zero(nr_rows);
 
-        CoveringJRF simpleJRF(A_t, c, b, y, x);
+        CoveringJRF simpleJRF(A_t, c, b, warm_y, warm_x);
+        
         Vector c1 = -c;
 //        PackingJRF simpleJRF(A, b, c1, x, y);
         AugmentedLagrangian solver(simpleJRF, 15);
         solver.setParameter("verbose", false);
-        solver.setParameter("pgtol", 1e-1); // should influence running time a lot
+        solver.setParameter("pgtol", 1); // should influence running time a lot
         solver.setParameter("constraintsTol", 1e-5);
         Timer timeGeno;
         timeGeno.start();
@@ -456,6 +506,10 @@ public:
         /* when Packing: x->x, y->y, when Covering: -y -> x, x -> y */
         x = -Vector::ConstMapType(solver.y(), nr_cols);
         y = Vector::ConstMapType(solver.x(), nr_rows);
+
+        warm_x = Vector::ConstMapType(solver.y(), nr_cols);
+        warm_y = Vector::ConstMapType(solver.x(), nr_rows);
+        
         
         Vector t = A_t*y-c;
         int nr_tight_constr =  nr_cols - (t.array() > 0.1).count();
@@ -482,7 +536,9 @@ public:
         assert(truncA_col == nr_tight_constr);
 
         cout << "Truncated matrix formed ... resolve" << endl;
-        PackingJRF simpleJRF1(truncA, b, truncc, truncx, y);
+        Vector expy = Vector::Zero(truncA.rows() + truncA.cols());
+        IntegerPackingJRF simpleJRF1(truncA, b, truncc, truncx, expy);
+        //PackingJRF simpleJRF1(truncA, b, truncc, truncx, y);
         AugmentedLagrangian solver1(simpleJRF1, 15);
         solver1.setParameter("verbose", false);
         solver1.setParameter("pgtol", 1e-1); // should influence running time a lot
@@ -493,7 +549,7 @@ public:
         timeGeno1.stop();
         cout << "trunc f = " << solver1.f() << " computed in time: " << timeGeno1.secs() << " secs" << endl;
         
-        // map the solution back to to vector x       
+        // map the solution back to vector x       
         truncx = Vector::ConstMapType(solver1.x(), nr_tight_constr);
         truncA_col = 0;
         for (int i=0; i<nr_cols; i++)
@@ -503,13 +559,16 @@ public:
             }
             
         assert(truncA_col == nr_tight_constr);
-
+        
     }
 
 private:
     vector<ET> Triplets;
     Vector x;
     Vector y;
+    // backup x->warm_x and y->warm_y for two consecutive iterations 
+    Vector warm_x;
+    Vector warm_y;
     vector<vector<int> > K;
     Tree t1, t2;
     Vector c;
