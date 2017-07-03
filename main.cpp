@@ -551,6 +551,7 @@ public:
         
         // map the solution back to vector x       
         truncx = Vector::ConstMapType(solver1.x(), nr_tight_constr);
+        cout <<"MAX INTEGER PACKING VALUE: " <<  truncx.maxCoeff() << endl;
         truncA_col = 0;
         for (int i=0; i<nr_cols; i++)
             if (t(i)<= 0.1){
@@ -560,6 +561,21 @@ public:
             
         assert(truncA_col == nr_tight_constr);
         
+    }
+    void WriteSolution(string fileName){
+        ofstream sol_file(fileName);
+        for (size_t i = 0; i < K.size(); i++)
+        {
+            for (size_t j = 0; j < K[i].size(); j++)
+            {
+                if (K[i][j] != -1)
+                    sol_file << x(K[i][j]) << "\t" ;
+                else
+                    sol_file << 0 << "\t";
+            }
+            sol_file << endl;
+        }
+        sol_file.close();
     }
 
 private:
@@ -608,4 +624,7 @@ int main(int argc, char** argv)
     T.stop();
     cout << "TOTAL TIME : \t\t" << T.secs() << " secs" << endl;
     cout << "Total number of iterations: " <<  i + 1 << endl;
+    
+    lp.WriteSolution("yeastnet_precollapse.solution");
+    
 }
