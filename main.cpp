@@ -410,7 +410,7 @@ public:
         ifstream SimFile(path);
         if (!SimFile)
         {
-            cout << "Failed to open " << path << endl;
+            clog << "Failed to open " << path << endl;
             exit(EXIT_FAILURE);
         }
 
@@ -477,7 +477,7 @@ public:
     
     void Solve()
     {
-        cout << "nr_rows = " << nr_rows << " and nr_cols = " << nr_cols << endl;        
+        clog << "nr_rows = " << nr_rows << " and nr_cols = " << nr_cols << endl;        
         warm_y.conservativeResizeLike(Vector::Zero(nr_rows)); // resizes y with 0's, but keeping old values intact.
         
         SpMat A(nr_rows, nr_cols);
@@ -501,7 +501,9 @@ public:
         solver.solve();
         timeGeno.stop();
 
-        cout << "f = " << solver.f() << " computed in time: " << timeGeno.secs() << " secs" << endl;
+        clog << "f = ";
+        cout << solver.f();
+        clog << " computed in time: " << timeGeno.secs() << " secs" << endl;
        
         /* when Packing: x->x, y->y, when Covering: -y -> x, x -> y */
         x = -Vector::ConstMapType(solver.y(), nr_cols);
@@ -513,7 +515,7 @@ public:
         
         Vector t = A_t*y-c;
         int nr_tight_constr =  nr_cols - (t.array() > 0.1).count();
-        cout << "Number of tight constraints in the dual: " << nr_tight_constr << endl;
+        clog << "Number of tight constraints in the dual: " << nr_tight_constr << endl;
         //idea, truncate matrix A for columns that correspond to non-tight constraints in dual
         SpMat truncA(nr_rows, nr_tight_constr);
         Vector truncc(nr_tight_constr);
@@ -535,7 +537,7 @@ public:
             
         assert(truncA_col == nr_tight_constr);
 
-        cout << "Truncated matrix formed ... resolve" << endl;
+        clog << "Truncated matrix formed ... resolve" << endl;
         Vector expy = Vector::Zero(truncA.rows() + truncA.cols());
         IntegerPackingJRF simpleJRF1(truncA, b, truncc, truncx, expy);
         //PackingJRF simpleJRF1(truncA, b, truncc, truncx, y);
@@ -547,11 +549,11 @@ public:
         timeGeno1.start();
         solver1.solve();
         timeGeno1.stop();
-        cout << "trunc f = " << solver1.f() << " computed in time: " << timeGeno1.secs() << " secs" << endl;
+        clog << "trunc f = " << solver1.f() << " computed in time: " << timeGeno1.secs() << " secs" << endl;
         
         // map the solution back to vector x       
         truncx = Vector::ConstMapType(solver1.x(), nr_tight_constr);
-        cout <<"MAX INTEGER PACKING VALUE: " <<  truncx.maxCoeff() << endl;
+        clog <<"MAX INTEGER PACKING VALUE: " <<  truncx.maxCoeff() << endl;
         truncA_col = 0;
         for (int i=0; i<nr_cols; i++)
             if (t(i)<= 0.1){
@@ -595,7 +597,7 @@ int main(int argc, char** argv)
 {
     if (argc != 4)
     {
-        cout << "usage: " << argv[0] << " <filename.newick> <filename.newick> <filename.sim>" << endl;
+        clog << "usage: " << argv[0] << " <filename.newick> <filename.newick> <filename.sim>" << endl;
         return EXIT_FAILURE;
     }
 
@@ -610,20 +612,20 @@ int main(int argc, char** argv)
         T_lp.start();
         lp.Solve();
         T_lp.stop();
-        cout << ">>> Time for solve: \t\t" << T_lp.secs() << " secs" << endl; 
+        clog << ">>> Time for solve: \t\t" << T_lp.secs() << " secs" << endl; 
         T_cross.start();
         cnt = lp.CrossingConstraints();
         T_cross.stop();
-        cout << ">>> Time for crossing constraints: \t\t" << T_cross.secs() << " secs" << endl;
+        clog << ">>> Time for crossing constraints: \t\t" << T_cross.secs() << " secs" << endl;
         T_indep.start();
         cnt += lp.IndependentSetConstraints();
         T_indep.stop();
-        cout << ">>> Time for independent set constraints: \t\t" << T_indep.secs() << " secs" << endl;
-        cout << "Added " << cnt << " rows." << endl;        
+        clog << ">>> Time for independent set constraints: \t\t" << T_indep.secs() << " secs" << endl;
+        clog << "Added " << cnt << " rows." << endl;        
     }
     T.stop();
-    cout << "TOTAL TIME : \t\t" << T.secs() << " secs" << endl;
-    cout << "Total number of iterations: " <<  i + 1 << endl;
+    clog << "TOTAL TIME : \t\t" << T.secs() << " secs" << endl;
+    clog << "Total number of iterations: " <<  i + 1 << endl;
     
     lp.WriteSolution("yeastnet_precollapse.solution");
     
