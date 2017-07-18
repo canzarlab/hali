@@ -27,7 +27,7 @@ struct newick_node
 };
 
 newick_node* load_tree(const char* filename);
-void print_tree(newick_node* root);
+void print_tree(newick_node* root, ofstream& file);
 
 #endif
 

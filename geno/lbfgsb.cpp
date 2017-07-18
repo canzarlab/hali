@@ -65,7 +65,8 @@ void LBFGSB::updateB() {
   
     _index = (_index + 1) % _m;
    } else {
-    std::cout << "skipping LBFGS-B update\n";
+    std::clog << "skipping LBFGS-B update\n";
+    return;
   }
   _Q = Matrix::Identity(_S.cols(), _S.cols());
   if (_S.cols() >= _m) {  // rotate by index % m to the right
@@ -462,7 +463,7 @@ SolverStatus LBFGSB::solve() {
   }
   projectedGradient();
   if (_projectedGradient.lpNorm<Eigen::Infinity>() < _tol) {
-    std::cout << "already optimal" << std::endl;
+    std::clog << "already optimal" << std::endl;
     return SOLVED;
   }
 
@@ -487,7 +488,7 @@ SolverStatus LBFGSB::solve() {
     if (-1 == t) {
       if (0 != _S.cols()) {
         refresh();
-        std::cout << "refresh() called\n";
+        std::clog << "refresh() called\n";
         --k;
         --_funEval;  // TODO remove
         continue;
