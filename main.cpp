@@ -201,7 +201,7 @@ class IntegerPackingJRF : public SimpleJRF {
 
 class Constraint
 {
-public:   
+public:
     Constraint(Tree& t1, Tree& t2, vector<vector<int> >& K, Vector& x, bool swp) : t1(t1), t2(t2), K(K), x(x), swp(swp)
     {
     }
@@ -501,9 +501,7 @@ public:
         solver.solve();
         timeGeno.stop();
 
-        clog << "f = ";
-        cout << solver.f();
-        clog << " computed in time: " << timeGeno.secs() << " secs" << endl;
+        clog << "f = " << solver.f() << " computed in time: " << timeGeno.secs() << " secs" << endl;
        
         /* when Packing: x->x, y->y, when Covering: -y -> x, x -> y */
         x = -Vector::ConstMapType(solver.y(), nr_cols);
@@ -564,20 +562,28 @@ public:
         assert(truncA_col == nr_tight_constr);
         
     }
-    void WriteSolution(string fileName){
+    
+    void WriteSolution(string fileName)
+    {
         ofstream sol_file(fileName);
+        float weight = 0;
         for (size_t i = 0; i < K.size(); i++)
         {
             for (size_t j = 0; j < K[i].size(); j++)
             {
                 if (K[i][j] != -1)
+                {
+                    if (lround(x(K[i][j])) == 1)
+                        weight += c(K[i][j]);
                     sol_file << x(K[i][j]) << "\t" ;
+                }
                 else
                     sol_file << 0 << "\t";
             }
             sol_file << endl;
         }
         sol_file.close();
+        cout << t1.GetNumNodes() + t2.GetNumNodes() - weight << " ";
     }
 
 private:
