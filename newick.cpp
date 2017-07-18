@@ -73,20 +73,20 @@ newick_node* load_tree(const char* filename)
     return parse_tree(str, itr);
 }
 
-void print_tree(newick_node* root)
+void print_tree(newick_node* root, ofstream& file)
 {
-    cout << fixed << setprecision(6);
+    file << fixed << setprecision(6);
     if (root->child)
     {
-        cout << "(";
+        file << "(";
         for (newick_child* child = root->child; child; child = child->next)
         {
-            print_tree(child->node);
+            print_tree(child->node, file);
             if (child->next)
-                cout << ",";
+                file << ",";
         }
-        cout << ")" << root->taxon << ":" << root->dist;
+        file << ")" << root->taxon << ":" /*<< root->dist*/;
     }
     else
-        cout << root->taxon << ":" << root->dist;
+        file << root->taxon << ":" /*<< root->dist*/;
 }

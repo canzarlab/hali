@@ -5,29 +5,11 @@
 #include <fstream>
 #include <utility>
 #include <algorithm>
+#include <cassert>
 using namespace std;
 
-void print(newick_node* root, ofstream& file)
+newick_node* yule(int n)
 {
-	if(root->child)
-	{
-		file << "(";
-		for(newick_child* child = root->child; child; child = child->next)
-		{
-			print(child->node, file);
-			if(child->next)
-			file << ",";
-		}
-		file << ")" << root->taxon << ":";
-	}
-	else
-       file << root->taxon << ":";
-}
-
-void yule(int n, const char* filename)
-{
-	srand(unsigned(time(0)));
-	ofstream file(filename);
 	unsigned random[2 * n - 1], size = 1;
 	vector<newick_node*> L;
 	
@@ -51,20 +33,11 @@ void yule(int n, const char* filename)
 		L[i] = leaf1;
 		L.push_back(leaf2);
 	}
-	
-	if(file.is_open())
-	{
-		print(root, file);
-		file.close();
-	}
-	
-	delete root;
+    return root;
 }
 
-void uniform(int n, const char* filename)
+newick_node* uniform(int n)
 {
-	srand(unsigned(time(0)));
-	ofstream file(filename);
 	unsigned random[2 * n - 1], size = 3;
 	vector<pair<newick_node*, newick_node*>> E;
 	
@@ -91,30 +64,41 @@ void uniform(int n, const char* filename)
 		leaf2->child->next = new newick_child(leaf1);
 
 		for(newick_child* c = E[i].first->child; c; c = c->next)
+        {
 			if(c->node == E[i].second)
 			{
 				c->node = leaf2;
 				break;
 			}
-			
+		}	
 		E.emplace_back(leaf2, leaf1);
 		E.emplace_back(leaf2, E[i].second);
 		E[i] = make_pair(E[i].first, leaf2); 
 	}
+    return root;
+}
 
-	if(file.is_open())
-	{
-		print(root, file);
-		file.close();
-	}
-	
-	delete root;
-}
-/*
-int main()
+newick_node* (*F[])(int) = { uniform, yule };
+
+int main(int argc, char** argv)
 {
-	int n;
-	cin >> n;
-	uniform(n, "data/a1");
+    if (argc != 3)
+    {
+        cout << "usage: " << argv[0] << " <n-leaves> <n-trees>\n";
+        return 1;
+    }
+    srand(unsigned(time(0)));
+    int n_leaves = stoi(argv[1]);
+    int n_trees = stoi(argv[2]);
+    for (int i = 0; i < n_trees; ++i)
+    {
+        for (int j = 0; j < 2; ++j)
+        {
+            newick_node* root = F[j](n_leaves);
+            ofstream file(string("data") + to_string(j) + string("/a") + to_string(i));
+            assert(file);
+            print_tree(root, file);
+            delete root;
+        }
+    }
 }
-*/
