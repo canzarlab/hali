@@ -2,8 +2,7 @@
 
 #include <vector>
 #include <stack>
-#include "seqUtil.h"
-#include "Newickform.h"
+#include "newick.h"
 #include <lemon/lgf_writer.h>
 #include <lemon/bfs.h>
 #include <algorithm> // set_union
@@ -46,52 +45,11 @@ void PhylogeneticTree::parseNewick(string filename)
 //      cout << "\ttokentoken " << tokentokens[j] << endl;
 //    
 //  }
-  FILE *f;
-  int iLen, iMaxLen;
-	char *pcTreeStr;
-	//char *pcInputFile;
-	//char *pcOutputFile;
-	newick_node *root;
-	char acStrArray[256];
-  
-  // Open tree file
-	f = fopen(filename.c_str(), "r+");
-	if (f == NULL)
-	{
-		printf("Cannot open input file. Please check file name again.\n");
-		seqFreeAll();
-		exit(-1);
-	}
-	// Read in tree string
-	pcTreeStr = NULL;
-	iLen = 0;
-	iMaxLen = 0;
-	while (1)
-	{
-		memset(acStrArray, '\0', 256);
-		fgets(acStrArray, 255, f);
-		if (acStrArray[0] == '\0' && feof(f))
-		{
-			break;
-		}
-		inputString(acStrArray, &pcTreeStr, &iLen, &iMaxLen);
-	}
-	fclose(f);
-  
-	// Parse tree string
-	root = parseTree(pcTreeStr);
-  _makeTree(root, INVALID);
-  _makeClades();
- // printTree(root);
-//	printf(");\n");
-  
-  
-	// Free occupied memory
-	//seqFree(pcOutputFile);
-	seqFree(pcTreeStr);
-  
-	// End memory management procedure and free all allocated space
-	seqFreeAll();
+
+	newick_node* root = load_tree(filename.c_str());
+    _makeTree(root, INVALID);
+    _makeClades();
+    delete root;
 }
 
 void PhylogeneticTree::_makeTree(newick_node *root, ListDigraph::Node p)
@@ -102,15 +60,15 @@ void PhylogeneticTree::_makeTree(newick_node *root, ListDigraph::Node p)
   if (root->dist) _dist[r] = root->dist; else root->dist = 0.0;
   if (p != INVALID) _t.addArc(p, r); else _r = r;
   
-  if (root->childNum == 0) return;
-
+  if (!root->child) return;
+  
   // else
   newick_child *child = root->child;
-		while (child != NULL)
-		{
-			_makeTree(child->node, r);
-			child = child->next;
-		}
+  while (child != NULL)
+  {
+      _makeTree(child->node, r);
+      child = child->next;
+  }
 }
 
 void PhylogeneticTree::_makeClades()

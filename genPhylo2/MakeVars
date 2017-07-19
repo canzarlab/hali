@@ -2,6 +2,5 @@ BINDIR = .
 
 CC = g++
 LD = g++
-CPPFLAGS2 = -std=c++0x -m64 -fPIC -g -fexceptions  -DIL_STD -Wall -Wextra -Wno-variadic-macros -pedantic
-CPPFLAGS = -std=c++0x -m64 -fPIC -g -fexceptions  -DIL_STD
+CPPFLAGS = -std=c++0x -m64 -fPIC -g -fexceptions  -DIL_STD -I..
 LDFLAGS = $(LIBDIRS) -lm -lpthread -lemon

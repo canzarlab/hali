@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <lemon/list_graph.h>
-#include "Newickform.h"
+#include "newick.h"
 
 using namespace lemon;
 using namespace std;

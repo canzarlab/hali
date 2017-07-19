@@ -530,7 +530,6 @@ public:
                 truncc(truncA_col) = - c(i);
                 truncx(truncA_col) = x(i);
                 truncA_col ++;
-                
             }
             
         assert(truncA_col == nr_tight_constr);
@@ -559,8 +558,7 @@ public:
                 truncA_col++;
             }
             
-        assert(truncA_col == nr_tight_constr);
-        
+        assert(truncA_col == nr_tight_constr);        
     }
     
     void WriteSolution(string fileName)
@@ -573,8 +571,7 @@ public:
             {
                 if (K[i][j] != -1)
                 {
-                    if (lround(x(K[i][j])) == 1)
-                        weight += c(K[i][j]);
+                    weight += x(K[i][j]) * c(K[i][j]);
                     sol_file << x(K[i][j]) << "\t" ;
                 }
                 else
