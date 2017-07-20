@@ -345,7 +345,7 @@ class IndependentSetConstraint : Constraint
     typedef pair<double, LN> dLN;
 public:
     IndependentSetConstraint(Tree& t1, Tree& t2, vector<vector<int> >& K, Vector& x, bool swp) : Constraint(t1, t2, K, x, swp)
-    {        
+    {
     }
 
     int AddTriplets(vector<ET>& Triplets, int nr_rows)
@@ -580,7 +580,7 @@ public:
             sol_file << endl;
         }
         sol_file.close();
-        cout << t1.GetNumNodes() + t2.GetNumNodes() - weight << " ";
+        cout << t1.GetNumNodes() - t1.L.size() + t2.GetNumNodes() - t2.L.size() - weight << " ";
     }
 
 private:
@@ -603,6 +603,8 @@ int main(int argc, char** argv)
         clog << "usage: " << argv[0] << " <filename.newick> <filename.newick> <filename.sim>" << endl;
         return EXIT_FAILURE;
     }
+
+    clog << "Comparing trees " << argv[1] << " " << argv[2] << endl;
 
     LP lp(argv[1], argv[2]);
     lp.MatchingConstraints(argv[3]);
@@ -627,9 +629,9 @@ int main(int argc, char** argv)
         clog << "Added " << cnt << " rows." << endl;        
     }
     T.stop();
+    clog << "Done comparing trees " << argv[1] << " " << argv[2] << endl;
     clog << "TOTAL TIME : \t\t" << T.secs() << " secs" << endl;
     clog << "Total number of iterations: " <<  i + 1 << endl;
     
     lp.WriteSolution("yeastnet_precollapse.solution");
-    
 }
