@@ -23,5 +23,5 @@ int main(int argc, char** argv)
     string in;
     getline(ifs, in);
     while (input(ifs, in))
-        ofs << in << ' ';
+        ofs << stod(in) * 2 << ' ';
 }
