@@ -28,7 +28,7 @@ string getNewick(ListDigraph::Node r, PhylogeneticTree& t, ListDigraph::NodeMap<
 	stringstream ss;
 	ListDigraph::OutArcIt a(t.get_graph(), r);
 	if (a == INVALID) { //leaf 
-		ss << nm[r];
+		ss << nm[r] << ":";
 		return ss.str();
 	}
 	
@@ -38,7 +38,7 @@ string getNewick(ListDigraph::Node r, PhylogeneticTree& t, ListDigraph::NodeMap<
 		result += ",";
 	}
 	result.back() = ')';
-        ss << result << nm[r];
+	ss << result << nm[r] << ":";
 	return ss.str();
 }
 

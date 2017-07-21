@@ -21,6 +21,7 @@ do
         ./solver "data$b/a$n" "data$b/a$a" "data$b/s_a"$n"_a$a" 2>>rand.log >> "dists$b"
         cat "data$m/a$n" "data$m/a$a" >> "rfn$m"
     done
+    sed -i "s/://g" "rfn$m"
     sed -i "s/$/;/g" "rfn$m"
     java -jar bin/TreeCmp.jar -w 2 -d rf -i "rfn$m" -o "rfn$m.out" -P
     rm "rfn$m"
