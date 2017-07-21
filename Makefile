@@ -1,5 +1,5 @@
 CXX = g++
-CFLAGS = -Wall -O2 -std=c++11 -DTAXONI
+CFLAGS = -Wall -O2 -std=c++11
 INCL = -I Eigen
 BINARIES = solver
 GENO_OBJS = main.o geno/augmentedLagrangian.o geno/lbfgsb.o geno/lineSearch.o
