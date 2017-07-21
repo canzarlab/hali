@@ -56,7 +56,7 @@ void PhylogeneticTree::_makeTree(newick_node *root, ListDigraph::Node p)
 {
   //if (root->taxon) cout << "adding new node (" << root->taxon << " " << root->dist << ")" << endl;
   ListDigraph::Node r = _t.addNode();
-  if (root->taxon) _label[r] = root->taxon;
+  if (!root->taxon.empty()) _label[r] = root->taxon;
   if (root->dist) _dist[r] = root->dist; else root->dist = 0.0;
   if (p != INVALID) _t.addArc(p, r); else _r = r;
   

@@ -13,8 +13,11 @@ newick_child::~newick_child()
     delete next;
 }
 
-newick_node::newick_node(const string& taxon, float dist, newick_child* child) : child(child), taxon(stoi(taxon)), dist(dist), parent(nullptr)
+newick_node::newick_node(const string& taxon, float dist, newick_child* child) : child(child), taxon(taxon), dist(dist), parent(nullptr)
 {
+#ifdef TAXONI
+    taxoni = stoi(taxon);
+#endif
 }
 
 newick_node::~newick_node()

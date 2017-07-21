@@ -21,7 +21,8 @@ struct newick_node
     ~newick_node();
 
     newick_child* child;
-    int taxon;
+    string taxon;
+    int taxoni;
     float dist;
     newick_node* parent;
 };

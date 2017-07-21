@@ -14,7 +14,7 @@ PhylogeneticTree::~PhylogeneticTree()
 
 void PhylogeneticTree::Init(newick_node* node)
 {
-    unsigned id = node->taxon;
+    unsigned id = node->taxoni;
     if (id >= B.size())
         B.resize(id + 1, false);
     B[id] = true;
