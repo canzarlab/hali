@@ -494,8 +494,8 @@ public:
 //        PackingJRF simpleJRF(A, b, c1, x, y);
         AugmentedLagrangian solver(simpleJRF, 15);
         solver.setParameter("verbose", false);
-        solver.setParameter("pgtol", 1); // should influence running time a lot
-        solver.setParameter("constraintsTol", 1e-1);
+        solver.setParameter("pgtol", 1e-1); // should influence running time a lot
+        solver.setParameter("constraintsTol", 1e-5);
         Timer timeGeno;
         timeGeno.start();
         solver.solve();

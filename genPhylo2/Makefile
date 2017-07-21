@@ -1,6 +1,6 @@
 include MakeVars
 
-OBJS = ../newick.o PhylogeneticTree.o phylo2treecomp.o Globals.o
+OBJS = ../newick.o PhylogeneticTree.o phylo2treecomp.o
 
 phylo2tc: $(OBJS)
 	$(LD) $(OBJS) -o $(BINDIR)/phylo2tc $(LDFLAGS)
