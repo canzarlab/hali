@@ -98,6 +98,7 @@ int main(int argc, char** argv)
             ofstream file(string("data") + to_string(j) + string("/a") + to_string(i));
             assert(file);
             print_tree(root, file);
+            file << '\n';
             delete root;
         }
     }
