@@ -18,7 +18,7 @@ do
         mv t1mod "data$b/a$n"
         mv t2mod "data$b/a$a"
         mv sim_t1_t2 "data$b/s_a"$n"_a$a"
-        ./solver "data$m/a$n" "data$m/a$a" "data$m/s_a"$n"_a$a" 2>>rand.log >> "dists$b"
+        ./solver "data$b/a$n" "data$b/a$a" "data$b/s_a"$n"_a$a" 2>>rand.log >> "dists$b"
         cat "data$m/a$n" "data$m/a$a" >> "rfn$m"
     done
     sed -i "s/$/;/g" "rfn$m"
