@@ -175,7 +175,8 @@ void dcsrch(double & f,
           std::cerr << "ERROR: STP < STPMIN" << std::endl;
          }
          if (stp > stpmax) {
-          task = TaskType::ERROR;
+          //task = TaskType::ERROR;
+          stp = stpmax;
           std::cerr << "ERROR: STP > STPMAX" << std::endl;
          } 
          if (g >= zero) {
