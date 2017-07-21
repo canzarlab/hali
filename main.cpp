@@ -580,7 +580,7 @@ public:
             sol_file << endl;
         }
         sol_file.close();
-        cout << t1.GetNumNodes() - t1.L.size() + t2.GetNumNodes() - t2.L.size() - weight << " ";
+        cout << t1.GetNumNodes() - t1.L.size() - 1 + t2.GetNumNodes() - 1 - t2.L.size() - weight << " ";
     }
 
 private:
