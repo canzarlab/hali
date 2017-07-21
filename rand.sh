@@ -28,7 +28,7 @@ do
     }
     sed -i "s/://g" "rfn$m"
     sed -i "s/$/;/g" "rfn$m"
-    java -jar bin/TreeCmp.jar -w 2 -d rf -i "rfn$m" -o "rfn$m.out" -P
+    java -jar bin/TreeCmp.jar -w 2 -d rf -i "rfn$m" -o "rfn$m.out"
     rm "rfn$m"
     ./filter "rfn$m.out" "dists$m"
     rm "rfn$m.out"
