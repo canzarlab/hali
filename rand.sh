@@ -11,11 +11,11 @@ do
     fi
 done
 ./bgen $1 $(($2*2))
+rm -f rand.log
 for m in {0..1}
 do
     b=$((m+2))
-    rm -f "dists$b"
-    rm -f "rfm$m"
+    rm -f "dists$b" "rfm$m"
     for ((n=0; n<$2; n++))
     {
         a=$((n+$2))
@@ -28,7 +28,7 @@ do
     }
     sed -i "s/://g" "rfn$m"
     sed -i "s/$/;/g" "rfn$m"
-    java -jar bin/TreeCmp.jar -w 2 -d rf -i "rfn$m" -o "rfn$m.out"
+    java -jar bin/TreeCmp.jar -w 2 -d rc -i "rfn$m" -o "rfn$m.out"
     rm "rfn$m"
     ./filter "rfn$m.out" "dists$m"
     rm "rfn$m.out"
