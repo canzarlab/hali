@@ -28,7 +28,7 @@ do
     }
     sed -i "s/://g" "rfn$m"
     sed -i "s/$/;/g" "rfn$m"
-    for d in mc rc ns tt
+    for d in mc rc ns tt mp
     do
         java -jar bin/TreeCmp.jar -w 2 -d $d -i "rfn$m" -o $d"n$m.out"
         ./filter $d"n$m.out" $d"dists$m"
