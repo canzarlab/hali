@@ -598,11 +598,13 @@ private:
 
 int main(int argc, char** argv)
 {
-    if (argc != 4)
+    if (argc < 4 || argc > 5)
     {
-        clog << "usage: " << argv[0] << " <filename.newick> <filename.newick> <filename.sim>" << endl;
+        clog << "usage: " << argv[0] << " <filename.newick> <filename.newick> <filename.sim> [c]" << endl;
         return EXIT_FAILURE;
     }
+    int c = (argc == 4) ? 2 : stoi(argv[4]);
+    assert(c >= 0 && c <= 2);
 
     clog << "Comparing trees " << argv[1] << " " << argv[2] << endl;
 
@@ -617,15 +619,22 @@ int main(int argc, char** argv)
         T_lp.start();
         lp.Solve();
         T_lp.stop();
-        clog << ">>> Time for solve: \t\t" << T_lp.secs() << " secs" << endl; 
+        clog << ">>> Time for solve: \t\t" << T_lp.secs() << " secs" << endl;
+        if (c == 0)
+            break;
+
         T_cross.start();
         cnt = lp.CrossingConstraints();
         T_cross.stop();
         clog << ">>> Time for crossing constraints: \t\t" << T_cross.secs() << " secs" << endl;
-        T_indep.start();
-        cnt += lp.IndependentSetConstraints();
-        T_indep.stop();
-        clog << ">>> Time for independent set constraints: \t\t" << T_indep.secs() << " secs" << endl;
+
+        if (c == 2)
+        {
+            T_indep.start();
+            cnt += lp.IndependentSetConstraints();
+            T_indep.stop();
+            clog << ">>> Time for independent set constraints: \t\t" << T_indep.secs() << " secs" << endl;
+        }
         clog << "Added " << cnt << " rows." << endl;        
     }
     T.stop();

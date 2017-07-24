@@ -25,7 +25,10 @@ do
             mv t1mod "data$b/a$n"
             mv t2mod "data$b/a$a"
             mv sim_t1_t2 "data$b/s_a"$n"_a$a"
-            ./solver "data$b/a$n" "data$b/a$a" "data$b/s_a"$n"_a$a" 2>>rand.log >> "dists"$b"k$k"
+            for c in 0 1 2
+            do
+                ./solver "data$b/a$n" "data$b/a$a" "data$b/s_a"$n"_a$a" $c 2>>rand.log >> "dists"$b"k"$k"c"$c
+            done
         done
         cat "data$m/a$n" "data$m/a$a" >> "rfn$m"
     }
@@ -33,7 +36,7 @@ do
     sed -i "s/$/;/g" "rfn$m"
     for d in mc rc ns tt mp
     do
-        java -jar bin/TreeCmp.jar -w 2 -d $d -i "rfn$m" -o $d"n$m.out" -A
+        java -jar bin/TreeCmp.jar -w 2 -d $d -i "rfn$m" -o $d"n$m.out" -A > /dev/null
         ./filter $d"n$m.out" $d"dists$m" $d
         rm $d"n$m.out"
     done
