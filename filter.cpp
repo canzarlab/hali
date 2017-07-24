@@ -4,7 +4,7 @@ using namespace std;
 
 bool input(ifstream& ifs, string& in)
 {
-    for (int i = 0; i < 7; ++i)
+    for (int i = 0; i < 4; ++i)
         if (!(ifs >> in))
             return false;
     return true;
