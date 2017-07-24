@@ -11,11 +11,11 @@ do
     fi
 done
 ./bgen $1 $(($2*2))
-rm -f rand.log
+rm -f rand.log dists*
 for m in {0..1}
 do
     b=$((m+2))
-    rm -f "dists$b" "rfm$m"
+    rm -f "rfm$m"
     for ((n=0; n<$2; n++))
     {
         a=$((n+$2))
