@@ -25,9 +25,12 @@ do
             mv t1mod "data$b/a$n"
             mv t2mod "data$b/a$a"
             mv sim_t1_t2 "data$b/s_a"$n"_a$a"
-            for c in 0 1 2
+            for c in 2 1 0
             do
                 ./solver "data$b/a$n" "data$b/a$a" "data$b/s_a"$n"_a$a" $c 2>>rand.log >> "dists"$b"k"$k"c"$c
+                if [ $k != 1 ]; then
+                    break
+                fi
             done
         done
         cat "data$m/a$n" "data$m/a$a" >> "rfn$m"
