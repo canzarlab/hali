@@ -34,7 +34,7 @@ do
     for d in mc rc ns tt mp
     do
         java -jar bin/TreeCmp.jar -w 2 -d $d -i "rfn$m" -o $d"n$m.out" -A
-        ./filter $d"n$m.out" $d"dists$m"
+        ./filter $d"n$m.out" $d"dists$m" $d
         rm $d"n$m.out"
     done
     rm "rfn$m"

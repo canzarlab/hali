@@ -12,16 +12,17 @@ bool input(ifstream& ifs, string& in)
 
 int main(int argc, char** argv)
 {
-    if (argc != 3)
+    if (argc != 4)
     {
-        cout << "usage: " << argv[0] << " <input> <output>\n";
+        cout << "usage: " << argv[0] << " <input> <output> <metric>\n";
         return EXIT_FAILURE;
     }
-    
+
+    double mult = (argv[3] == string("rc")) ? 2 : 1;
     ifstream ifs(argv[1]);
     ofstream ofs(argv[2]);
     string in;
     getline(ifs, in);
     while (input(ifs, in))
-        ofs << stod(in) * 2 << ' ';
+        ofs << stod(in) * mult << ' ';
 }
