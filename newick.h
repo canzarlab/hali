@@ -17,7 +17,7 @@ struct newick_child
 
 struct newick_node
 {
-    newick_node(const string& taxon, float dist, newick_child* child);
+    newick_node(const string& taxon = "", float dist = 0, newick_child* child = nullptr);
     ~newick_node();
 
     newick_child* child;
