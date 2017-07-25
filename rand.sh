@@ -10,6 +10,10 @@ do
         mkdir "data$m"
     fi
 done
+make >& /dev/null
+g++ generator.cpp newick.cpp -o bgen
+g++ filter.cpp -o filter
+( cd genPhylo2 && make >& /dev/null && mv phylo2tc .. )
 ./bgen $1 $(($2*2))
 rm -f rand.log dists*
 for m in {0..1}
