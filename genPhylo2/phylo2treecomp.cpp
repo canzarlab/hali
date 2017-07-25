@@ -62,18 +62,33 @@ double Jaccard_weight(const list<string> &L1, const list<string> &L2, double k)
   return 2 - 2*pow(J, k);
 }
 
+double symdif_weight(const list<string> &L1, const list<string> &L2)
+{
+  vector<string>::iterator uit, iit, dit;
+  vector<string> U(L1.size() + L2.size()), I(min(L1.size(), L2.size())), D(L1.size() + L2.size());
+  uit = set_union(L1.begin(), L1.end(), L2.begin(), L2.end(), U.begin());
+  iit = set_intersection(L1.begin(), L1.end(), L2.begin(), L2.end(), I.begin());
+  U.resize(uit - U.begin());
+  I.resize(iit - I.begin());
+  dit = set_difference(U.begin(), U.end(), I.begin(), I.end(), D.begin());
+  D.resize(dit - D.begin());
+  return D.size();
+}
+
 int main(int argc, char * const argv[]) {
     // Initialize the argument parser
     ArgParser ap(argc, argv);
 
     string filename_t1, filename_t2, dirname;
     double k = 1.0;
+    string d = "j";
 
     // Add a string option with storage reference for file name
     ap.refOption("t1", "Name of file that contains first tree in Newick format []", filename_t1, false);
     ap.refOption("t2", "Name of file that contains second tree in Newick format []", filename_t2, false);
     ap.refOption("d",  "Name of directory with trees in Newick format for all-against-all *.tre comparisons []", dirname, false);
     ap.refOption("k", "Exponent of GRF metric [1.0]", k, false);
+    ap.refOption("d", "Distance function [j/s]", d, false);
     // Perform the parsing process
     // (in case of any error it terminates the program)
     ap.parse();
@@ -124,7 +139,12 @@ int main(int argc, char * const argv[]) {
                 ListDigraph::InArcIt a2(t2.get_graph(), j);
                 ListDigraph::OutArcIt o2(t2.get_graph(), j);
                 if (a1 != INVALID && a2 != INVALID && o1 != INVALID && o2 != INVALID) //t1.clade(i).size() > 1 && t2.clade(j).size() > 1)
-                    w = 2 - Jaccard_weight(t1.clade(i), t2.clade(j), k);
+                {
+                    if (d == "j")
+                        w = 2 - Jaccard_weight(t1.clade(i), t2.clade(j), k);
+                    else
+                        w = t1.clade(i).size() + t2.clade(j).size() - symdif_weight(t1.clade(i), t2.clade(j));
+                }
                 ss << w << "\t";
 
                 //source_in_t1[e] = *i; target_in_t2[e] = *j;
