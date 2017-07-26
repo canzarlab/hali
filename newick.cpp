@@ -15,7 +15,7 @@ newick_child::~newick_child()
 
 newick_node::newick_node(const string& taxon, float dist, newick_child* child) : child(child), taxon(taxon), dist(dist), parent(nullptr)
 {
-    try { taxoni = stoi(taxon); } catch(...) { }
+    try { taxoni = stoi(taxon); } catch(...) { taxoni = -1; }
 }
 
 newick_node::~newick_node()
@@ -74,7 +74,7 @@ newick_node* load_tree(const char* filename)
     return parse_tree(str, itr);
 }
 
-void print_tree(newick_node* root, ofstream& file)
+void print_tree(newick_node* root, ostream& file)
 {
     file << fixed << setprecision(6);
     if (root->child)
