@@ -394,7 +394,7 @@ private:
 class LP
 {
 public:
-    LP(const char* p1, const char* p2) : t1(p1), t2(p2), c(t1.GetNumNodes() * t2.GetNumNodes()), nr_rows(0), nr_cols(0)
+    LP(const char* p1, const char* p2, string d) : d(d), t1(p1), t2(p2), c(t1.GetNumNodes() * t2.GetNumNodes()), nr_rows(0), nr_cols(0)
     {
         K.resize(t1.GetNumNodes());
         for (auto& v : K)
@@ -560,6 +560,29 @@ public:
             
         assert(truncA_col == nr_tight_constr);        
     }
+
+    int GetMax(newick_node* node, int& hmax)
+    {
+        int sum = 0;
+        for (newick_child* child = node->child; child; child = child->next)
+            sum += GetMax(child->node, hmax);
+        hmax += sum;
+        int ret = node->child ? sum : 1;
+        return ret;
+    }
+
+    float SymdifDist(float weight)
+    {
+        int max1 = 0, max2 = 0;
+        int r1 = GetMax(t1.GetRoot(), max1);
+        int r2 = GetMax(t2.GetRoot(), max2);
+        return max1 + max2 - r1 - r2 - weight;
+    }
+
+    float JaccardDist(float weight)
+    {
+        return t1.GetNumNodes() - t1.L.size() - 1 + t2.GetNumNodes() - 1 - t2.L.size() - weight;
+    }
     
     void WriteSolution(string fileName)
     {
@@ -580,10 +603,11 @@ public:
             sol_file << endl;
         }
         sol_file.close();
-        cout << t1.GetNumNodes() - t1.L.size() - 1 + t2.GetNumNodes() - 1 - t2.L.size() - weight << " ";
+        cout << ((d == "j") ? JaccardDist(weight) : SymdifDist(weight)) << " ";
     }
 
 private:
+    string d;
     vector<ET> Triplets;
     Vector x;
     Vector y;
@@ -598,17 +622,19 @@ private:
 
 int main(int argc, char** argv)
 {
-    if (argc < 4 || argc > 5)
+    if (argc < 4 || argc > 6)
     {
-        clog << "usage: " << argv[0] << " <filename.newick> <filename.newick> <filename.sim> [c]" << endl;
+        clog << "usage: " << argv[0] << " <filename.newick> <filename.newick> <filename.sim> [c] [d]" << endl;
         return EXIT_FAILURE;
     }
-    int c = (argc == 4) ? 2 : stoi(argv[4]);
+    int c = (argc < 5) ? 2 : stoi(argv[4]);
     assert(c >= 0 && c <= 2);
+    string d = (argc < 6) ? "j" : argv[5];
+    assert(d == "j" || d == "s");
 
     clog << "Comparing trees " << argv[1] << " " << argv[2] << endl;
 
-    LP lp(argv[1], argv[2]);
+    LP lp(argv[1], argv[2], d);
     lp.MatchingConstraints(argv[3]);
     int cnt = 1, i;
     Timer T;
