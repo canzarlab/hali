@@ -23,15 +23,21 @@ do
     for ((n=0; n<$2; n++))
     {
         a=$((n+$2))
-        for k in 1 5 10 20
+        for k in 1 2 3 4 5
         do
-            ./phylo2tc -t1 "data$m/a$n" -t2 "data$m/a$a" -k $k >& /dev/null
-            mv t1mod "data$b/a$n"
-            mv t2mod "data$b/a$a"
-            mv sim_t1_t2 "data$b/s_a"$n"_a$a"
-            for c in 2 1 0
+            for mt in j s
             do
-                ./solver "data$b/a$n" "data$b/a$a" "data$b/s_a"$n"_a$a" $c 2>>rand.log >> "dists"$b"k"$k"c"$c
+                ./phylo2tc -t1 "data$m/a$n" -t2 "data$m/a$a" -k $k -d $mt >& /dev/null
+                mv t1mod "data$b/a$n"
+                mv t2mod "data$b/a$a"
+                mv sim_t1_t2 "data$b/s_a"$n"_a$a"
+                for c in 2 1 0
+                do
+                    ./solver "data$b/a$n" "data$b/a$a" "data$b/s_a"$n"_a$a" $c $mt 2>>rand.log >> "dists"$b"k"$k"c"$c"d"$mt
+                    if [ $k != 1 ]; then
+                        break
+                    fi
+                done
                 if [ $k != 1 ]; then
                     break
                 fi
