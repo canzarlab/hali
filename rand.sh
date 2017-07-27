@@ -3,7 +3,7 @@ then
     echo "usage: <n-leaves> <n-tree-pairs>"
     exit 1
 fi
-for m in {0..3}
+for m in 0 1
 do
     if [ ! -d "data$m" ]
     then
@@ -16,7 +16,7 @@ g++ filter.cpp -o filter
 ( cd genPhylo2 && make >& /dev/null && mv phylo2tc .. )
 ./bgen $1 $(($2*2))
 rm -f rand.log dists*
-for m in {0..1}
+for m in 0 1
 do
     b=$((m+2))
     rm -f "rfm$m"
@@ -28,12 +28,9 @@ do
             for mt in j s
             do
                 ./phylo2tc -t1 "data$m/a$n" -t2 "data$m/a$a" -k $k -d $mt >& /dev/null
-                mv t1mod "data$b/a$n"
-                mv t2mod "data$b/a$a"
-                mv sim_t1_t2 "data$b/s_a"$n"_a$a"
                 for c in 2 1 0
                 do
-                    ./solver "data$b/a$n" "data$b/a$a" "data$b/s_a"$n"_a$a" $c $mt 2>>rand.log >> "dists"$b"k"$k"c"$c"d"$mt
+                    ./solver t1mod t2mod sim_t1_t2 $c $mt 2>>rand.log >> "dists"$b"k"$k"c"$c"d"$mt
                     if [ $k != 1 ]; then
                         break
                     fi
