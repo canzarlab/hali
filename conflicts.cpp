@@ -66,109 +66,57 @@ private:
 
 class tree
 {
+    vector<newick_node*> nodes;
+    newick_node* root;
+    segtree* seg;
+    vi L, E, H;
+    int size, ntax, idx;
 public:
-    class lca
-    {
-        vi L, E, H;
-        int idx;
-        tree* t;
-        segtree* seg;
-    public:
-        lca(tree* t) :
-            L(2 * t->size()),
-            E(2 * t->size()),
-            H(t->size(), -1),
-            idx(0),
-            t(t)
-        {
-            init(0, 0);
-            seg = new segtree(L);
-        }
+    vector<newick_node*> leaves;
+    vi matches;
 
-        ~lca()
-        {
-            delete seg;
-        }
-
-        int query(int p, int q)
-        {
-            if (H[q] < H[p]) swap(p, q);
-            return E[seg->rmq(H[p], H[q])];
-        }
-
-        int query(const vi& v, int i = 0)
-        {
-            if (v.size() - i == 1)
-                return v[i];
-            return query(v[i], query(v, i + 1));
-        }
-
-    private:
-        void init(int cur, int depth)
-        {
-            H[cur] = idx;
-            E[idx] = cur;
-            L[idx++] = depth;
-            for (newick_child* child = t->get(cur)->child; child; child = child->next)
-            {
-                init(child->node->taxoni, depth + 1);
-                E[idx] = cur;
-                L[idx++] = depth;
-            }
-        }
-    };
-
-    tree(newick_node* root) : root(root), sz(0), ntax(1)
+    tree(newick_node* root) :
+        root(root),
+        size(0),
+        ntax(1),
+        idx(0)
     {
         init1(root);
-        nodes.resize(size());
-        matches.resize(size(), -1);
+        nodes.resize(size);
+        matches.resize(size, -1);
+        L.resize(2 * size);
+        E.resize(2 * size);
+        H.resize(size, -1);
         leaves.reserve(ntax - 1);
         root->taxoni = 0;
-        init2(root);
-        tlca = new lca(this);
+        root->taxon = "0";
+        init2(root, 0);
+        seg = new segtree(L);
     }
 
     ~tree()
     {
-        delete tlca;
+        delete seg;
         delete root;
     }
 
-    lca* get_lca()
+    int lca(int p, int q)
     {
-        return tlca;
+        if (H[q] < H[p]) swap(p, q);
+        return E[seg->rmq(H[p], H[q])];
     }
 
-    void match(int l, int r)
+    int lca(const vi& v, int i = 0)
     {
-        matches[l] = r;
-    }
-
-    int get_match(int p)
-    {
-        return matches[p];
-    }
-
-    int size()
-    {
-        return sz;
-    }
-
-    int n_leaves()
-    {
-        return leaves.size();
-    }
-
-    newick_node* get(int i)
-    {
-        return nodes[i];
+        if (v.size() - i == 1)
+            return v[i];
+        return lca(v[i], lca(v, i + 1));
     }
 
 private:
     void init1(newick_node* node)
     {
-        sz++;
+        size++;
         if (!node->child)
             ntax++;
 
@@ -179,27 +127,29 @@ private:
         }
     }
 
-    void init2(newick_node* node)
+    void init2(newick_node* node, int depth)
     {
-        if (node->taxoni != -1)
-            nodes[node->taxoni] = node;
-        else
+        if (node->taxoni == -1)
+        {
             nodes[node->taxoni = ntax++] = node;
+            node->taxon = to_string(node->taxoni);
+        }
+        else
+            nodes[node->taxoni] = node;
 
-        node->taxon = to_string(node->taxoni);
         if (!node->child)
             leaves.push_back(node);
 
+        H[node->taxoni] = idx;
+        E[idx] = node->taxoni;
+        L[idx++] = depth;
         for (newick_child* child = node->child; child; child = child->next)
-            init2(child->node);
+        {
+            init2(child->node, depth + 1);
+            E[idx] = node->taxoni;
+            L[idx++] = depth;
+        }
     }
-
-    newick_node* root;
-    vector<newick_node*> nodes;
-    vector<newick_node*> leaves;
-    vector<int> matches;
-    int sz, ntax;
-    lca* tlca;
 };
 
 class cc
@@ -222,10 +172,10 @@ public:
 
         while (f && f.peek() != '-')
         {
-            int l = t1->get_lca()->query(get_cluster(f));
-            int r = t2->get_lca()->query(get_cluster(f));
-            t1->match(l, r);
-            t2->match(r, l);
+            int l = t1->lca(get_cluster(f));
+            int r = t2->lca(get_cluster(f));
+            t1->matches[l] = r;
+            t2->matches[r] = l;
             getline(f, in);
             getline(f, in);
         }
@@ -241,9 +191,7 @@ public:
     {
         int c1, c2, d1, d2;
         tie(c1, c2) = get_c_i();
-        swap(t1, t2);
         tie(d1, d2) = get_c_i();
-        swap(t1, t2);
         return make_pair(c1 + d1, c2 + d2);
     }
 
@@ -251,33 +199,31 @@ private:
     ii get_c_i()
     {
         c1 = c2 = 0;
-        for (int i = 1; i < t1->n_leaves(); ++i)
-            for (newick_node* node = t1->get(i); node->parent; node = node->parent)
+        for (newick_node* leaf : t1->leaves)
+            for (newick_node* node = leaf; node->parent; node = node->parent)
                 for (newick_node* nodeup = node->parent; nodeup; nodeup = nodeup->parent)
                     check_c(node->taxoni, nodeup->taxoni);
+        swap(t1, t2);
         return make_pair(c1, c2);
     }
 
     void check_c(int p, int q)
     {
-        int mp = t1->get_match(p);
-        int mq = t1->get_match(q);
+        int mp = t1->matches[p];
+        int mq = t1->matches[q];
         if (mp == -1 || mq == -1)
             return;
 
-        int lp = t1->get_lca()->query(p, q);
-        int rp = t2->get_lca()->query(mp, mq);
+        int lp = t1->lca(p, q);
+        int rp = t2->lca(mp, mq);
         if (rp != mp && rp != mq) c2++;
-        else if (t1->get_match(lp) != rp) c1++;
+        else if (t1->matches[lp] != rp) c1++;
     }
 
     vi get_cluster(ifstream& file)
     {
-        while (file.peek() != '(')
-            file.ignore();
-        file.ignore();
-
         vi v;
+        while (file.get() != '(');
         while (file.peek() != ')')
         {
             int l;
