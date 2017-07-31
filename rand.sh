@@ -3,7 +3,7 @@ then
     echo "usage: <n-leaves> <n-tree-pairs>"
     exit 1
 fi
-for m in 0 1
+for m in 0 1 2 3
 do
     if [ ! -d "data$m" ]
     then
@@ -28,9 +28,12 @@ do
             for mt in j s
             do
                 ./phylo2tc -t1 "data$m/a$n" -t2 "data$m/a$a" -k $k -d $mt >& /dev/null
+                mv t1mod "data$b/a$n"
+                mv t2mod "data$b/a$a"
+                mv sim_t1_t2 "data$b/s_a"$n"_a"$a"_k"$k"_d"$mt
                 for c in 2 1 0
                 do
-                    ./solver t1mod t2mod sim_t1_t2 $c $mt 2>>rand.log >> "dists"$b"k"$k"c"$c"d"$mt
+                    ./solver "data$b/a$n" "data$b/a$a" "data$b/s_a"$n"_a"$a"_k"$k"_d"$mt $c $mt 2>>/dev/null >> "dists"$b"k"$k"c"$c"d"$mt &
                     if [ $k != 1 ]; then
                         break
                     fi
@@ -41,6 +44,10 @@ do
             done
         done
         cat "data$m/a$n" "data$m/a$a" >> "rfn$m"
+        r=$((n%8));
+        if [ $r == 7 ]; then
+            wait
+        fi
     }
     sed -i "s/://g" "rfn$m"
     sed -i "s/$/;/g" "rfn$m"
