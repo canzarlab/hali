@@ -508,7 +508,7 @@ public:
         //y = Vector::ConstMapType(solver.x(), nr_rows);
 
         x = Vector::ConstMapType(solver.x(), nr_cols);
-        y = Vector::ConstMapType(solver.y(), nr_rows + nr_cols);
+        y = Vector::ConstMapType(solver.y(), nr_rows);
 /*
         warm_x = Vector::ConstMapType(solver.y(), nr_cols);
         warm_y = Vector::ConstMapType(solver.x(), nr_rows);
