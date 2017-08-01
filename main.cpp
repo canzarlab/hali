@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
+#include <queue>
 #include "geno/genoNLP.hpp"
 #include "geno/augmentedLagrangian.hpp"
 
@@ -252,6 +253,7 @@ public:
     CrossingConstraint(Tree& t1, Tree& t2, vector<vector<int> >& K, Vector& x, bool swp) : Constraint(t1, t2, K, x, swp)
     {
         DP.resize(t1.GetNumNodes());
+        PA.resize(t1.GetNumNodes());
         for (auto& v : DP)
             v.resize(t2.GetNumNodes());
     }
@@ -259,7 +261,7 @@ public:
     int AddTriplets(vector<ET>& Triplets, int nr_rows)
     {
         int ncr = 0;
-        DFSLeft(t1.GetRoot());
+        KahnLeft(t1.GetRoot());
         for (auto node : t1.L)
         {
             VPN P;
@@ -281,34 +283,55 @@ private:
         return DP[nodel->taxoni][noder->taxoni];
     }
 
-    double GetWeightParent(newick_node* nodel, newick_node* noder)
-    {
-        if (newick_node* parent = nodel->parent)
-            return GetDP(parent, noder);
-        return 0;
-    }
-
-    pair<newick_node*, double> GetMaxChild(newick_node* nodel, newick_node* noder)
+    template <class F>
+    pair<newick_node*, double> GetMaxPC(newick_node* nodel, newick_node* noder, F f)
     {
         double mx = 0;
         newick_node* mc = nullptr;
-        for (newick_child* child = noder->child; child; child = child->next)
+        for (newick_child* pc = f(noder); pc; pc = pc->next)
         {
-            double cw = GetDP(nodel, child->node);
+            double cw = GetDP(nodel, pc->node);
             if (cw >= mx)
             {
                 mx = cw;
-                mc = child->node;
+                mc = pc->node;
             }
         }
         return make_pair(mc, mx);
     }
 
+    pair<newick_node*, double> GetMaxChild(newick_node* nodel, newick_node* noder)
+    {
+        return GetMaxPC(nodel, noder, [](newick_node* n){return n->child;});
+    }
+
+    pair<newick_node*, double> GetMaxParent(newick_node* nodel, newick_node* noder)
+    {
+        return GetMaxPC(nodel, noder, [](newick_node* n){return n->parent;});
+    }
+
     void DFSLeft(newick_node* node)
     {
-        DFSRight(t2.GetRoot(), node);
         for (newick_child* child = node->child; child; child = child->next)
+        {
+            PA[child->node->taxoni]++;
             DFSLeft(child->node);
+        }
+    }
+
+    void KahnLeft(newick_node* node)
+    {
+        queue<newick_node*> Q;
+        Q.push(node);
+        DFSLeft(node);
+        while (!Q.empty())
+        {
+            node = Q.front(); Q.pop();
+            DFSRight(t2.GetRoot(), node);
+            for (newick_child* child = node->child; child; child = child->next)
+                if (--PA[child->node->taxoni] == 0)
+                    Q.push(child->node);
+        }
     }
 
     double DFSRight(newick_node* node, newick_node* nodel)
@@ -316,27 +339,29 @@ private:
         double mx = 0;
         for (newick_child* child = node->child; child; child = child->next)
             mx = max(mx, DFSRight(child->node, nodel));
-        mx = max(mx, GetWeightParent(nodel, node));
+        mx = max(mx, GetMaxParent(node, nodel).second);
         return GetDP(nodel, node) = mx + GetWeight(nodel, node);
     }
 
     void Reconstruct(VPN& P, newick_node* nodel, newick_node* noder)
     {
-        double pw = GetWeightParent(nodel, noder), cw;
-        newick_node* child;
+        double pw, cw;
+        newick_node *child, *parent;
         tie(child, cw) = GetMaxChild(nodel, noder);
+        tie(parent, pw) = GetMaxParent(noder, nodel);
         P.emplace_back(nodel, noder);
         if (nodel->parent && (!child || pw > cw))
-            Reconstruct(P, nodel->parent, noder);
-        else if (child && (!nodel->parent || cw >= pw))
+            Reconstruct(P, parent, noder);
+        else if (child && (!parent || cw >= pw))
             Reconstruct(P, nodel, child);
         else
-            assert(!nodel->parent && !child);
+            assert(!parent && !child);
     }
 
+    vector<int> PA;
     DPT DP;
 };
-
+/*
 class IndependentSetConstraint : Constraint
 {
     typedef list<newick_node*> LN;
@@ -388,7 +413,7 @@ private:
         return make_pair(w, LN(1, noder));
     }
 };
-
+*/
 class LP
 {
 public:
@@ -425,7 +450,7 @@ public:
         nr_rows += cc21.AddTriplets(Triplets, nr_rows);
         return nr_rows - row_old;
     }
-
+/*
     int IndependentSetConstraints()
     {
         int row_old = nr_rows;
@@ -435,7 +460,7 @@ public:
         nr_rows += isc21.AddTriplets(Triplets, nr_rows);
         return nr_rows - row_old;
     }
-    
+*/
     void Solve()
     {
         clog << "nr_rows = " << nr_rows << " and nr_cols = " << nr_cols << endl;        
@@ -675,7 +700,7 @@ int main(int argc, char** argv)
         cnt = lp.CrossingConstraints();
         T_cross.stop();
         clog << ">>> Time for crossing constraints: \t\t" << T_cross.secs() << " secs" << endl;
-
+/*
         if (c == 2)
         {
             T_indep.start();
@@ -683,6 +708,7 @@ int main(int argc, char** argv)
             T_indep.stop();
             clog << ">>> Time for independent set constraints: \t\t" << T_indep.secs() << " secs" << endl;
         }
+*/
         clog << "Added " << cnt << " rows." << endl;        
     }
     T.stop();

@@ -22,8 +22,13 @@ void PhylogeneticTree::Init(newick_node* node)
     node->taxon = to_string(node->taxoni = _n++);
     for (newick_child* child = node->child; child; child = child->next)
     {
-        child->node->parent = node;
-        Init(child->node);
+        newick_node* cnode = child->node;
+        newick_parent** parentptr = &cnode->parent;
+        if (!cnode->parent)
+            Init(cnode);
+
+        while (*parentptr) parentptr = &(*parentptr)->next;
+        *parentptr = new newick_parent(node);
         list<string> &cl = clade[node], &cr = clade[child->node];
         cl.insert(cl.end(), cr.begin(), cr.end());
     }

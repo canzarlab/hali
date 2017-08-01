@@ -15,6 +15,8 @@ struct newick_child
     newick_child* next;
 };
 
+typedef newick_child newick_parent;
+
 struct newick_node
 {
     newick_node(const string& taxon = "", float dist = 0, newick_child* child = nullptr);
@@ -24,7 +26,7 @@ struct newick_node
     string taxon;
     int taxoni;
     float dist;
-    newick_node* parent;
+    newick_parent* parent;
 };
 
 newick_node* load_tree(const char* filename);
