@@ -1,7 +1,7 @@
 CXX = g++
 CFLAGS = -Wall -O2 -std=c++11
 INCL = -I Eigen
-BINARIES = solver phylo2tc filter bgen
+BINARIES = solver filter bgen
 GENO_OBJS = main.o geno/augmentedLagrangian.o geno/lbfgsb.o geno/lineSearch.o
 TEST_BINARIES = 
 HEADERS = 
@@ -23,9 +23,6 @@ geno/%.o: geno/%.cpp
 	$(CXX) -c $< $(CFLAGS) $(INCL)
 
 solver: $(GENO_OBJS) PhylogeneticTree.o newick.o
-	$(CXX) -o $@ $^ $(CFLAGS)
-
-phylo2tc: newick.o phylo2treecomp.o
 	$(CXX) -o $@ $^ $(CFLAGS)
 
 filter: filter.o

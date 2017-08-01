@@ -4,7 +4,6 @@ PhylogeneticTree::PhylogeneticTree(string filename) : _n(0)
 {
     root = load_tree(filename.c_str());
     Init(root);
-    N.resize(B.size());
 }
 
 PhylogeneticTree::~PhylogeneticTree()
@@ -14,18 +13,19 @@ PhylogeneticTree::~PhylogeneticTree()
 
 void PhylogeneticTree::Init(newick_node* node)
 {
-    unsigned id = node->taxoni;
-    if (id >= B.size())
-        B.resize(id + 1, false);
-    B[id] = true;
-
     if (!node->child)
+    {
         L.push_back(node);
+        clade[node].push_back(node->taxon);
+    }
 
+    node->taxon = to_string(node->taxoni = _n++);
     for (newick_child* child = node->child; child; child = child->next)
     {
         child->node->parent = node;
         Init(child->node);
+        list<string> &cl = clade[node], &cr = clade[child->node];
+        cl.insert(cl.end(), cr.begin(), cr.end());
     }
-    ++_n;
+    clade[node].sort();
 }

@@ -216,7 +216,7 @@ protected:
 
     int GetCol(newick_node* nodel, newick_node* noder)
     {
-        return GetCol(t1.GetIndex(nodel), t2.GetIndex(noder));
+        return GetCol(nodel->taxoni, noder->taxoni);
     }
 
     double GetWeight(newick_node* nodel, newick_node* noder)
@@ -278,9 +278,7 @@ public:
 private:
     double& GetDP(newick_node* nodel, newick_node* noder)
     {
-        int i1 = t1.GetIndex(nodel);
-        int i2 = t2.GetIndex(noder);
-        return DP[i1][i2];
+        return DP[nodel->taxoni][noder->taxoni];
     }
 
     double GetWeightParent(newick_node* nodel, newick_node* noder)
@@ -394,7 +392,7 @@ private:
 class LP
 {
 public:
-    LP(const char* p1, const char* p2, string d) : d(d), t1(p1), t2(p2), c(t1.GetNumNodes() * t2.GetNumNodes()), nr_rows(0), nr_cols(0)
+    LP(const char* p1, const char* p2, string d, double k) : d(d), t1(p1), t2(p2), c(t1.GetNumNodes() * t2.GetNumNodes()), nr_rows(0), nr_cols(0), k(k)
     {
         K.resize(t1.GetNumNodes());
         for (auto& v : K)
@@ -404,49 +402,12 @@ public:
     ~LP()
     {
     }
-
-    void MatchingConstraints(const char* path)
+    
+    void MatchingConstraints()
     {
-        ifstream SimFile(path);
-        if (!SimFile)
-        {
-            clog << "Failed to open " << path << endl;
-            exit(EXIT_FAILURE);
-        }
-
-        int n = t1.GetNumNodes(), m = t2.GetNumNodes(), cnt = 0;
-        string line;
-        for (int i = 0, k = 0; getline(SimFile, line) && !line.empty(); ++i)
-        {
-            istringstream ss(line);
-            if (!t1.NodeExists(i + 1))
-                continue;
-
-            t1.N[i + 1] = k;
-            double w;
-            for (int j = 0, l = 0; ss >> w; ++j)
-            {
-                if (!t2.NodeExists(j + 1))
-                    continue;
-
-                t2.N[j + 1] = l;
-                if (w != 0)
-                {
-                    int col = k * m + l - cnt;
-                    K[k][l] = col;
-                    Triplets.push_back(ET(k, col, 1.));
-                    Triplets.push_back(ET(n + l, col, 1.));
-                    c(col) = w;
-                }
-                else
-                {
-                    K[k][l] = -1;
-                    ++cnt;
-                }
-                ++l;
-            }
-            ++k;
-        }
+        cnt = 0;
+        DFSLeft(t1.GetRoot(), 0);
+        int n = t1.GetNumNodes(), m = t2.GetNumNodes();
         nr_rows = n + m;
         nr_cols = n * m - cnt;
         c.conservativeResize(nr_cols);
@@ -567,23 +528,9 @@ public:
         for (newick_child* child = node->child; child; child = child->next)
             sum += GetMax(child->node, hmax);
         hmax += sum;
-        int ret = node->child ? sum : 1;
-        return ret;
+        return node->child ? sum : 1;
     }
 
-    float SymdifDist(float weight)
-    {
-        int max1 = 0, max2 = 0;
-        int r1 = GetMax(t1.GetRoot(), max1);
-        int r2 = GetMax(t2.GetRoot(), max2);
-        return max1 + max2 - r1 - r2 - weight;
-    }
-
-    float JaccardDist(float weight)
-    {
-        return t1.GetNumNodes() - t1.L.size() - 1 + t2.GetNumNodes() - 1 - t2.L.size() - weight;
-    }
-    
     void WriteSolution(string fileName)
     {
         ofstream sol_file(fileName);
@@ -607,6 +554,75 @@ public:
     }
 
 private:
+    void DFSLeft(newick_node* node, int i)
+    {
+        DFSRight(node, t2.GetRoot(), i, 0);
+        for (newick_child* child = node->child; child; child = child->next)
+            DFSLeft(child->node, i + 1);
+    }
+
+    void DFSRight(newick_node* nodel, newick_node* noder, int i, int j)
+    {
+        if (nodel->parent && nodel->child && noder->parent && noder->child)
+        {
+            double w = 0;
+            if (d == "j")
+                w = JaccardSim(t1.clade[nodel], t2.clade[noder]);
+            else
+                w = SymdifSim(t1.clade[nodel], t2.clade[noder]);
+
+            if (w != 0)
+            {
+                int n = t1.GetNumNodes(), m = t2.GetNumNodes();
+                int col = i * m + j - cnt;
+                K[i][j] = col;
+                Triplets.push_back(ET(i, col, 1.));
+                Triplets.push_back(ET(n + j, col, 1.));
+                c(col) = w;
+            }
+            else
+            {
+                K[i][j] = -1;
+                ++cnt;
+            }
+        }
+        for (newick_child* child = noder->child; child; child = child->next)
+            DFSRight(nodel, child->node, i, j + 1);
+    }
+
+    int cnt;
+
+    double JaccardSim(const list<string>& L1, const list<string>& L2)
+    {
+        vector<string> I(min(L1.size(), L2.size()));
+        auto iit = set_intersection(L1.begin(), L1.end(), L2.begin(), L2.end(), I.begin());
+        I.resize(iit - I.begin());
+        double i = I.size(), u = L1.size() + L2.size() - I.size();
+        return (u == i) ? 2 : 2 * pow(i / u, k);
+    }
+
+    double SymdifSim(const list<string>& L1, const list<string>& L2)
+    {
+        vector<string> I(min(L1.size(), L2.size()));
+        auto iit = set_intersection(L1.begin(), L1.end(), L2.begin(), L2.end(), I.begin());
+        I.resize(iit - I.begin());
+        return 2 * I.size();
+    }
+
+    float SymdifDist(float weight)
+    {
+        int max1 = 0, max2 = 0;
+        int r1 = GetMax(t1.GetRoot(), max1);
+        int r2 = GetMax(t2.GetRoot(), max2);
+        return max1 + max2 - r1 - r2 - weight;
+    }
+
+    float JaccardDist(float weight)
+    {
+        return t1.GetNumNodes() - t1.L.size() - 1 + t2.GetNumNodes() - 1 - t2.L.size() - weight;
+    }
+
+    double k;
     string d;
     vector<ET> Triplets;
     Vector x;
@@ -624,18 +640,19 @@ int main(int argc, char** argv)
 {
     if (argc < 4 || argc > 6)
     {
-        clog << "usage: " << argv[0] << " <filename.newick> <filename.newick> <filename.sim> [c] [d]" << endl;
+        clog << "usage: " << argv[0] << " <filename.newick> <filename.newick> [c] [d] [k]" << endl;
         return EXIT_FAILURE;
     }
-    int c = (argc < 5) ? 2 : stoi(argv[4]);
+    int c = (argc < 4) ? 2 : stoi(argv[3]);
     assert(c >= 0 && c <= 2);
-    string d = (argc < 6) ? "j" : argv[5];
+    string d = (argc < 5) ? "j" : argv[4];
     assert(d == "j" || d == "s");
+    double k = (argc < 6) ? 1 : stod(argv[5]);
 
     clog << "Comparing trees " << argv[1] << " " << argv[2] << endl;
 
-    LP lp(argv[1], argv[2], d);
-    lp.MatchingConstraints(argv[3]);
+    LP lp(argv[1], argv[2], d, k);
+    lp.MatchingConstraints();
     int cnt = 1, i;
     Timer T;
     T.start();
