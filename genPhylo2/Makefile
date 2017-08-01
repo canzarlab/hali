@@ -2,7 +2,7 @@ BINDIR = .
 CC = g++
 LD = g++
 CPPFLAGS = -std=c++0x -m64 -fPIC -g -fexceptions  -DIL_STD -I..
-LDFLAGS = $(LIBDIRS) -lm -lpthread -lemon
+LDFLAGS = $(LIBDIRS) -lm -lpthread
 OBJS = ../newick.o phylo2treecomp.o
 
 phylo2tc: $(OBJS)
