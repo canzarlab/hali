@@ -406,7 +406,7 @@ public:
     void MatchingConstraints()
     {
         cnt = 0;
-        DFSLeft(t1.GetRoot(), 0);
+        DFSLeft(t1.GetRoot());
         int n = t1.GetNumNodes(), m = t2.GetNumNodes();
         nr_rows = n + m;
         nr_cols = n * m - cnt;
@@ -558,15 +558,16 @@ public:
     }
 
 private:
-    void DFSLeft(newick_node* node, int i)
+    void DFSLeft(newick_node* node)
     {
-        DFSRight(node, t2.GetRoot(), i, 0);
+        DFSRight(node, t2.GetRoot());
         for (newick_child* child = node->child; child; child = child->next)
-            DFSLeft(child->node, i + 1);
+            DFSLeft(child->node);
     }
 
-    void DFSRight(newick_node* nodel, newick_node* noder, int i, int j)
+    void DFSRight(newick_node* nodel, newick_node* noder)
     {
+        int i = nodel->taxoni, j = noder->taxoni;
         if (nodel->parent && nodel->child && noder->parent && noder->child)
         {
             double w = 0;
@@ -591,7 +592,7 @@ private:
             }
         }
         for (newick_child* child = noder->child; child; child = child->next)
-            DFSRight(nodel, child->node, i, j + 1);
+            DFSRight(nodel, child->node);
     }
 
     int cnt;
