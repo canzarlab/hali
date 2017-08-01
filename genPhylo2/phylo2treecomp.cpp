@@ -85,7 +85,7 @@ private:
         sim << w << "\t";
 
         for (newick_child* child = noder->child; child; child = child->next)
-            DFSRight(nodel, noder->child->node);
+            DFSRight(nodel, child->node);
     }
 
     double jaccard(const list<string> &L1, const list<string> &L2, double k)
