@@ -113,5 +113,5 @@ int main(int argc, char** argv)
         cout << "usage: " << argv[0] << " <t1> <t2> <d> [k]" << endl;
         return EXIT_FAILURE;
     }
-    generator(argv[1], argv[2], argv[3], (argc == 4) ? stod(argv[4]) : 1).generate();
+    generator(argv[1], argv[2], argv[3], (argc == 5) ? stod(argv[4]) : 1).generate();
 }
