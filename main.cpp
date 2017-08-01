@@ -592,7 +592,10 @@ private:
             }
         }
         else
+        {
+            K[i][j] = -1;
             ++cnt;
+        }
 
         for (newick_child* child = noder->child; child; child = child->next)
             DFSRight(nodel, child->node);
