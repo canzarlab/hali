@@ -603,7 +603,7 @@ private:
         auto iit = set_intersection(L1.begin(), L1.end(), L2.begin(), L2.end(), I.begin());
         I.resize(iit - I.begin());
         double i = I.size(), u = L1.size() + L2.size() - I.size();
-        return (u == i) ? 2 : 2 * pow(i / u, k);
+        return 2 * pow(i / u, k);
     }
 
     double SymdifSim(const list<string>& L1, const list<string>& L2)
@@ -643,7 +643,7 @@ private:
 
 int main(int argc, char** argv)
 {
-    if (argc < 4 || argc > 6)
+    if (argc < 3 || argc > 6)
     {
         clog << "usage: " << argv[0] << " <filename.newick> <filename.newick> [c] [d] [k]" << endl;
         return EXIT_FAILURE;
