@@ -2,8 +2,7 @@
 
 PhylogeneticTree::PhylogeneticTree(string filename) : _n(0)
 {
-    root = load_tree(filename.c_str());
-    Init(root);
+    Init(root = load_tree(filename.c_str()));
 }
 
 PhylogeneticTree::~PhylogeneticTree()
