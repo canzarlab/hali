@@ -36,7 +36,7 @@ function clean()
 
 function prep()
 {
-    ./phylo2tc -t1 "data$m/a$n" -t2 "data$m/a$a" -k $k -d $mt >& /dev/null
+    ./phylo2tc "data$m/a$n" "data$m/a$a" $mt $k
     mv t1mod "data$b/a$n"
     mv t2mod "data$b/a$a"
     mv sim_t1_t2 "data$b/s_a"$n"_a"$a"_k"$k"_d"$mt
@@ -64,9 +64,6 @@ done
 j=32
 
 make >& /dev/null
-g++ generator.cpp newick.cpp -o bgen
-g++ filter.cpp -o filter
-( cd genPhylo2 && make >& /dev/null && mv phylo2tc .. )
 
 ./bgen $1 $(($2*2))
 rm -f rand.log dists*
