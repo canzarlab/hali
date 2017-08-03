@@ -122,7 +122,7 @@ private:
 
         for (newick_child* child = node->child; child; child = child->next)
         {
-            child->node->parent = node;
+            child->node->parent->node = node;
             init1(child->node);
         }
     }
@@ -200,8 +200,8 @@ private:
     {
         c1 = c2 = 0;
         for (newick_node* leaf : t1->leaves)
-            for (newick_node* node = leaf; node->parent; node = node->parent)
-                for (newick_node* nodeup = node->parent; nodeup; nodeup = nodeup->parent)
+            for (newick_node* node = leaf; node->parent->node; node = node->parent->node)
+                for (newick_node* nodeup = node->parent->node; nodeup; nodeup = nodeup->parent->node)
                     check_c(node->taxoni, nodeup->taxoni);
         swap(t1, t2);
         return make_pair(c1, c2);
