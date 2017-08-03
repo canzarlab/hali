@@ -1,7 +1,7 @@
 CXX = g++
 CFLAGS = -O2 -std=c++11
 INCL = -I Eigen
-BINARIES = solver filter bgen
+BINARIES = solver filter bgen conflicts
 GENO_OBJS = main.o geno/augmentedLagrangian.o geno/lbfgsb.o geno/lineSearch.o
 TEST_BINARIES = 
 HEADERS = 
@@ -29,4 +29,7 @@ filter: filter.o
 	$(CXX) -o $@ $^ $(CFLAGS)
 
 bgen: generator.o newick.o
+	$(CXX) -o $@ $^ $(CFLAGS)
+
+conflicts: conflicts.o newick.o
 	$(CXX) -o $@ $^ $(CFLAGS)
