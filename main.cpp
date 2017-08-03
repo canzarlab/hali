@@ -276,19 +276,19 @@ public:
     }
 
 private:
-    double& GetDP(newick_node* nodel, newick_node* noder)
+    double& GetDP(newick_node* nodel, newick_node* noder, bool s = false)
     {
-        return DP[nodel->taxoni][noder->taxoni];
+        return s ? DP[noder->taxoni][nodel->taxoni] : DP[nodel->taxoni][noder->taxoni];
     }
 
     template <class F>
-    pair<newick_node*, double> GetMaxPC(newick_node* nodel, newick_node* noder, F f)
+    pair<newick_node*, double> GetMaxPC(newick_node* nodel, newick_node* noder, F f, bool s)
     {
         double mx = 0;
         newick_node* mc = nullptr;
         for (newick_child* pc = f(noder); pc; pc = pc->next)
         {
-            double cw = GetDP(nodel, pc->node);
+            double cw = GetDP(nodel, pc->node, s);
             if (cw >= mx)
             {
                 mx = cw;
@@ -300,12 +300,12 @@ private:
 
     pair<newick_node*, double> GetMaxChild(newick_node* nodel, newick_node* noder)
     {
-        return GetMaxPC(nodel, noder, [](newick_node* n){return n->child;});
+        return GetMaxPC(nodel, noder, [](newick_node* n){return n->child;}, false);
     }
 
     pair<newick_node*, double> GetMaxParent(newick_node* nodel, newick_node* noder)
     {
-        return GetMaxPC(nodel, noder, [](newick_node* n){return n->parent;});
+        return GetMaxPC(nodel, noder, [](newick_node* n){return n->parent;}, true);
     }
 
     void DFSLeft(newick_node* node)
