@@ -1,5 +1,5 @@
 #include "PhylogeneticTree.h"
-#include "Timer.h" 
+#include "Timer.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -15,7 +15,6 @@ Scalar const INF = numeric_limits<Scalar>::infinity();
 
 // declares a column-major sparse matrix type of double
 typedef Eigen::SparseMatrix<Scalar> SpMat;
-typedef PhylogeneticTree Tree;
 typedef Eigen::Triplet<double> ET;
 typedef vector<vector<double> > DPT;
 typedef vector<pair<newick_node*, newick_node*> > VPN;
@@ -31,7 +30,7 @@ class SimpleJRF : public GenoNLP
         : _A(A), _b(b), _c(c), _x(x), _y(y), _n(A.cols()), _m(A.rows())
      {
      }
-                                                
+
 
     virtual bool getInfo(Index& n, Index& m)
     {
@@ -50,15 +49,15 @@ class SimpleJRF : public GenoNLP
         Vector::MapType(ub, _n) = Vector::Constant(_n, INF);
         return true;
     }
- 
-/*    virtual bool getBoundsConstraints(Scalar* cl, Scalar* cu) 
+
+/*    virtual bool getBoundsConstraints(Scalar* cl, Scalar* cu)
     {
         // we have equality constraints here
         Vector::MapType(cl, _m) = _b;
         Vector::MapType(cu, _m) = Vector::Constant(_m, INF);
         return true;
     };
-*/  
+*/
     virtual bool getStartingPoint(Scalar* x)
     {
 //        Vector::MapType(x, _n) = Vector::Zero(_n);
@@ -66,7 +65,7 @@ class SimpleJRF : public GenoNLP
         return true;
     }
 
-    virtual bool getStartingPointDual(Scalar* y) 
+    virtual bool getStartingPointDual(Scalar* y)
     {
 //        Vector::MapType(y, _m) = Vector::Zero(_m);
         Vector::MapType(y, _m) = _y;
@@ -92,7 +91,7 @@ class SimpleJRF : public GenoNLP
         constraintValues = _A * x;
         return true;
     }
-  
+
     virtual bool gradientConstraintsTimesVector(const Scalar* variablesPtr,
                                                 const Scalar* dualVariablesPtr,
                                                 Scalar* gradientPtr)
@@ -103,7 +102,7 @@ class SimpleJRF : public GenoNLP
         gradient = _A.transpose() * y;
         return true;
     }
-  
+
 protected:
     const SpMat& _A;
     const Vector& _b;
@@ -117,10 +116,10 @@ protected:
 class CoveringJRF : public SimpleJRF
 {
  public:
-    CoveringJRF(const SpMat& A, 
-                const Vector& b, 
-                const Vector& c, 
-                Vector& x, 
+    CoveringJRF(const SpMat& A,
+                const Vector& b,
+                const Vector& c,
+                Vector& x,
                 Vector& y): SimpleJRF(A, b, c, x, y) { }
     bool getBoundsConstraints(Scalar* cl, Scalar* cu) override
     {
@@ -128,18 +127,18 @@ class CoveringJRF : public SimpleJRF
         Vector::MapType(cl, _m) = _b;
         Vector::MapType(cu, _m) = Vector::Constant(_m, INF);
         return true;
-    } 
-     
+    }
+
 };
 
 
 class PackingJRF : public SimpleJRF
 {
  public:
-    PackingJRF(const SpMat& A, 
-                const Vector& b, 
-                const Vector& c, 
-                Vector& x, 
+    PackingJRF(const SpMat& A,
+                const Vector& b,
+                const Vector& c,
+                Vector& x,
                 Vector& y): SimpleJRF(A, b, c, x, y) { }
     bool getBoundsConstraints(Scalar* cl, Scalar* cu) override
     {
@@ -147,7 +146,7 @@ class PackingJRF : public SimpleJRF
         Vector::MapType(cu, _m) = _b;
         Vector::MapType(cl, _m) = Vector::Constant(_m, -INF);
         return true;
-    } 
+    }
 };
 
 
@@ -159,12 +158,12 @@ class PackingJRF : public SimpleJRF
 */
 class IntegerPackingJRF : public SimpleJRF {
  public:
-     IntegerPackingJRF(const SpMat& A, 
+     IntegerPackingJRF(const SpMat& A,
                        const Vector& b,
                        const Vector& c,
-                       Vector& x, 
+                       Vector& x,
                        Vector& y) : SimpleJRF(A,b,c,x,y){ _m += _n; }
-                       
+
      bool getBoundsConstraints(Scalar* cl, Scalar* cu) override
      {
          Vector::MapType cLower = Vector::MapType(cl, _m);
@@ -172,7 +171,7 @@ class IntegerPackingJRF : public SimpleJRF {
          cLower.head(_n) = Vector::Zero(_n);
          cUpper.head(_n) = Vector::Zero(_n);
          cUpper.tail(_A.rows()) = _b;
-         cLower.tail(_A.rows()) = Vector::Constant(_A.rows(), -INF);    
+         cLower.tail(_A.rows()) = Vector::Constant(_A.rows(), -INF);
          return true;
      }
      bool functionValueConstraints(const Scalar* variablesPtr,
@@ -196,14 +195,14 @@ class IntegerPackingJRF : public SimpleJRF {
            gradient += _A.transpose() * y.tail(_A.rows());
            return true;
        }
-      
-};                                   
+
+};
 
 
 class Constraint
 {
 public:
-    Constraint(Tree& t1, Tree& t2, vector<vector<int> >& K, Vector& x, bool swp) : t1(t1), t2(t2), K(K), x(x), swp(swp)
+    Constraint(Graph& t1, Graph& t2, vector<vector<int> >& K, Vector& x, bool swp) : t1(t1), t2(t2), K(K), x(x), swp(swp)
     {
     }
 
@@ -230,7 +229,7 @@ protected:
     {
         if (sum - EPS <= 1.0)
             return false;
-        
+
         for (auto k : P)
         {
             int col = GetCol(k.first, k.second);
@@ -240,8 +239,7 @@ protected:
         return true;
     }
 
-    Tree& t1;
-    Tree& t2;
+    Graph &t1, &t2;
     vector<vector<int> >& K;
     Vector& x;
     bool swp;
@@ -250,7 +248,7 @@ protected:
 class CrossingConstraint : Constraint
 {
 public:
-    CrossingConstraint(Tree& t1, Tree& t2, vector<vector<int> >& K, Vector& x, bool swp) : Constraint(t1, t2, K, x, swp)
+    CrossingConstraint(Graph& t1, Graph& t2, vector<vector<int> >& K, Vector& x, bool swp) : Constraint(t1, t2, K, x, swp)
     {
         DP.resize(t1.GetNumNodes());
         PA.resize(t1.GetNumNodes());
@@ -361,13 +359,13 @@ private:
     vector<int> PA;
     DPT DP;
 };
-/*
+
 class IndependentSetConstraint : Constraint
 {
     typedef list<newick_node*> LN;
     typedef pair<double, LN> dLN;
 public:
-    IndependentSetConstraint(Tree& t1, Tree& t2, vector<vector<int> >& K, Vector& x, bool swp) : Constraint(t1, t2, K, x, swp)
+    IndependentSetConstraint(Graph& t1, Graph& t2, vector<vector<int> >& K, Vector& x, bool swp) : Constraint(t1, t2, K, x, swp)
     {
     }
 
@@ -379,7 +377,7 @@ public:
             dLN L = DFSRight(node, t2.GetRoot());
             VPN P;
             for (newick_node* noder : L.second)
-                for (newick_node* nodel = node; nodel; nodel = nodel->parent)
+                for (newick_node* nodel = node; nodel; nodel = nodel->parent->node)
                     P.emplace_back(nodel, noder);
 
             if (AddConstraint(Triplets, nr_rows + ncr, P, L.first))
@@ -391,14 +389,14 @@ public:
 private:
     double PathSum(newick_node* nodel, newick_node* noder)
     {
-        return nodel ? GetWeight(nodel, noder) + PathSum(nodel->parent, noder) : 0;
+        return nodel ? GetWeight(nodel, noder) + PathSum(nodel->parent->node, noder) : 0;
     }
-    
+
     dLN DFSRight(newick_node* nodel, newick_node* noder)
     {
         double w = PathSum(nodel, noder), sum = 0;
         LN V;
-        
+
         for (newick_child* child = noder->child; child; child = child->next)
         {
             double ww;
@@ -407,17 +405,17 @@ private:
             sum += ww;
             V.splice(V.begin(), T);
         }
-        
+
         if (sum > w)
             return make_pair(sum, V);
         return make_pair(w, LN(1, noder));
     }
 };
-*/
+
 class LP
 {
 public:
-    LP(const char* p1, const char* p2, string d, double k) : d(d), t1(p1), t2(p2), c(t1.GetNumNodes() * t2.GetNumNodes()), nr_rows(0), nr_cols(0), k(k)
+    LP(Graph& t1, Graph& t2, string d, double k) : d(d), t1(t1), t2(t2), c(t1.GetNumNodes() * t2.GetNumNodes()), nr_rows(0), nr_cols(0), k(k)
     {
         K.resize(t1.GetNumNodes());
         for (auto& v : K)
@@ -427,11 +425,12 @@ public:
     ~LP()
     {
     }
-    
+
     void MatchingConstraints()
     {
         cnt = 0;
-        DFSLeft(t1.GetRoot());
+        vector<bool> P(t1.GetNumNodes());
+        DFSLeft(t1.GetRoot(), P);
         int n = t1.GetNumNodes(), m = t2.GetNumNodes();
         nr_rows = n + m;
         nr_cols = n * m - cnt;
@@ -450,7 +449,7 @@ public:
         nr_rows += cc21.AddTriplets(Triplets, nr_rows);
         return nr_rows - row_old;
     }
-/*
+
     int IndependentSetConstraints()
     {
         int row_old = nr_rows;
@@ -460,12 +459,12 @@ public:
         nr_rows += isc21.AddTriplets(Triplets, nr_rows);
         return nr_rows - row_old;
     }
-*/
+
     void Solve()
     {
-        clog << "nr_rows = " << nr_rows << " and nr_cols = " << nr_cols << endl;        
+        clog << "nr_rows = " << nr_rows << " and nr_cols = " << nr_cols << endl;
         warm_y.conservativeResizeLike(Vector::Zero(nr_rows)); // resizes y with 0's, but keeping old values intact.
-        
+
         SpMat A(nr_rows, nr_cols);
         A.setFromTriplets(Triplets.begin(), Triplets.end());
         SpMat A_t = A.transpose();
@@ -475,7 +474,7 @@ public:
         y = Vector::Zero(nr_rows);
 
 //        CoveringJRF simpleJRF(A_t, c, b, warm_y, warm_x);
-        
+
         Vector c1 = -c;
         PackingJRF simpleJRF(A, b, c1, x, y);
         AugmentedLagrangian solver(simpleJRF, 15);
@@ -488,7 +487,7 @@ public:
         timeGeno.stop();
 
         clog << "f = " << solver.f() << " computed in time: " << timeGeno.secs() << " secs" << endl;
-       
+
         /* when Packing: x->x, y->y, when Covering: -y -> x, x -> y */
         //x = -Vector::ConstMapType(solver.y(), nr_cols);
         //y = Vector::ConstMapType(solver.x(), nr_rows);
@@ -498,8 +497,8 @@ public:
 /*
         warm_x = Vector::ConstMapType(solver.y(), nr_cols);
         warm_y = Vector::ConstMapType(solver.x(), nr_rows);
-        
-        
+
+
         Vector t = A_t*y-c;
         int nr_tight_constr =  nr_cols - (t.array() > 0.1).count();
         clog << "Number of tight constraints in the dual: " << nr_tight_constr << endl;
@@ -520,7 +519,7 @@ public:
                 truncx(truncA_col) = x(i);
                 truncA_col ++;
             }
-            
+
         assert(truncA_col == nr_tight_constr);
 
         clog << "Truncated matrix formed ... resolve" << endl;
@@ -536,8 +535,8 @@ public:
         solver1.solve();
         timeGeno1.stop();
         clog << "trunc f = " << solver1.f() << " computed in time: " << timeGeno1.secs() << " secs" << endl;
-        
-        // map the solution back to vector x       
+
+        // map the solution back to vector x
         truncx = Vector::ConstMapType(solver1.x(), nr_tight_constr);
         clog <<"MAX INTEGER PACKING VALUE: " <<  truncx.maxCoeff() << endl;
         truncA_col = 0;
@@ -546,7 +545,7 @@ public:
                 x(i) = truncx(truncA_col);
                 truncA_col++;
             }
-            
+
             assert(truncA_col == nr_tight_constr);
 */
     }
@@ -583,15 +582,21 @@ public:
     }
 
 private:
-    void DFSLeft(newick_node* node)
+    void DFSLeft(newick_node* node, vector<bool>& P)
     {
-        DFSRight(node, t2.GetRoot());
+        P[node->taxoni] = true;
+        {
+            vector<bool> Q(t2.GetNumNodes());
+            DFSRight(node, t2.GetRoot(), Q);
+        }
         for (newick_child* child = node->child; child; child = child->next)
-            DFSLeft(child->node);
+            if (!P[child->node->taxoni])
+                DFSLeft(child->node, P);
     }
 
-    void DFSRight(newick_node* nodel, newick_node* noder)
+    void DFSRight(newick_node* nodel, newick_node* noder, vector<bool>& Q)
     {
+        Q[noder->taxoni] = true;
         int i = nodel->taxoni, j = noder->taxoni;
         if (nodel->parent && nodel->child && noder->parent && noder->child)
         {
@@ -623,7 +628,8 @@ private:
         }
 
         for (newick_child* child = noder->child; child; child = child->next)
-            DFSRight(nodel, child->node);
+            if (!Q[child->node->taxoni])
+                DFSRight(nodel, child->node, Q);
     }
 
     int cnt;
@@ -661,39 +667,49 @@ private:
     double k;
     string d;
     vector<ET> Triplets;
-    Vector x;
-    Vector y;
-    // backup x->warm_x and y->warm_y for two consecutive iterations 
-    Vector warm_x;
-    Vector warm_y;
+    Vector x, y;
+    // backup x->warm_x and y->warm_y for two consecutive iterations
+    Vector warm_x, warm_y;
     vector<vector<int> > K;
-    Tree t1, t2;
+    Graph &t1, &t2;
     Vector c;
     int nr_rows, nr_cols;
 };
 
 int main(int argc, char** argv)
 {
-    if (argc < 3 || argc > 6)
+    Graph *t1, *t2;
+    if (argc == 6)
     {
-        clog << "usage: " << argv[0] << " <filename.newick> <filename.newick> [c] [d] [k]" << endl;
+        t1 = new Tree(argv[1]);
+        t2 = new Tree(argv[2]);
+    }
+    else if (argc == 8)
+    {
+        t1 = new DAG(argv[1], argv[2], true);
+        t2 = new DAG(argv[3], argv[4], false);
+    }
+    else
+    {
+        cout << "tree usage: " << argv[0] << " <filename.newick> <filename.newick> <c> <d> <k>" << endl;
+        cout << "dag usage: " << argv[0] << " <yeastnet> <mapping> <precollapse> <mapping> <c> <d> <k>" << endl;
         return EXIT_FAILURE;
     }
-    int c = (argc < 4) ? 2 : stoi(argv[3]);
+    int c = stoi(argv[argc - 3]);
+    string d = argv[argc - 2];
+    double k = stod(argv[argc - 1]);
     assert(c >= 0 && c <= 2);
-    string d = (argc < 5) ? "j" : argv[4];
     assert(d == "j" || d == "s");
-    double k = (argc < 6) ? 1 : stod(argv[5]);
 
     clog << "Comparing trees " << argv[1] << " " << argv[2] << endl;
 
-    LP lp(argv[1], argv[2], d, k);
+    LP lp(*t1, *t2, d, k);
     lp.MatchingConstraints();
     int cnt = 1, i;
     Timer T;
     T.start();
     for (i = 0; cnt; i++)
-    {        
+    {
         Timer T_lp, T_cross, T_indep;
         T_lp.start();
         lp.Solve();
@@ -706,7 +722,7 @@ int main(int argc, char** argv)
         cnt = lp.CrossingConstraints();
         T_cross.stop();
         clog << ">>> Time for crossing constraints: \t\t" << T_cross.secs() << " secs" << endl;
-/*
+
         if (c == 2)
         {
             T_indep.start();
@@ -714,13 +730,13 @@ int main(int argc, char** argv)
             T_indep.stop();
             clog << ">>> Time for independent set constraints: \t\t" << T_indep.secs() << " secs" << endl;
         }
-*/
-        clog << "Added " << cnt << " rows." << endl;        
+
+        clog << "Added " << cnt << " rows." << endl;
     }
     T.stop();
     clog << "Done comparing trees " << argv[1] << " " << argv[2] << endl;
     clog << "TOTAL TIME : \t\t" << T.secs() << " secs" << endl;
     clog << "Total number of iterations: " <<  i + 1 << endl;
-    
+
     lp.WriteSolution("yeastnet_precollapse.solution");
 }
