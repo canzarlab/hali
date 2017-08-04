@@ -377,7 +377,7 @@ public:
             dLN L = DFSRight(node, t2.GetRoot());
             VPN P;
             for (newick_node* noder : L.second)
-                for (newick_node* nodel = node; nodel; nodel = nodel->parent->node)
+                for (newick_node* nodel = node; nodel; nodel = nodel->parent ? nodel->parent->node : nullptr)
                     P.emplace_back(nodel, noder);
 
             if (AddConstraint(Triplets, nr_rows + ncr, P, L.first))
@@ -389,7 +389,7 @@ public:
 private:
     double PathSum(newick_node* nodel, newick_node* noder)
     {
-        return nodel ? GetWeight(nodel, noder) + PathSum(nodel->parent->node, noder) : 0;
+        return nodel ? GetWeight(nodel, noder) + PathSum(nodel->parent ? nodel->parent->node : nullptr, noder) : 0;
     }
 
     dLN DFSRight(newick_node* nodel, newick_node* noder)
