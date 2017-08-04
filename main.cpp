@@ -415,7 +415,7 @@ private:
 class LP
 {
 public:
-    LP(Graph& t1, Graph& t2, string d, double k) : d(d), t1(t1), t2(t2), c(t1.GetNumNodes() * t2.GetNumNodes()), nr_rows(0), nr_cols(0), k(k)
+    LP(Graph& t1, Graph& t2, string d, double k, bool dag) : d(d), t1(t1), t2(t2), c(t1.GetNumNodes() * t2.GetNumNodes()), nr_rows(0), nr_cols(0), k(k), dag(dag)
     {
         K.resize(t1.GetNumNodes());
         for (auto& v : K)
@@ -594,7 +594,7 @@ private:
     {
         Q[noder->taxoni] = true;
         int i = nodel->taxoni, j = noder->taxoni;
-        if (nodel->parent && nodel->child && noder->parent && noder->child)
+        if (dag || (nodel->parent && nodel->child && noder->parent && noder->child))
         {
             double w = 0;
             if (d == "j")
@@ -670,10 +670,12 @@ private:
     Graph &t1, &t2;
     Vector c;
     int nr_rows, nr_cols;
+    bool dag;
 };
 
 int main(int argc, char** argv)
 {
+    bool dag = false;
     Graph *t1, *t2;
     if (argc == 6)
     {
@@ -684,6 +686,7 @@ int main(int argc, char** argv)
     {
         t1 = new DAG(argv[1], argv[2], true);
         t2 = new DAG(argv[3], argv[4], false);
+        dag = true;
     }
     else
     {
@@ -699,7 +702,7 @@ int main(int argc, char** argv)
 
     clog << "Comparing trees " << argv[1] << " " << argv[2] << endl;
 
-    LP lp(*t1, *t2, d, k);
+    LP lp(*t1, *t2, d, k, dag);
     lp.MatchingConstraints();
     int cnt = 1, i;
     Timer T;
