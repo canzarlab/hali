@@ -2,6 +2,7 @@
 #define NEWICK_H
 
 #include <string>
+#include <map>
 using namespace std;
 
 struct newick_node;
@@ -29,7 +30,10 @@ struct newick_node
     newick_parent* parent;
 };
 
+typedef map<string, newick_node*> msn;
+
 newick_node* load_tree(const char* filename);
+newick_node* load_dag(const char* f1, bool y, msn& M);
 void print_tree(newick_node* root, ostream& file);
 
 #endif

@@ -36,9 +36,6 @@ class DAG : public Graph
 public:
     DAG(const char* f1, const char* f2, bool y);
     ~DAG() { }
-
-private:
-    newick_node* load_dag(const string& r, msn& M, msvs& C);
 };
 
 class Tree : public Graph

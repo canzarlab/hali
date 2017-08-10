@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <set>
 #include <fstream>
 #include <utility>
 #include <tuple>
@@ -64,40 +65,114 @@ private:
     }
 };
 
-class tree
+class graph
 {
+protected:
     vector<newick_node*> nodes;
     newick_node* root;
-    segtree* seg;
-    vi L, E, H;
-    int size, ntax, idx;
+    int size, ntax;
 public:
     vector<newick_node*> leaves;
     vi matches;
 
-    tree(newick_node* root) :
+    graph(newick_node* root) :
         root(root),
         size(0),
-        ntax(1),
-        idx(0)
+        ntax(1)
     {
         init1(root);
         nodes.resize(size);
         matches.resize(size, -1);
-        L.resize(2 * size);
-        E.resize(2 * size);
-        H.resize(size, -1);
+    }
+
+    virtual void init()
+    {
         leaves.reserve(ntax - 1);
         root->taxoni = 0;
-        root->taxon = "0";
+        //root->taxon = "0";
         init2(root, 0);
-        seg = new segtree(L);
+    }
+
+    virtual ~graph()
+    {
+        delete root;
+    }
+
+    int get_size() const
+    {
+        return size;
+    }
+
+protected:
+    virtual void pre(newick_node* node, int depth) = 0;
+    virtual void post(newick_node* node, newick_node* child, int depth) = 0;
+
+private:
+    void init1(newick_node* node)
+    {
+        size++;
+        if (!node->child)
+            ntax++;
+
+        for (newick_child* child = node->child; child; child = child->next)
+        {
+            newick_node* cnode = child->node;
+            newick_parent** parentptr = &cnode->parent;
+            if (!cnode->parent)
+                init1(cnode);
+
+            while (*parentptr) parentptr = &(*parentptr)->next;
+            *parentptr = new newick_parent(node);
+        }
+    }
+
+    void init2(newick_node* node, int depth)
+    {
+        if (node->taxoni >= 0 && nodes[node->taxoni])
+            return;
+
+        if (node->taxoni == -1)
+        {
+            nodes[node->taxoni = ntax++] = node;
+            //node->taxon = to_string(node->taxoni);
+        }
+        else
+            nodes[node->taxoni] = node;
+
+        if (!node->child)
+            leaves.push_back(node);
+
+        pre(node, depth);
+        for (newick_child* child = node->child; child; child = child->next)
+        {
+            init2(child->node, depth + 1);
+            post(node, child->node, depth);
+        }
+    }
+};
+
+class tree : public graph
+{
+    segtree* seg;
+    vi L, E, H;
+    int idx;
+public:
+    tree(newick_node* root) : graph(root), idx(0)
+    {
     }
 
     ~tree()
     {
         delete seg;
-        delete root;
+    }
+
+    virtual void init()
+    {
+        L.resize(2 * size);
+        E.resize(2 * size);
+        H.resize(size, -1);
+        graph::init();
+        seg = new segtree(L);
     }
 
     int lca(int p, int q)
@@ -113,75 +188,64 @@ public:
         return lca(v[i], lca(v, i + 1));
     }
 
-private:
-    void init1(newick_node* node)
+protected:
+    virtual void pre(newick_node* node, int depth)
     {
-        size++;
-        if (!node->child)
-            ntax++;
-
-        for (newick_child* child = node->child; child; child = child->next)
-        {
-            child->node->parent->node = node;
-            init1(child->node);
-        }
-    }
-
-    void init2(newick_node* node, int depth)
-    {
-        if (node->taxoni == -1)
-        {
-            nodes[node->taxoni = ntax++] = node;
-            node->taxon = to_string(node->taxoni);
-        }
-        else
-            nodes[node->taxoni] = node;
-
-        if (!node->child)
-            leaves.push_back(node);
-
         H[node->taxoni] = idx;
         E[idx] = node->taxoni;
         L[idx++] = depth;
-        for (newick_child* child = node->child; child; child = child->next)
-        {
-            init2(child->node, depth + 1);
-            E[idx] = node->taxoni;
-            L[idx++] = depth;
-        }
+    }
+
+    virtual void post(newick_node* node, newick_node* child, int depth)
+    {
+        E[idx] = node->taxoni;
+        L[idx++] = depth;
+    }
+};
+
+class dag : public graph
+{
+    vector<set<int> > D;
+public:
+    dag(newick_node* root) : graph(root)
+    {
+    }
+
+    virtual void init()
+    {
+        ntax = 1;
+        graph::init();
+    }
+
+    bool dsc(int p, int q)
+    {
+        return D[q].find(p) != D[q].end();
+    }
+
+protected:
+    virtual void pre(newick_node* node, int depth)
+    {
+    }
+
+    virtual void post(newick_node* node, newick_node* child, int depth)
+    {
+        set<int>& cr = D[child->taxoni];
+        D[node->taxoni].insert(cr.begin(), cr.end());
+        D[node->taxoni].insert(child->taxoni);
     }
 };
 
 class cc
 {
-    tree *t1, *t2;
+protected:
+    graph *t1, *t2;
     int c1, c2;
-public:    
-    // TODO: n should probaby be number of aligns in file so we do a batch comparison instead of this
-    cc(const char* fn1, const char* fn2, const char* fn3, int n) :
-        t1(new tree(load_tree(fn1))),
-        t2(new tree(load_tree(fn2)))
+public:
+    cc(graph* t1, graph* t2) : t1(t1), t2(t2)
     {
-        string in;
-        ifstream f(fn3);
-        for (int i = 0; i < n; ++i)
-            while (getline(f, in) && in != "-----------------");
-
-        for (int i = 0; i < 5; ++i)
-            getline(f, in);
-
-        while (f && f.peek() != '-')
-        {
-            int l = t1->lca(get_cluster(f));
-            int r = t2->lca(get_cluster(f));
-            t1->matches[l] = r;
-            t2->matches[r] = l;
-            getline(f, in);
-            getline(f, in);
-        }
     }
 
-    ~cc()
+    virtual ~cc()
     {
         delete t1;
         delete t2;
@@ -199,27 +263,79 @@ private:
     ii get_c_i()
     {
         c1 = c2 = 0;
+        vector<bool> C(t1->get_size());
         for (newick_node* leaf : t1->leaves)
-            for (newick_node* node = leaf; node->parent->node; node = node->parent->node)
-                for (newick_node* nodeup = node->parent->node; nodeup; nodeup = nodeup->parent->node)
-                    check_c(node->taxoni, nodeup->taxoni);
+            dfs_c_i(leaf, leaf, C);
         swap(t1, t2);
         return make_pair(c1, c2);
     }
 
-    void check_c(int p, int q)
+    void dfs_c_i(newick_node* node, newick_node* rnode, vector<bool>& C)
+    {
+        if (node != rnode)
+            check_c(node->taxoni, rnode->taxoni);
+        else
+            C[node->taxoni] = true;
+
+        for (newick_parent* parent = node->parent; parent; parent = parent->next)
+        {
+            newick_node* pn = parent->node;
+            dfs_c_i(pn, rnode, C);
+            if (!C[pn->taxoni])
+                dfs_c_i(pn, pn, C);
+        }
+    }
+
+    virtual void check_c(int p, int q) = 0;
+};
+
+class cct : public cc
+{
+public:
+    // TODO: n should probaby be number of aligns in file so we do a batch comparison instead of this
+    cct(const char* fn1, const char* fn2, const char* fn3, int n) :
+        cc(new tree(load_tree(fn1)), new tree(load_tree(fn2)))
+    {
+        t1->init();
+        t2->init();
+        string in;
+        ifstream f(fn3);
+        for (int i = 0; i < n; ++i)
+            while (getline(f, in) && in != "-----------------");
+
+        for (int i = 0; i < 5; ++i)
+            getline(f, in);
+
+        tree* t1 = (tree*)this->t1;
+        tree* t2 = (tree*)this->t2;
+        while (f && f.peek() != '-')
+        {
+            int l = t1->lca(get_cluster(f));
+            int r = t2->lca(get_cluster(f));
+            t1->matches[l] = r;
+            t2->matches[r] = l;
+            getline(f, in);
+            getline(f, in);
+        }
+    }
+
+protected:
+    virtual void check_c(int p, int q)
     {
         int mp = t1->matches[p];
         int mq = t1->matches[q];
         if (mp == -1 || mq == -1)
             return;
 
+        tree* t1 = (tree*)this->t1;
+        tree* t2 = (tree*)this->t2;
         int lp = t1->lca(p, q);
         int rp = t2->lca(mp, mq);
         if (rp != mp && rp != mq) c2++;
         else if (t1->matches[lp] != rp) c1++;
     }
 
+private:
     vi get_cluster(ifstream& file)
     {
         vi v;
@@ -236,14 +352,55 @@ private:
     }
 };
 
+class ccd : public cc
+{
+    msn A, B;
+public:
+    ccd(const char* fn1, const char* fn2, const char* fn3, const char* fn4, const char* fn5) :
+        cc(new dag(load_dag(fn1, true, A)), new dag(load_dag(fn3, false, B)))
+    {
+        t1->init();
+        t2->init();
+        ifstream f(fn5);
+        string a, b;
+        float p;
+        while (f >> a >> b >> p)
+        {
+            int l = A[a]->taxoni;
+            int r = B[b]->taxoni;
+            t1->matches[l] = r;
+            t2->matches[r] = l;
+        }
+    }
+
+    virtual void check_c(int p, int q)
+    {
+        int mp = t1->matches[p];
+        int mq = t1->matches[q];
+        if (mp == -1 || mq == -1)
+            return;
+
+        dag* t1 = (dag*)this->t1;
+        dag* t2 = (dag*)this->t2;
+        if (!t2->dsc(mp, mq) && !t2->dsc(mq, mp))
+            c2++;
+        else if (t1->dsc(q, p) == t2->dsc(mp, mq))
+            c1++;
+    }
+};
+
 int main(int argc, char** argv)
 {
-    if (argc != 5)
+    int c1, c2;
+    if (argc != 5 && argc != 6)
     {
-        cout << "usage " << argv[0] << " <t1.newick> <t2.newick> <align> <n>\n";
+        cout << "tree usage " << argv[0] << " <t1.newick> <t2.newick> <align> <n>" << endl;
+        cout << "dag usage: " << argv[0] << " <yeastnet> <mapping> <precollapse> <mapping> <align>" << endl;
         return EXIT_FAILURE;
     }
-    int c1, c2;
-    tie(c1, c2) = cc(argv[1], argv[2], argv[3], stoi(argv[4])).get_c();
-    cout << c1 << " " << c2 << '\n';
+    else if (argc == 5)
+        tie(c1, c2) = cct(argv[1], argv[2], argv[3], stoi(argv[4])).get_c();
+    else
+        tie(c1, c2) = ccd(argv[1], argv[2], argv[3], argv[4], argv[5]).get_c();
+    cout << c1 << " " << c2 << "\n";
 }
