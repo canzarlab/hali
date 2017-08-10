@@ -1,6 +1,6 @@
 CXX = g++
 CFLAGS = -O2 -std=c++11
-INCL = -I Eigen
+INCL = 
 BINARIES = solver filter bgen conflicts
 GENO_OBJS = main.o geno/augmentedLagrangian.o geno/lbfgsb.o geno/lineSearch.o
 TEST_BINARIES = 

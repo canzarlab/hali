@@ -4,8 +4,8 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
-#include <Eigen/Dense>
-#include <Eigen/Sparse>
+#include "Eigen/Dense"
+#include "Eigen/Sparse"
 #include <queue>
 #include "geno/genoNLP.hpp"
 #include "geno/augmentedLagrangian.hpp"
