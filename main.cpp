@@ -4,6 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
+#include <algorithm>
 #include "Eigen/Dense"
 #include "Eigen/Sparse"
 #include <queue>
@@ -16,8 +17,12 @@ Scalar const INF = numeric_limits<Scalar>::infinity();
 // declares a column-major sparse matrix type of double
 typedef Eigen::SparseMatrix<Scalar> SpMat;
 typedef Eigen::Triplet<double> ET;
-typedef vector<vector<double> > DPT;
 typedef vector<pair<newick_node*, newick_node*> > VPN;
+typedef vector<int> vi;
+typedef vector<vi> vvi;
+typedef vector<double> vd;
+typedef vector<vd> vvd;
+typedef vector<bool> vb;
 
 class SimpleJRF : public GenoNLP
 {
@@ -202,7 +207,7 @@ class IntegerPackingJRF : public SimpleJRF {
 class Constraint
 {
 public:
-    Constraint(Graph& t1, Graph& t2, vector<vector<int> >& K, Vector& x, bool swp) : t1(t1), t2(t2), K(K), x(x), swp(swp)
+    Constraint(Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp) : t1(t1), t2(t2), K(K), x(x), swp(swp)
     {
     }
 
@@ -225,22 +230,18 @@ protected:
         return in == -1 ? 0 : x(in);
     }
 
-    bool AddConstraint(vector<ET>& Triplets, int row, VPN& P, double sum)
+    void AddConstraint(vector<ET>& Triplets, int row, VPN& P)
     {
-        if (sum - EPS <= 1.0)
-            return false;
-
         for (auto k : P)
         {
             int col = GetCol(k.first, k.second);
             if (col != -1)
                 Triplets.push_back(ET(row, col, 1.));
         }
-        return true;
     }
 
     Graph &t1, &t2;
-    vector<vector<int> >& K;
+    vvi& K;
     Vector& x;
     bool swp;
 };
@@ -248,7 +249,7 @@ protected:
 class CrossingConstraint : Constraint
 {
 public:
-    CrossingConstraint(Graph& t1, Graph& t2, vector<vector<int> >& K, Vector& x, bool swp) : Constraint(t1, t2, K, x, swp)
+    CrossingConstraint(Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp) : Constraint(t1, t2, K, x, swp)
     {
         DP.resize(t1.GetNumNodes());
         PA.resize(t1.GetNumNodes());
@@ -269,8 +270,8 @@ public:
             for (auto k : P)
                 sum += GetWeight(k.first, k.second);
 
-            if (AddConstraint(Triplets, nr_rows + ncr, P, sum))
-                ncr++;
+            if (sum - EPS > 1)
+                AddConstraint(Triplets, nr_rows + ncr, P), ncr++;
         }
         return ncr;
     }
@@ -356,8 +357,8 @@ private:
             assert(!parent && !child);
     }
 
-    vector<int> PA;
-    DPT DP;
+    vi PA;
+    vvd DP;
 };
 
 class IndependentSetConstraint : Constraint
@@ -365,23 +366,27 @@ class IndependentSetConstraint : Constraint
     typedef list<newick_node*> LN;
     typedef pair<double, LN> dLN;
 public:
-    IndependentSetConstraint(Graph& t1, Graph& t2, vector<vector<int> >& K, Vector& x, bool swp) : Constraint(t1, t2, K, x, swp)
+    IndependentSetConstraint(Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp) : Constraint(t1, t2, K, x, swp)
     {
     }
 
     int AddTriplets(vector<ET>& Triplets, int nr_rows)
     {
         int ncr = 0;
-        for (auto node : t1.L)
+        for (newick_node* node : t1.L)
         {
             dLN L = DFSRight(node, t2.GetRoot());
+
+            if (L.first - EPS <= 1)
+                continue;
+
             VPN P;
             for (newick_node* noder : L.second)
                 for (newick_node* nodel = node; nodel; nodel = nodel->parent ? nodel->parent->node : nullptr)
                     P.emplace_back(nodel, noder);
 
-            if (AddConstraint(Triplets, nr_rows + ncr, P, L.first))
-                ++ncr;
+            AddConstraint(Triplets, nr_rows + ncr, P);
+            ++ncr;
         }
         return ncr;
     }
@@ -412,6 +417,150 @@ private:
     }
 };
 
+class AntichainConstraint : Constraint
+{
+public:
+    AntichainConstraint(Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp) : Constraint(t1, t2, K, x, swp)
+    {
+        Z = t2.GetNumNodes();
+        SZ = Z * 2 + 2;
+        S = SZ - 2;
+        T = SZ - 1;
+    }
+
+    int AddTriplets(vector<ET>& Triplets, int nr_rows)
+    {
+        ncr = 0;
+        this->nr_rows = nr_rows;
+        this->Triplets = &Triplets;
+        for (newick_node* leaf : t1.L)
+            DFSLeft(leaf);
+        return ncr;
+    }
+
+private:
+    void DFSLeft(newick_node* node)
+    {
+        P.push_back(node);
+        if (!node->parent)
+            Antichain();
+        for (newick_parent* parent = node->parent; parent; parent = parent->next)
+            DFSLeft(parent->node);
+        P.pop_back();
+    }
+
+    double DFSRight(newick_node* node, vvd& R, vb& C, vvi& G)
+    {
+        C[node->taxoni] = true;
+        int i = node->taxoni;
+        G[S].push_back(i);
+        G[i].push_back(S);
+        G[T].push_back(i + Z);
+        G[i + Z].push_back(T);
+        for (newick_node* nodel : P)
+        {
+            R[S][node->taxoni] += GetWeight(nodel, node);
+            R[node->taxoni + t2.GetNumNodes()][T] += GetWeight(nodel, node);
+        }
+        double sum = 0;
+        for (newick_child* child = node->child; child; child = child->next)
+            if (!C[child->node->taxoni])
+                sum += DFSRight(child->node, R, C, G);
+        return sum + R[S][node->taxoni];
+    }
+
+    bool AugmentingPath(vvi& G, vi& Q, vvd& R)
+    {
+        queue<int> W;
+        W.push(S);
+        fill(Q.begin(), Q.end(), -1);
+        while (!W.empty())
+        {
+            int k = W.front(); W.pop();
+            if (k == T)
+                return true;
+
+            for (int x : G[k])
+                if (Q[x] == -1 && R[k][x] > 0 + EPS)
+                    Q[x] = k, W.push(x);
+        }
+        return false;
+    }
+
+    void BuildNetwork(newick_node* node, newick_node* rnode, vb& C, vvd& R, vvi& G, const double& inf)
+    {
+        if (node != rnode)
+        {
+            int l = rnode->taxoni;
+            R[l][l + Z] = inf;
+            G[l].push_back(l + Z);
+            G[l + Z].push_back(l);
+        }
+        else
+            C[node->taxoni] = true;
+
+        for (newick_parent* parent = node->parent; parent; parent = parent->next)
+        {
+            newick_node* pn = parent->node;
+            BuildNetwork(pn, rnode, C, R, G, inf);
+            if (!C[pn->taxoni])
+                BuildNetwork(pn, pn, C, R, G, inf);
+        }
+    }
+
+    void Antichain()
+    {        
+        vvi G(SZ);
+        vvd R(SZ, vd(SZ));
+        vb C(Z);
+        double sum = DFSRight(t2.GetRoot(), R, C, G);
+        fill(C.begin(), C.end(), false);
+        for (newick_node* leaf : t2.L)
+            BuildNetwork(leaf, leaf, C, R, G, sum);
+
+        double flow = 0;
+        vi Q(SZ, -1);
+        while (AugmentingPath(G, Q, R))
+        {
+            double aug = sum;
+            for (int x = T; x != S; x = Q[x])
+                aug = min(aug, R[Q[x]][x]);
+
+            for (int x = T; x != S; x = Q[x])
+                R[Q[x]][x] -= aug, R[x][Q[x]] += aug;
+
+            flow += aug;
+        }
+
+        double weight = sum - flow;
+        if (weight - EPS <= 1)
+            return;
+
+        queue<int> W;
+        W.push(S);
+        fill(Q.begin(), Q.end(), -1);
+        while (!W.empty())
+        {
+            int k = W.front(); W.pop();
+            for (int x : G[k])
+                if (Q[x] == -1 && R[k][x] > 0 + EPS)
+                    Q[x] = k, W.push(x);
+        }
+        VPN PN;
+        for (int i = 0; i < Z; ++i)
+            if (Q[i] != -1 && Q[i + Z] == -1)
+                for (newick_node* nodel : P)
+                    PN.emplace_back(nodel, t2.GetNode(i));
+
+        AddConstraint(*Triplets, nr_rows + ncr, PN);
+        ++ncr;
+    }
+
+    int ncr, nr_rows, S, T, Z, SZ;
+    vector<ET>* Triplets;
+    vector<newick_node*> P;
+};
+
 class LP
 {
 public:
@@ -429,7 +578,7 @@ public:
     void MatchingConstraints()
     {
         cnt = 0;
-        vector<bool> P(t1.GetNumNodes());
+        vb P(t1.GetNumNodes());
         DFSLeft(t1.GetRoot(), P);
         int n = t1.GetNumNodes(), m = t2.GetNumNodes();
         nr_rows = n + m;
@@ -440,23 +589,14 @@ public:
         warm_y = Vector::Zero(nr_rows);
     }
 
-    int CrossingConstraints()
+    template<class T>
+    int Constraints()
     {
         int row_old = nr_rows;
-        CrossingConstraint cc12(t1, t2, K, x, false);
-        nr_rows += cc12.AddTriplets(Triplets, nr_rows);
-        CrossingConstraint cc21(t2, t1, K, x, true);
-        nr_rows += cc21.AddTriplets(Triplets, nr_rows);
-        return nr_rows - row_old;
-    }
-
-    int IndependentSetConstraints()
-    {
-        int row_old = nr_rows;
-        IndependentSetConstraint isc12(t1, t2, K, x, false);
-        nr_rows += isc12.AddTriplets(Triplets, nr_rows);
-        IndependentSetConstraint isc21(t2, t1, K, x, true);
-        nr_rows += isc21.AddTriplets(Triplets, nr_rows);
+        T c12(t1, t2, K, x, false);
+        nr_rows += c12.AddTriplets(Triplets, nr_rows);
+        T c21(t2, t1, K, x, true);
+        nr_rows += c21.AddTriplets(Triplets, nr_rows);
         return nr_rows - row_old;
     }
 
@@ -578,11 +718,11 @@ public:
     }
 
 private:
-    void DFSLeft(newick_node* node, vector<bool>& P)
+    void DFSLeft(newick_node* node, vb& P)
     {
         P[node->taxoni] = true;
         {
-            vector<bool> Q(t2.GetNumNodes());
+            vb Q(t2.GetNumNodes());
             DFSRight(node, t2.GetRoot(), Q);
         }
         for (newick_child* child = node->child; child; child = child->next)
@@ -590,7 +730,7 @@ private:
                 DFSLeft(child->node, P);
     }
 
-    void DFSRight(newick_node* nodel, newick_node* noder, vector<bool>& Q)
+    void DFSRight(newick_node* nodel, newick_node* noder, vb& Q)
     {
         Q[noder->taxoni] = true;
         int i = nodel->taxoni, j = noder->taxoni;
@@ -666,7 +806,7 @@ private:
     Vector x, y;
     // backup x->warm_x and y->warm_y for two consecutive iterations
     Vector warm_x, warm_y;
-    vector<vector<int> > K;
+    vvi K;
     Graph &t1, &t2;
     Vector c;
     int nr_rows, nr_cols;
@@ -718,14 +858,17 @@ int main(int argc, char** argv)
             break;
 
         T_cross.start();
-        cnt = lp.CrossingConstraints();
+        cnt = lp.Constraints<CrossingConstraint>();
         T_cross.stop();
         clog << ">>> Time for crossing constraints: \t\t" << T_cross.secs() << " secs" << endl;
 
         if (c == 2)
         {
             T_indep.start();
-            cnt += lp.IndependentSetConstraints();
+            if (dag)
+                cnt += lp.Constraints<AntichainConstraint>();
+            else
+                cnt += lp.Constraints<IndependentSetConstraint>();
             T_indep.stop();
             clog << ">>> Time for independent set constraints: \t\t" << T_indep.secs() << " secs" << endl;
         }
