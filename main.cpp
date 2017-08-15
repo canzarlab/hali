@@ -451,22 +451,22 @@ private:
 
     double DFSRight(newick_node* node, vvd& R, vb& C, vvi& G)
     {
-        C[node->taxoni] = true;
         int i = node->taxoni;
+        C[i] = true;
         G[S].push_back(i);
         G[i].push_back(S);
         G[T].push_back(i + Z);
         G[i + Z].push_back(T);
         for (newick_node* nodel : P)
         {
-            R[S][node->taxoni] += GetWeight(nodel, node);
-            R[node->taxoni + t2.GetNumNodes()][T] += GetWeight(nodel, node);
+            R[S][i] += GetWeight(nodel, node);
+            R[i + Z][T] += GetWeight(nodel, node);
         }
         double sum = 0;
         for (newick_child* child = node->child; child; child = child->next)
             if (!C[child->node->taxoni])
                 sum += DFSRight(child->node, R, C, G);
-        return sum + R[S][node->taxoni];
+        return sum + R[S][i];
     }
 
     bool AugmentingPath(vvi& G, vi& Q, vvd& R)
@@ -509,7 +509,7 @@ private:
     }
 
     void Antichain()
-    {        
+    {
         vvi G(SZ);
         vvd R(SZ, vd(SZ));
         vb C(Z);
@@ -590,7 +590,7 @@ public:
     }
 
     template<class T>
-    int Constraints()
+    int Add()
     {
         int row_old = nr_rows;
         T c12(t1, t2, K, x, false);
@@ -858,7 +858,7 @@ int main(int argc, char** argv)
             break;
 
         T_cross.start();
-        cnt = lp.Constraints<CrossingConstraint>();
+        cnt = lp.Add<CrossingConstraint>();
         T_cross.stop();
         clog << ">>> Time for crossing constraints: \t\t" << T_cross.secs() << " secs" << endl;
 
@@ -866,9 +866,9 @@ int main(int argc, char** argv)
         {
             T_indep.start();
             if (dag)
-                cnt += lp.Constraints<AntichainConstraint>();
+                cnt += lp.Add<AntichainConstraint>();
             else
-                cnt += lp.Constraints<IndependentSetConstraint>();
+                cnt += lp.Add<IndependentSetConstraint>();
             T_indep.stop();
             clog << ">>> Time for independent set constraints: \t\t" << T_indep.secs() << " secs" << endl;
         }
