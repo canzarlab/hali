@@ -715,7 +715,10 @@ public:
             sol_file << endl;
         }
         sol_file.close();
-        cout << ((d == "j") ? JaccardDist(weight) : SymdifDist(weight)) << " ";
+        if (dag)
+            cout << weight << " ";
+        else
+            cout << ((d == "j") ? JaccardDist(weight) : SymdifDist(weight)) << " ";
     }
 
 private:
