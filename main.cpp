@@ -611,17 +611,17 @@ public:
         SpMat A_t = A.transpose();
         Vector b = Vector::Ones(nr_rows);
 
-        //x = Vector::Zero(nr_cols);
-        //y = Vector::Zero(nr_rows);
+        x = Vector::Zero(nr_cols);
+        y = Vector::Zero(nr_rows);
 
-        CoveringJRF simpleJRF(A_t, c, b, warm_y, warm_x);
+//        CoveringJRF simpleJRF(A_t, c, b, warm_y, warm_x);
 
         Vector c1 = -c;
-//        PackingJRF simpleJRF(A, b, c1, x, y);
+        PackingJRF simpleJRF(A, b, c1, x, y);
         AugmentedLagrangian solver(simpleJRF, 15);
         solver.setParameter("verbose", false);
         solver.setParameter("pgtol", 1e-1); // should influence running time a lot
-        solver.setParameter("constraintsTol", 1e-3);
+        solver.setParameter("constraintsTol", 1e-4);
         Timer timeGeno;
         timeGeno.start();
         solver.solve();
@@ -630,9 +630,12 @@ public:
         clog << "f = " << solver.f() << " computed in time: " << timeGeno.secs() << " secs" << endl;
 
         /* when Packing: x->x, y->y, when Covering: -y -> x, x -> y */
-        x = -Vector::ConstMapType(solver.y(), nr_cols);
-        y = Vector::ConstMapType(solver.x(), nr_rows);
+        //x = -Vector::ConstMapType(solver.y(), nr_cols);
+        //y = Vector::ConstMapType(solver.x(), nr_rows);
 
+        x = Vector::ConstMapType(solver.x(), nr_cols);
+        y = Vector::ConstMapType(solver.y(), nr_rows);
+/*
         warm_x = Vector::ConstMapType(solver.y(), nr_cols);
         warm_y = Vector::ConstMapType(solver.x(), nr_rows);
 
@@ -684,7 +687,8 @@ public:
                 truncA_col++;
             }
 
-        assert(truncA_col == nr_tight_constr);
+            assert(truncA_col == nr_tight_constr);
+*/
     }
 
     int GetMax(newick_node* node, int& hmax)
