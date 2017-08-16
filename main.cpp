@@ -481,7 +481,7 @@ private:
                 return true;
 
             for (int x : G[k])
-                if (Q[x] == -1 && R[k][x] > 0 + EPS)
+                if (Q[x] == -1 && R[k][x] > 0)
                     Q[x] = k, W.push(x);
         }
         return false;
@@ -489,15 +489,16 @@ private:
 
     void BuildNetwork(newick_node* node, newick_node* rnode, vb& C, vvd& R, vvi& G, const double& inf)
     {
+        int l = rnode->taxoni;
+        int i = node->taxoni;
         if (node != rnode)
         {
-            int l = rnode->taxoni;
-            R[l][l + Z] = inf;
-            G[l].push_back(l + Z);
-            G[l + Z].push_back(l);
+            R[l][i + Z] = inf;
+            G[l].push_back(i + Z);
+            G[i + Z].push_back(l);
         }
         else
-            C[node->taxoni] = true;
+            C[i] = true;
 
         for (newick_parent* parent = node->parent; parent; parent = parent->next)
         {
@@ -543,7 +544,7 @@ private:
         {
             int k = W.front(); W.pop();
             for (int x : G[k])
-                if (Q[x] == -1 && R[k][x] > 0 + EPS)
+                if (Q[x] == -1 && R[k][x] > 0)
                     Q[x] = k, W.push(x);
         }
         VPN PN;
