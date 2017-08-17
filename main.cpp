@@ -826,20 +826,20 @@ int main(int argc, char** argv)
         clog << "Comparing trees " << argv[1] << " " << argv[2] << endl;
         t1 = new Tree(argv[1]);
         t2 = new Tree(argv[2]);
-        out = argv[6];
+        out = argv[3];
     }
     else if (argc == 9)
     {
         clog << "Comparing dags " << argv[1] << " " << argv[3] << endl;
         t1 = new DAG(argv[1], argv[2], true);
         t2 = new DAG(argv[3], argv[4], false);
-        out = argv[8];
+        out = argv[5];
         dag = true;
     }
     else
     {
-        cout << "tree usage: " << argv[0] << " <filename.newick> <filename.newick> <c> <d> <k> <align>" << endl;
-        cout << "dag usage: " << argv[0] << " <yeastnet> <mapping> <precollapse> <mapping> <c> <d> <k> <align>" << endl;
+        cout << "tree usage: " << argv[0] << " <filename.newick> <filename.newick> <align> <c> <d> <k>" << endl;
+        cout << "dag usage: " << argv[0] << " <yeastnet> <mapping> <precollapse> <mapping> <align><c> <d> <k>" << endl;
         return EXIT_FAILURE;
     }
     int c = stoi(argv[argc - 3]);
