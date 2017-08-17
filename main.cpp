@@ -376,7 +376,6 @@ public:
         for (newick_node* node : t1.L)
         {
             dLN L = DFSRight(node, t2.GetRoot());
-
             if (L.first - EPS <= 1)
                 continue;
 
@@ -823,11 +822,13 @@ int main(int argc, char** argv)
     Graph *t1, *t2;
     if (argc == 6)
     {
+        clog << "Comparing trees " << argv[1] << " " << argv[2] << endl;
         t1 = new Tree(argv[1]);
         t2 = new Tree(argv[2]);
     }
     else if (argc == 8)
     {
+        clog << "Comparing dags " << argv[1] << " " << argv[3] << endl;
         t1 = new DAG(argv[1], argv[2], true);
         t2 = new DAG(argv[3], argv[4], false);
         dag = true;
@@ -843,8 +844,6 @@ int main(int argc, char** argv)
     double k = stod(argv[argc - 1]);
     assert(c >= 0 && c <= 2);
     assert(d == "j" || d == "s");
-
-    clog << "Comparing trees " << argv[1] << " " << argv[2] << endl;
 
     LP lp(*t1, *t2, d, k, dag);
     lp.MatchingConstraints();
@@ -880,7 +879,6 @@ int main(int argc, char** argv)
         clog << "Added " << cnt << " rows." << endl;
     }
     T.stop();
-    clog << "Done comparing trees " << argv[1] << " " << argv[2] << endl;
     clog << "TOTAL TIME : \t\t" << T.secs() << " secs" << endl;
     clog << "Total number of iterations: " <<  i + 1 << endl;
 
