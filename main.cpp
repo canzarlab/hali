@@ -820,23 +820,26 @@ int main(int argc, char** argv)
 {
     bool dag = false;
     Graph *t1, *t2;
-    if (argc == 6)
+    const char* out;
+    if (argc == 7)
     {
         clog << "Comparing trees " << argv[1] << " " << argv[2] << endl;
         t1 = new Tree(argv[1]);
         t2 = new Tree(argv[2]);
+        out = argv[6];
     }
-    else if (argc == 8)
+    else if (argc == 9)
     {
         clog << "Comparing dags " << argv[1] << " " << argv[3] << endl;
         t1 = new DAG(argv[1], argv[2], true);
         t2 = new DAG(argv[3], argv[4], false);
+        out = argv[8];
         dag = true;
     }
     else
     {
-        cout << "tree usage: " << argv[0] << " <filename.newick> <filename.newick> <c> <d> <k>" << endl;
-        cout << "dag usage: " << argv[0] << " <yeastnet> <mapping> <precollapse> <mapping> <c> <d> <k>" << endl;
+        cout << "tree usage: " << argv[0] << " <filename.newick> <filename.newick> <c> <d> <k> <align>" << endl;
+        cout << "dag usage: " << argv[0] << " <yeastnet> <mapping> <precollapse> <mapping> <c> <d> <k> <align>" << endl;
         return EXIT_FAILURE;
     }
     int c = stoi(argv[argc - 3]);
@@ -881,6 +884,5 @@ int main(int argc, char** argv)
     T.stop();
     clog << "TOTAL TIME : \t\t" << T.secs() << " secs" << endl;
     clog << "Total number of iterations: " <<  i + 1 << endl;
-
-    lp.WriteSolution("yeastnet_precollapse.solution");
+    lp.WriteSolution(out);
 }
