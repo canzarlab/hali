@@ -839,7 +839,7 @@ int main(int argc, char** argv)
     else
     {
         cout << "tree usage: " << argv[0] << " <filename.newick> <filename.newick> <align> <c> <d> <k>" << endl;
-        cout << "dag usage: " << argv[0] << " <yeastnet> <mapping> <precollapse> <mapping> <align><c> <d> <k>" << endl;
+        cout << "dag usage: " << argv[0] << " <yeastnet> <mapping> <precollapse> <mapping> <align> <c> <d> <k>" << endl;
         return EXIT_FAILURE;
     }
     int c = stoi(argv[argc - 3]);
