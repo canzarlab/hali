@@ -735,7 +735,7 @@ private:
     {
         Q[noder->taxoni] = true;
         int i = nodel->taxoni, j = noder->taxoni;
-        if (dag || (nodel->parent && nodel->child && noder->parent && noder->child))
+        if ((dag || nodel->parent) && nodel->child && noder->parent && noder->child)
         {
             double w = 0;
             if (d == "j")
