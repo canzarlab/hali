@@ -47,7 +47,7 @@ do
     fi
 done
 
-j=32
+j=8
 
 make >& /dev/null
 
