@@ -364,6 +364,7 @@ public:
         ifstream f(fn5);
         string a, b;
         float p;
+        while (getline(f, a), a != "Matched");
         while (f >> a >> b >> p)
         {
             int l = A[a]->taxoni;
