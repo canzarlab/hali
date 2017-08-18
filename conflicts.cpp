@@ -95,7 +95,7 @@ public:
 
     virtual ~graph()
     {
-        delete root;
+        dealloc_dag(root, size);
     }
 
     int get_size() const

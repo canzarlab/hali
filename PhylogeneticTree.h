@@ -17,7 +17,7 @@ class Graph
 {
 public:
     Graph() : _n(0) { }
-    virtual ~Graph() { delete root; };
+    virtual ~Graph() { dealloc_dag(root, _n); };
 
     int GetNumNodes() const { return _n; }
     newick_node* GetRoot() const { return root; }
