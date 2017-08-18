@@ -207,7 +207,7 @@ class dag : public graph
 {
     vector<set<int> > D;
 public:
-    dag(newick_node* root) : graph(root)
+    dag(newick_node* root) : graph(root), D(size)
     {
     }
 
@@ -357,10 +357,10 @@ class ccd : public cc
     msn A, B;
 public:
     ccd(const char* fn1, const char* fn2, const char* fn3, const char* fn4, const char* fn5) :
-        cc(new dag(load_dag(fn1, true, A)), new dag(load_dag(fn3, false, B)))
+        cc(nullptr, nullptr)
     {
-        t1->init();
-        t2->init();
+        (t1 = new dag(load_dag(fn1, true, A)))->init();
+        (t2 = new dag(load_dag(fn3, false, B)))->init();
         ifstream f(fn5);
         string a, b;
         float p;
