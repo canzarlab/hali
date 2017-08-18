@@ -20,8 +20,6 @@ typedef Eigen::Triplet<double> ET;
 typedef vector<pair<newick_node*, newick_node*> > VPN;
 typedef vector<int> vi;
 typedef vector<vi> vvi;
-typedef vector<double> vd;
-typedef vector<vd> vvd;
 typedef vector<bool> vb;
 
 class SimpleJRF : public GenoNLP
@@ -456,6 +454,7 @@ private:
         G[i].push_back(S);
         G[T].push_back(i + Z);
         G[i + Z].push_back(T);
+        R[S][i] = R[i + Z][T] = 0;
         for (newick_node* nodel : P)
         {
             R[S][i] += GetWeight(nodel, node);
@@ -493,6 +492,7 @@ private:
         if (node != rnode)
         {
             R[l][i + Z] = inf;
+            R[i + Z][l] = 0;
             G[l].push_back(i + Z);
             G[i + Z].push_back(l);
         }
@@ -511,7 +511,7 @@ private:
     void Antichain()
     {
         vvi G(SZ);
-        vvd R(SZ, vd(SZ));
+        vvd& R = ((DAG*)&t2)->R;
         vb C(Z);
         double sum = DFSRight(t2.GetRoot(), R, C, G);
         fill(C.begin(), C.end(), false);

@@ -7,8 +7,8 @@
 #include "newick.h"
 using namespace std;
 
-typedef map<string, newick_node*> msn;
-typedef map<string, vector<string> > msvs;
+typedef vector<double> vd;
+typedef vector<vd> vvd;
 
 class Graph
 {
@@ -29,7 +29,6 @@ protected:
     virtual void Child(newick_node* node, newick_node* child) { }
     newick_node* root;
     long _n;
-
 };
 
 class DAG : public Graph
@@ -37,6 +36,8 @@ class DAG : public Graph
 public:
     DAG(const char* f1, const char* f2, bool y);
     ~DAG() { }
+
+    vvd R;
 };
 
 class Tree : public Graph

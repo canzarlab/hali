@@ -11,6 +11,10 @@ DAG::DAG(const char* f1, const char* f2, bool y)
         clade[M[n1]].push_back(s);
 
     Init(root);
+    size_t SZ = _n * 2 + 2;
+    R.resize(SZ);
+    for (vd& v : R)
+        v.resize(SZ);
 }
 
 /*
@@ -20,7 +24,6 @@ for (string& j : L[i])
     if (find(L[r].begin(), L[r].end(), j) == L[r].end())
         L[r].push_back(j);
 */
-
 void Graph::Init(newick_node* node)
 {
     if (!node->child)
