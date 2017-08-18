@@ -520,10 +520,8 @@ private:
 
     void Antichain()
     {
-        double sum = Reset();
-        double flow = 0;
         vi Q(SZ, -1);
-        if (sum - MaxFlow(Q) <= 1 + EPS)
+        if (Reset() - MaxFlow(Q) <= 1 + EPS)
             return;
 
         fill(Q.begin(), Q.end(), -1);
