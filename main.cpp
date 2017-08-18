@@ -18,9 +18,6 @@ Scalar const INF = numeric_limits<Scalar>::infinity();
 typedef Eigen::SparseMatrix<Scalar> SpMat;
 typedef Eigen::Triplet<double> ET;
 typedef vector<pair<newick_node*, newick_node*> > VPN;
-typedef vector<int> vi;
-typedef vector<vi> vvi;
-typedef vector<bool> vb;
 
 class SimpleJRF : public GenoNLP
 {
@@ -417,7 +414,7 @@ private:
 class AntichainConstraint : Constraint
 {
 public:
-    AntichainConstraint(Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp) : Constraint(t1, t2, K, x, swp)
+    AntichainConstraint(Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp) : Constraint(t1, t2, K, x, swp), G(((DAG*)&t2)->G), R(((DAG*)&t2)->R)
     {
         Z = t2.GetNumNodes();
         SZ = Z * 2 + 2;
@@ -446,27 +443,6 @@ private:
         P.pop_back();
     }
 
-    double DFSRight(newick_node* node, vvd& R, vb& C, vvi& G)
-    {
-        int i = node->taxoni;
-        C[i] = true;
-        G[S].push_back(i);
-        G[i].push_back(S);
-        G[T].push_back(i + Z);
-        G[i + Z].push_back(T);
-        R[S][i] = R[i + Z][T] = 0;
-        for (newick_node* nodel : P)
-        {
-            R[S][i] += GetWeight(nodel, node);
-            R[i + Z][T] += GetWeight(nodel, node);
-        }
-        double sum = 0;
-        for (newick_child* child = node->child; child; child = child->next)
-            if (!C[child->node->taxoni])
-                sum += DFSRight(child->node, R, C, G);
-        return sum + R[S][i];
-    }
-
     bool AugmentingPath(vvi& G, vi& Q, vvd& R)
     {
         queue<int> W;
@@ -485,44 +461,12 @@ private:
         return false;
     }
 
-    void BuildNetwork(newick_node* node, newick_node* rnode, vb& C, vvd& R, vvi& G, const double& inf)
+    double MaxFlow(vi& Q)
     {
-        int l = rnode->taxoni;
-        int i = node->taxoni;
-        if (node != rnode)
-        {
-            R[l][i + Z] = inf;
-            R[i + Z][l] = 0;
-            G[l].push_back(i + Z);
-            G[i + Z].push_back(l);
-        }
-        else
-            C[i] = true;
-
-        for (newick_parent* parent = node->parent; parent; parent = parent->next)
-        {
-            newick_node* pn = parent->node;
-            BuildNetwork(pn, rnode, C, R, G, inf);
-            if (!C[pn->taxoni])
-                BuildNetwork(pn, pn, C, R, G, inf);
-        }
-    }
-
-    void Antichain()
-    {
-        vvi G(SZ);
-        vvd& R = ((DAG*)&t2)->R;
-        vb C(Z);
-        double sum = DFSRight(t2.GetRoot(), R, C, G);
-        fill(C.begin(), C.end(), false);
-        for (newick_node* leaf : t2.L)
-            BuildNetwork(leaf, leaf, C, R, G, sum);
-
         double flow = 0;
-        vi Q(SZ, -1);
         while (AugmentingPath(G, Q, R))
         {
-            double aug = sum;
+            double aug = numeric_limits<double>::infinity();
             for (int x = T; x != S; x = Q[x])
                 aug = min(aug, R[Q[x]][x]);
 
@@ -531,14 +475,13 @@ private:
 
             flow += aug;
         }
+        return flow;
+    }
 
-        double weight = sum - flow;
-        if (weight - EPS <= 1)
-            return;
-
+    void BFS(vi& Q)
+    {
         queue<int> W;
         W.push(S);
-        fill(Q.begin(), Q.end(), -1);
         while (!W.empty())
         {
             int k = W.front(); W.pop();
@@ -546,6 +489,41 @@ private:
                 if (Q[x] == -1 && R[k][x] > 0)
                     Q[x] = k, W.push(x);
         }
+    }
+
+    double Reset()
+    {
+        double sum = 0;
+        for (int i = 0; i < Z; ++i)
+        {
+            newick_node* node = t2.GetNode(i);
+            R[S][i] = R[i + Z][T] = 0;
+            for (newick_node* nodel : P)
+            {
+                R[S][i] += GetWeight(nodel, node);
+                R[i + Z][T] += GetWeight(nodel, node);
+            }
+            sum += R[S][i];
+        }
+        // TODO: unsure if needed...
+        for (int i = 0; i < Z; ++i)
+            for (int j = 0; j < G[i].size(); ++j)
+                if (j != S && j != T)
+                    if (R[i][j] != numeric_limits<double>::infinity())
+                        R[i][j] = 0;
+        return sum;
+    }
+
+    void Antichain()
+    {
+        double sum = Reset();
+        double flow = 0;
+        vi Q(SZ, -1);
+        if (sum - MaxFlow(Q) <= 1 + EPS)
+            return;
+
+        fill(Q.begin(), Q.end(), -1);
+        BFS(Q);
         VPN PN;
         for (int i = 0; i < Z; ++i)
             if (Q[i] != -1 && Q[i + Z] == -1)
@@ -556,6 +534,8 @@ private:
         ++ncr;
     }
 
+    vvi& G;
+    vvd& R = ((DAG*)&t2)->R;
     int ncr, nr_rows, S, T, Z, SZ;
     vector<ET>* Triplets;
     vector<newick_node*> P;

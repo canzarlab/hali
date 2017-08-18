@@ -1,5 +1,6 @@
 #include "PhylogeneticTree.h"
 #include <fstream>
+#include <limits>
 
 DAG::DAG(const char* f1, const char* f2, bool y)
 {
@@ -12,9 +13,44 @@ DAG::DAG(const char* f1, const char* f2, bool y)
 
     Init(root);
     size_t SZ = _n * 2 + 2;
+    G.resize(SZ);
     R.resize(SZ);
     for (vd& v : R)
         v.resize(SZ);
+
+    int S = SZ - 2, T = SZ - 1;
+    for (int i = 0; i < _n; ++i)
+    {
+        G[S].push_back(i);
+        G[i].push_back(S);
+        G[T].push_back(i + _n);
+        G[i + _n].push_back(T);
+    }
+    vb C(_n);
+    for (newick_node* leaf : L)
+        BuildNetwork(leaf, leaf, C);
+}
+
+void DAG::BuildNetwork(newick_node* node, newick_node* rnode, vb& C)
+{
+    int l = rnode->taxoni;
+    int i = node->taxoni;
+    if (node != rnode)
+    {
+        R[l][i + _n] = numeric_limits<double>::infinity();
+        G[l].push_back(i + _n);
+        G[i + _n].push_back(l);
+    }
+    else
+        C[i] = true;
+
+    for (newick_parent* parent = node->parent; parent; parent = parent->next)
+    {
+        newick_node* pn = parent->node;
+        BuildNetwork(pn, rnode, C);
+        if (!C[pn->taxoni])
+            BuildNetwork(pn, pn, C);
+    }
 }
 
 /*
