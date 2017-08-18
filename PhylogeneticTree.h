@@ -21,9 +21,8 @@ public:
 
     int GetNumNodes() const { return _n; }
     newick_node* GetRoot() const { return root; }
-    newick_node* GetNode(int i) const { return N[i]; }
 
-    vector<newick_node*> L, N;
+    vector<newick_node*> L;
     map<newick_node*, list<string> > clade;
 
 protected:

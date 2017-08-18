@@ -80,9 +80,6 @@ void Graph::Init(newick_node* node)
         *parentptr = new newick_parent(node);
         Child(node, child->node);
     }
-    if (N.size() <= node->taxoni)
-        N.resize(node->taxoni + 1);
-    N[node->taxoni] = node;
     clade[node].sort();
 }
 

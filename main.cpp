@@ -17,7 +17,7 @@ Scalar const INF = numeric_limits<Scalar>::infinity();
 // declares a column-major sparse matrix type of double
 typedef Eigen::SparseMatrix<Scalar> SpMat;
 typedef Eigen::Triplet<double> ET;
-typedef vector<pair<newick_node*, newick_node*> > VPN;
+typedef vector<pair<int, int> > vii;
 
 class SimpleJRF : public GenoNLP
 {
@@ -221,11 +221,16 @@ protected:
 
     double GetWeight(newick_node* nodel, newick_node* noder)
     {
-        int in = GetCol(nodel, noder);
+        return GetWeight(nodel->taxoni, noder->taxoni);
+    }
+
+    double GetWeight(int i, int j)
+    {
+        int in = GetCol(i, j);
         return in == -1 ? 0 : x(in);
     }
 
-    void AddConstraint(vector<ET>& Triplets, int row, VPN& P)
+    void AddConstraint(vector<ET>& Triplets, int row, vii& P)
     {
         for (auto k : P)
         {
@@ -258,7 +263,7 @@ public:
         KahnLeft(t1.GetRoot());
         for (auto node : t1.L)
         {
-            VPN P;
+            vii P;
             Reconstruct(P, node, t2.GetRoot());
 
             double sum = 0;
@@ -337,13 +342,13 @@ private:
         return GetDP(nodel, node) = mx + GetWeight(nodel, node);
     }
 
-    void Reconstruct(VPN& P, newick_node* nodel, newick_node* noder)
+    void Reconstruct(vii& P, newick_node* nodel, newick_node* noder)
     {
         double pw, cw;
         newick_node *child, *parent;
         tie(child, cw) = GetMaxChild(nodel, noder);
         tie(parent, pw) = GetMaxParent(noder, nodel);
-        P.emplace_back(nodel, noder);
+        P.emplace_back(nodel->taxoni, noder->taxoni);
         if (nodel->parent && (!child || pw > cw))
             Reconstruct(P, parent, noder);
         else if (child && (!parent || cw >= pw))
@@ -374,10 +379,10 @@ public:
             if (L.first - EPS <= 1)
                 continue;
 
-            VPN P;
+            vii P;
             for (newick_node* noder : L.second)
                 for (newick_node* nodel = node; nodel; nodel = nodel->parent ? nodel->parent->node : nullptr)
-                    P.emplace_back(nodel, noder);
+                    P.emplace_back(nodel->taxoni, noder->taxoni);
 
             AddConstraint(Triplets, nr_rows + ncr, P);
             ++ncr;
@@ -496,12 +501,11 @@ private:
         double sum = 0;
         for (int i = 0; i < Z; ++i)
         {
-            newick_node* node = t2.GetNode(i);
             R[S][i] = R[i + Z][T] = 0;
             for (newick_node* nodel : P)
             {
-                R[S][i] += GetWeight(nodel, node);
-                R[i + Z][T] += GetWeight(nodel, node);
+                R[S][i] += GetWeight(nodel->taxoni, i);
+                R[i + Z][T] += GetWeight(nodel->taxoni, i);
             }
             sum += R[S][i];
         }
@@ -524,18 +528,18 @@ private:
 
         fill(Q.begin(), Q.end(), -1);
         BFS(Q);
-        VPN PN;
+        vii PN;
         for (int i = 0; i < Z; ++i)
             if (Q[i] != -1 && Q[i + Z] == -1)
                 for (newick_node* nodel : P)
-                    PN.emplace_back(nodel, t2.GetNode(i));
+                    PN.emplace_back(nodel->taxoni, i);
 
         AddConstraint(*Triplets, nr_rows + ncr, PN);
         ++ncr;
     }
 
     vvi& G;
-    vvd& R = ((DAG*)&t2)->R;
+    vvd& R;
     int ncr, nr_rows, S, T, Z, SZ;
     vector<ET>* Triplets;
     vector<newick_node*> P;
