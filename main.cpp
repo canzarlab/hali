@@ -17,12 +17,7 @@ Scalar const INF = numeric_limits<Scalar>::infinity();
 // declares a column-major sparse matrix type of double
 typedef Eigen::SparseMatrix<Scalar> SpMat;
 typedef Eigen::Triplet<double> ET;
-typedef vector<pair<newick_node*, newick_node*> > VPN;
-typedef vector<int> vi;
-typedef vector<vi> vvi;
-typedef vector<double> vd;
-typedef vector<vd> vvd;
-typedef vector<bool> vb;
+typedef vector<pair<int, int> > vii;
 
 class SimpleJRF : public GenoNLP
 {
@@ -226,11 +221,16 @@ protected:
 
     double GetWeight(newick_node* nodel, newick_node* noder)
     {
-        int in = GetCol(nodel, noder);
+        return GetWeight(nodel->taxoni, noder->taxoni);
+    }
+
+    double GetWeight(int i, int j)
+    {
+        int in = GetCol(i, j);
         return in == -1 ? 0 : x(in);
     }
 
-    void AddConstraint(vector<ET>& Triplets, int row, VPN& P)
+    void AddConstraint(vector<ET>& Triplets, int row, vii& P)
     {
         for (auto k : P)
         {
@@ -263,7 +263,7 @@ public:
         KahnLeft(t1.GetRoot());
         for (auto node : t1.L)
         {
-            VPN P;
+            vii P;
             Reconstruct(P, node, t2.GetRoot());
 
             double sum = 0;
@@ -342,13 +342,13 @@ private:
         return GetDP(nodel, node) = mx + GetWeight(nodel, node);
     }
 
-    void Reconstruct(VPN& P, newick_node* nodel, newick_node* noder)
+    void Reconstruct(vii& P, newick_node* nodel, newick_node* noder)
     {
         double pw, cw;
         newick_node *child, *parent;
         tie(child, cw) = GetMaxChild(nodel, noder);
         tie(parent, pw) = GetMaxParent(noder, nodel);
-        P.emplace_back(nodel, noder);
+        P.emplace_back(nodel->taxoni, noder->taxoni);
         if (nodel->parent && (!child || pw > cw))
             Reconstruct(P, parent, noder);
         else if (child && (!parent || cw >= pw))
@@ -376,14 +376,13 @@ public:
         for (newick_node* node : t1.L)
         {
             dLN L = DFSRight(node, t2.GetRoot());
-
             if (L.first - EPS <= 1)
                 continue;
 
-            VPN P;
+            vii P;
             for (newick_node* noder : L.second)
                 for (newick_node* nodel = node; nodel; nodel = nodel->parent ? nodel->parent->node : nullptr)
-                    P.emplace_back(nodel, noder);
+                    P.emplace_back(nodel->taxoni, noder->taxoni);
 
             AddConstraint(Triplets, nr_rows + ncr, P);
             ++ncr;
@@ -420,7 +419,7 @@ private:
 class AntichainConstraint : Constraint
 {
 public:
-    AntichainConstraint(Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp) : Constraint(t1, t2, K, x, swp)
+    AntichainConstraint(Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp) : Constraint(t1, t2, K, x, swp), G(((DAG*)&t2)->G), R(((DAG*)&t2)->R)
     {
         Z = t2.GetNumNodes();
         SZ = Z * 2 + 2;
@@ -449,26 +448,6 @@ private:
         P.pop_back();
     }
 
-    double DFSRight(newick_node* node, vvd& R, vb& C, vvi& G)
-    {
-        int i = node->taxoni;
-        C[i] = true;
-        G[S].push_back(i);
-        G[i].push_back(S);
-        G[T].push_back(i + Z);
-        G[i + Z].push_back(T);
-        for (newick_node* nodel : P)
-        {
-            R[S][i] += GetWeight(nodel, node);
-            R[i + Z][T] += GetWeight(nodel, node);
-        }
-        double sum = 0;
-        for (newick_child* child = node->child; child; child = child->next)
-            if (!C[child->node->taxoni])
-                sum += DFSRight(child->node, R, C, G);
-        return sum + R[S][i];
-    }
-
     bool AugmentingPath(vvi& G, vi& Q, vvd& R)
     {
         queue<int> W;
@@ -487,43 +466,12 @@ private:
         return false;
     }
 
-    void BuildNetwork(newick_node* node, newick_node* rnode, vb& C, vvd& R, vvi& G, const double& inf)
+    double MaxFlow(vi& Q)
     {
-        int l = rnode->taxoni;
-        int i = node->taxoni;
-        if (node != rnode)
-        {
-            R[l][i + Z] = inf;
-            G[l].push_back(i + Z);
-            G[i + Z].push_back(l);
-        }
-        else
-            C[i] = true;
-
-        for (newick_parent* parent = node->parent; parent; parent = parent->next)
-        {
-            newick_node* pn = parent->node;
-            BuildNetwork(pn, rnode, C, R, G, inf);
-            if (!C[pn->taxoni])
-                BuildNetwork(pn, pn, C, R, G, inf);
-        }
-    }
-
-    void Antichain()
-    {
-        vvi G(SZ);
-        vvd R(SZ, vd(SZ));
-        vb C(Z);
-        double sum = DFSRight(t2.GetRoot(), R, C, G);
-        fill(C.begin(), C.end(), false);
-        for (newick_node* leaf : t2.L)
-            BuildNetwork(leaf, leaf, C, R, G, sum);
-
         double flow = 0;
-        vi Q(SZ, -1);
         while (AugmentingPath(G, Q, R))
         {
-            double aug = sum;
+            double aug = numeric_limits<double>::infinity();
             for (int x = T; x != S; x = Q[x])
                 aug = min(aug, R[Q[x]][x]);
 
@@ -532,14 +480,13 @@ private:
 
             flow += aug;
         }
+        return flow;
+    }
 
-        double weight = sum - flow;
-        if (weight - EPS <= 1)
-            return;
-
+    void BFS(vi& Q)
+    {
         queue<int> W;
         W.push(S);
-        fill(Q.begin(), Q.end(), -1);
         while (!W.empty())
         {
             int k = W.front(); W.pop();
@@ -547,16 +494,50 @@ private:
                 if (Q[x] == -1 && R[k][x] > 0)
                     Q[x] = k, W.push(x);
         }
-        VPN PN;
+    }
+
+    double Reset()
+    {
+        double sum = 0;
+        for (int i = 0; i < Z; ++i)
+        {
+            R[S][i] = R[i + Z][T] = 0;
+            for (newick_node* nodel : P)
+            {
+                R[S][i] += GetWeight(nodel->taxoni, i);
+                R[i + Z][T] += GetWeight(nodel->taxoni, i);
+            }
+            sum += R[S][i];
+        }
+        // TODO: unsure if needed...
+        for (int i = 0; i < Z; ++i)
+            for (int j = 0; j < G[i].size(); ++j)
+                if (i != S && j != T)
+                    if (R[i][j] != numeric_limits<double>::infinity())
+                        R[i][j] = 0;
+        return sum;
+    }
+
+    void Antichain()
+    {
+        vi Q(SZ, -1);
+        if (Reset() - MaxFlow(Q) <= 1 + EPS)
+            return;
+
+        fill(Q.begin(), Q.end(), -1);
+        BFS(Q);
+        vii PN;
         for (int i = 0; i < Z; ++i)
             if (Q[i] != -1 && Q[i + Z] == -1)
                 for (newick_node* nodel : P)
-                    PN.emplace_back(nodel, t2.GetNode(i));
+                    PN.emplace_back(nodel->taxoni, i);
 
         AddConstraint(*Triplets, nr_rows + ncr, PN);
         ++ncr;
     }
 
+    vvi& G;
+    vvd& R;
     int ncr, nr_rows, S, T, Z, SZ;
     vector<ET>* Triplets;
     vector<newick_node*> P;
@@ -719,7 +700,10 @@ public:
             sol_file << endl;
         }
         sol_file.close();
-        cout << ((d == "j") ? JaccardDist(weight) : SymdifDist(weight)) << " ";
+        if (dag)
+            cout << weight << " ";
+        else
+            cout << ((d == "j") ? JaccardDist(weight) : SymdifDist(weight)) << " ";
     }
 
 private:
@@ -739,7 +723,7 @@ private:
     {
         Q[noder->taxoni] = true;
         int i = nodel->taxoni, j = noder->taxoni;
-        if (dag || (nodel->parent && nodel->child && noder->parent && noder->child))
+        if ((dag || nodel->parent) && nodel->child && noder->parent && noder->child)
         {
             double w = 0;
             if (d == "j")
@@ -822,21 +806,26 @@ int main(int argc, char** argv)
 {
     bool dag = false;
     Graph *t1, *t2;
-    if (argc == 6)
+    const char* out;
+    if (argc == 7)
     {
+        clog << "Comparing trees " << argv[1] << " " << argv[2] << endl;
         t1 = new Tree(argv[1]);
         t2 = new Tree(argv[2]);
+        out = argv[3];
     }
-    else if (argc == 8)
+    else if (argc == 9)
     {
+        clog << "Comparing dags " << argv[1] << " " << argv[3] << endl;
         t1 = new DAG(argv[1], argv[2], true);
         t2 = new DAG(argv[3], argv[4], false);
+        out = argv[5];
         dag = true;
     }
     else
     {
-        cout << "tree usage: " << argv[0] << " <filename.newick> <filename.newick> <c> <d> <k>" << endl;
-        cout << "dag usage: " << argv[0] << " <yeastnet> <mapping> <precollapse> <mapping> <c> <d> <k>" << endl;
+        cout << "tree usage: " << argv[0] << " <filename.newick> <filename.newick> <align> <c> <d> <k>" << endl;
+        cout << "dag usage: " << argv[0] << " <yeastnet> <mapping> <precollapse> <mapping> <align> <c> <d> <k>" << endl;
         return EXIT_FAILURE;
     }
     int c = stoi(argv[argc - 3]);
@@ -844,8 +833,6 @@ int main(int argc, char** argv)
     double k = stod(argv[argc - 1]);
     assert(c >= 0 && c <= 2);
     assert(d == "j" || d == "s");
-
-    clog << "Comparing trees " << argv[1] << " " << argv[2] << endl;
 
     LP lp(*t1, *t2, d, k, dag);
     lp.MatchingConstraints();
@@ -881,9 +868,7 @@ int main(int argc, char** argv)
         clog << "Added " << cnt << " rows." << endl;
     }
     T.stop();
-    clog << "Done comparing trees " << argv[1] << " " << argv[2] << endl;
     clog << "TOTAL TIME : \t\t" << T.secs() << " secs" << endl;
     clog << "Total number of iterations: " <<  i + 1 << endl;
-
-    lp.WriteSolution("yeastnet_precollapse.solution");
+    lp.WriteSolution(out);
 }
