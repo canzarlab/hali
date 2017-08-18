@@ -8,12 +8,6 @@ newick_child::newick_child(newick_node* node) : node(node), next(nullptr)
 {
 }
 
-newick_child::~newick_child()
-{
-    delete node;
-    delete next;
-}
-
 newick_node::newick_node(const string& taxon, float dist, newick_child* child) : child(child), taxon(taxon), dist(dist), parent(nullptr)
 {
     try { taxoni = stoi(taxon); } catch(...) { taxoni = -1; }
@@ -22,6 +16,26 @@ newick_node::newick_node(const string& taxon, float dist, newick_child* child) :
 newick_node::~newick_node()
 {
     delete child;
+}
+
+static void dealloc_dag(newick_node* node, vector<bool>& C)
+{
+    C[node->taxoni] = true;
+    for (newick_child* child = node->child; child; child = child->next)
+    {
+        if (!C[child->node->taxoni])
+            dealloc_dag(child->node, C);
+        delete child;
+    }
+    for (newick_parent* parent = node->parent; parent; parent = parent->next)
+        delete parent;
+    delete node;
+}
+
+void dealloc_dag(newick_node* node, int n)
+{
+    vector<bool> C(n);
+    dealloc_dag(node, C);
 }
 
 static newick_node* parse_node(string& str, size_t& itr, newick_child* child)
@@ -77,7 +91,7 @@ newick_node* load_tree(const char* filename)
 
 typedef map<string, vector<string> > msvs;
 
-newick_node* load_dag_internal(const string& r, msn& M, msvs& C)
+static newick_node* load_dag_internal(const string& r, msn& M, msvs& C)
 {
     if (newick_node* node = M[r])
         return node;
