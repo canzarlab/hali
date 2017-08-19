@@ -509,12 +509,6 @@ private:
             }
             sum += R[S][i];
         }
-        // TODO: unsure if needed...
-        for (int i = 0; i < Z; ++i)
-            for (int j = 0; j < G[i].size(); ++j)
-                if (i != S && j != T)
-                    if (R[i][j] != numeric_limits<double>::infinity())
-                        R[i][j] = 0;
         return sum;
     }
 
