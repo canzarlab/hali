@@ -717,7 +717,7 @@ private:
     {
         Q[noder->taxoni] = true;
         int i = nodel->taxoni, j = noder->taxoni;
-        if ((dag || nodel->parent) && nodel->child && noder->parent && noder->child)
+        if ((dag || nodel->parent) && nodel->child && (dag || noder->parent) && noder->child)
         {
             double w = 0;
             if (d == "j")
@@ -865,4 +865,6 @@ int main(int argc, char** argv)
     clog << "TOTAL TIME : \t\t" << T.secs() << " secs" << endl;
     clog << "Total number of iterations: " <<  i + 1 << endl;
     lp.WriteSolution(out);
+    delete t1;
+    delete t2;
 }
