@@ -10,6 +10,7 @@ struct newick_node;
 struct newick_child
 {
     newick_child(newick_node* node);
+    ~newick_child();
 
     newick_node* node;
     newick_child* next;

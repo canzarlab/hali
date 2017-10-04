@@ -8,6 +8,11 @@ newick_child::newick_child(newick_node* node) : node(node), next(nullptr)
 {
 }
 
+newick_child::~newick_child()
+{
+    delete next;
+}
+
 newick_node::newick_node(const string& taxon, float dist, newick_child* child) : child(child), taxon(taxon), dist(dist), parent(nullptr)
 {
     try { taxoni = stoi(taxon); } catch(...) { taxoni = -1; }
@@ -15,27 +20,26 @@ newick_node::newick_node(const string& taxon, float dist, newick_child* child) :
 
 newick_node::~newick_node()
 {
+    delete parent;
     delete child;
 }
 
-static void dealloc_dag(newick_node* node, vector<bool>& C)
+static void get_nodes(newick_node* node, vector<newick_node*>& N, vector<bool>& C)
 {
     C[node->taxoni] = true;
+    N.push_back(node);
     for (newick_child* child = node->child; child; child = child->next)
-    {
         if (!C[child->node->taxoni])
-            dealloc_dag(child->node, C);
-        delete child;
-    }
-    for (newick_parent* parent = node->parent; parent; parent = parent->next)
-        delete parent;
-    delete node;
+            get_nodes(child->node, N, C);
 }
 
 void dealloc_dag(newick_node* node, int n)
 {
     vector<bool> C(n);
-    dealloc_dag(node, C);
+    vector<newick_node*> N;
+    get_nodes(node, N, C);
+    for (newick_node* node : N)
+        delete node;
 }
 
 static newick_node* parse_node(string& str, size_t& itr, newick_child* child)
