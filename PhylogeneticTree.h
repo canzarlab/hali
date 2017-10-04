@@ -12,6 +12,7 @@ typedef vector<vi> vvi;
 typedef vector<double> vd;
 typedef vector<vd> vvd;
 typedef vector<bool> vb;
+typedef vector<vb> vvb;
 
 class Graph
 {
@@ -42,7 +43,7 @@ public:
     vvi G;
     vvd R;
 private:
-    void BuildNetwork(newick_node* node, newick_node* rnode, vb& C);
+    void BuildNetwork(newick_node* node, newick_node* rnode, vvb& C);
 };
 
 class Tree : public Graph
