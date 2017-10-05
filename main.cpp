@@ -508,6 +508,8 @@ private:
                 R[i + Z][T] += GetWeight(nodel->taxoni, i);
             }
             sum += R[S][i];
+            for (int j : G[i + Z])
+                R[j][i] = 0;
         }
         return sum;
     }
