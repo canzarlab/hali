@@ -10,6 +10,7 @@
 #include <queue>
 #include "geno/genoNLP.hpp"
 #include "geno/augmentedLagrangian.hpp"
+using namespace std::placeholders;
 
 Scalar const INF = numeric_limits<Scalar>::infinity();
 #define EPS 1e-3
@@ -539,10 +540,48 @@ private:
     vector<newick_node*> P;
 };
 
-class LP
+class Solver
 {
 public:
-    LP(Graph& t1, Graph& t2, string d, double k, bool dag) : d(d), t1(t1), t2(t2), c(t1.GetNumNodes() * t2.GetNumNodes()), nr_rows(0), nr_cols(0), k(k), dag(dag)
+    Solver(Graph& t1, Graph& t2, string d, double k, bool dag) : t1(t1), t2(t2), d(d), k(k), dag(dag)
+    {
+    }
+
+    virtual ~Solver() {}
+    virtual void Solve() = 0;
+    virtual void WriteSolution(string fileName) = 0;
+
+protected:
+    Graph &t1, &t2;
+
+    double JaccardSim(const list<string>& L1, const list<string>& L2)
+    {
+        vector<string> I(min(L1.size(), L2.size()));
+        auto iit = set_intersection(L1.begin(), L1.end(), L2.begin(), L2.end(), I.begin());
+        I.resize(iit - I.begin());
+        double i = I.size(), u = L1.size() + L2.size() - I.size();
+        return 2 * pow(i / u, k);
+    }
+
+    double SymdifSim(const list<string>& L1, const list<string>& L2)
+    {
+        vector<string> I(min(L1.size(), L2.size()));
+        auto iit = set_intersection(L1.begin(), L1.end(), L2.begin(), L2.end(), I.begin());
+        I.resize(iit - I.begin());
+        return 2 * I.size();
+    }
+
+    string d;
+    double k;
+    bool dag;
+};
+
+int c;
+
+class LP : public Solver
+{
+public:
+    LP(Graph& t1, Graph& t2, string d, double k, bool dag) : Solver(t1, t2, d, k, dag), c(t1.GetNumNodes() * t2.GetNumNodes()), nr_rows(0), nr_cols(0)
     {
         K.resize(t1.GetNumNodes());
         for (auto& v : K)
@@ -579,6 +618,39 @@ public:
     }
 
     void Solve()
+    {
+        MatchingConstraints();
+        int cnt = 1;
+        for (int i = 0; cnt; i++)
+        {
+            Timer T_lp, T_cross, T_indep;
+            T_lp.start();
+            SolveLP();
+            T_lp.stop();
+            clog << ">>> Time for solve: \t\t" << T_lp.secs() << " secs" << endl;
+            if (::c == 0)
+                break;
+
+            T_cross.start();
+            cnt = Add<CrossingConstraint>();
+            T_cross.stop();
+            clog << ">>> Time for crossing constraints: \t\t" << T_cross.secs() << " secs" << endl;
+
+            if (::c == 2)
+            {
+                T_indep.start();
+                if (dag)
+                    cnt += Add<AntichainConstraint>();
+                else
+                    cnt += Add<IndependentSetConstraint>();
+                T_indep.stop();
+                clog << ">>> Time for independent set constraints: \t\t" << T_indep.secs() << " secs" << endl;
+            }
+            clog << "Added " << cnt << " rows." << endl;
+        }
+    }
+
+    void SolveLP()
     {
         clog << "nr_rows = " << nr_rows << " and nr_cols = " << nr_cols << endl;
         warm_y.conservativeResizeLike(Vector::Zero(nr_rows)); // resizes y with 0's, but keeping old values intact.
@@ -695,7 +767,6 @@ public:
             }
             sol_file << endl;
         }
-        sol_file.close();
         if (dag)
             cout << weight << " ";
         else
@@ -755,23 +826,6 @@ private:
 
     int cnt;
 
-    double JaccardSim(const list<string>& L1, const list<string>& L2)
-    {
-        vector<string> I(min(L1.size(), L2.size()));
-        auto iit = set_intersection(L1.begin(), L1.end(), L2.begin(), L2.end(), I.begin());
-        I.resize(iit - I.begin());
-        double i = I.size(), u = L1.size() + L2.size() - I.size();
-        return 2 * pow(i / u, k);
-    }
-
-    double SymdifSim(const list<string>& L1, const list<string>& L2)
-    {
-        vector<string> I(min(L1.size(), L2.size()));
-        auto iit = set_intersection(L1.begin(), L1.end(), L2.begin(), L2.end(), I.begin());
-        I.resize(iit - I.begin());
-        return 2 * I.size();
-    }
-
     float SymdifDist(float weight)
     {
         int max1 = 0, max2 = 0;
@@ -785,22 +839,136 @@ private:
         return t1.GetNumNodes() - t1.L.size() - 1 + t2.GetNumNodes() - 1 - t2.L.size() - weight;
     }
 
-    double k;
-    string d;
     vector<ET> Triplets;
     Vector x, y;
     // backup x->warm_x and y->warm_y for two consecutive iterations
     Vector warm_x, warm_y;
     vvi K;
-    Graph &t1, &t2;
     Vector c;
     int nr_rows, nr_cols;
-    bool dag;
 };
+
+typedef tuple<int, int, int> iii;
+typedef vector<iii> viii;
+
+class GDAG : public DAG
+{
+public:
+    GDAG(const char* f1, const char* f2, bool y) : DAG(f1, f2, y)
+    {
+        D.resize(_n, vb(_n));
+        vb C(_n);
+        DFS(root, C);
+    }
+
+    vvb D;
+private:
+    void DFS(newick_node* node, vb& C)
+    {
+        int y = node->taxoni;
+        C[y] = true;
+        for (int x : G[y])
+            D[y][x - _n] = true;
+
+        for (newick_child* child = node->child; child; child = child->next)
+            if (!C[child->node->taxoni])
+                DFS(child->node, C);
+    }
+};
+
+class Greedy : public Solver
+{
+public:
+    Greedy(Graph& t1, Graph& t2, string d, double k, bool dag) : Solver(t1, t2, d, k, dag), A(t1.GetNumNodes(), vb(t2.GetNumNodes()))
+    {
+        vb P(t1.GetNumNodes());
+        DFSLeft(t1.GetRoot(), P);
+        sort(E.begin(), E.end(), [](const iii& a, const iii& b){return get<2>(a) > get<2>(b);});
+    }
+
+    void Solve()
+    {
+        for (iii& e : E)
+            if (none_of(M.begin(), M.end(), bind(&Greedy::CC, *this, _1, cref(e))))
+                M.push_back(e), A[get<0>(e)][get<1>(e)] = true;
+    }
+
+    void WriteSolution(string fileName)
+    {
+        ofstream sol_file(fileName);
+        int weight = 0;
+        for (vb& v : A)
+        {
+            for (bool b : v)
+                sol_file << b << "\t", weight += b;
+            sol_file << endl;
+        }
+        cout << weight << " ";
+    }
+
+private:
+    bool CC(const iii& a, const iii& b)
+    {
+        GDAG &t1 = static_cast<GDAG&>(this->t1);
+        GDAG &t2 = static_cast<GDAG&>(this->t2);
+        int i = get<0>(a), j = get<0>(b);
+        int x = get<1>(a), y = get<1>(b);
+        return t1.D[i][j] && t2.D[x][y];
+    }
+
+    void DFSLeft(newick_node* node, vb& P)
+    {
+        P[node->taxoni] = true;
+        {
+            vb Q(t2.GetNumNodes());
+            DFSRight(node, t2.GetRoot(), Q);
+        }
+        for (newick_child* child = node->child; child; child = child->next)
+            if (!P[child->node->taxoni])
+                DFSLeft(child->node, P);
+    }
+
+    void DFSRight(newick_node* nodel, newick_node* noder, vb& Q)
+    {
+        Q[noder->taxoni] = true;
+        int i = nodel->taxoni, j = noder->taxoni;
+        if ((dag || nodel->parent) && nodel->child && (dag || noder->parent) && noder->child)
+        {
+            double w = 0;
+            if (d == "j")
+                w = JaccardSim(t1.clade[nodel], t2.clade[noder]);
+            else
+                w = SymdifSim(t1.clade[nodel], t2.clade[noder]);
+
+            if (w != 0)
+                E.emplace_back(i, j, w);
+        }
+
+        for (newick_child* child = noder->child; child; child = child->next)
+            if (!Q[child->node->taxoni])
+                DFSRight(nodel, child->node, Q);
+    }
+    vvb A;
+    viii E, M;
+};
+
+Solver* MakeSolver(Graph& t1, Graph& t2, string d, double k, bool dag, bool greedy)
+{
+    if (greedy)
+        return new Greedy(t1, t2, d, k, dag);
+    return new LP(t1, t2, d, k, dag);
+}
+
+DAG* MakeDAG(const char* f1, const char* f2, bool y, bool greedy)
+{
+    if (greedy)
+        return new GDAG(f1, f2, y);
+    return new DAG(f1, f2, y);
+}
 
 int main(int argc, char** argv)
 {
-    bool dag = false;
+    bool dag = false, greedy = false;
     Graph *t1, *t2;
     const char* out;
     if (argc == 7)
@@ -810,63 +978,36 @@ int main(int argc, char** argv)
         t2 = new Tree(argv[2]);
         out = argv[3];
     }
-    else if (argc == 9)
+    else if (argc == 10)
     {
         clog << "Comparing dags " << argv[1] << " " << argv[3] << endl;
-        t1 = new DAG(argv[1], argv[2], true);
-        t2 = new DAG(argv[3], argv[4], false);
+        greedy = stoi(argv[argc - 1]);
+        t1 = MakeDAG(argv[1], argv[2], true, greedy);
+        t2 = MakeDAG(argv[3], argv[4], false, greedy);
         out = argv[5];
         dag = true;
     }
     else
     {
         cout << "tree usage: " << argv[0] << " <filename.newick> <filename.newick> <align> <c> <d> <k>" << endl;
-        cout << "dag usage: " << argv[0] << " <yeastnet> <mapping> <precollapse> <mapping> <align> <c> <d> <k>" << endl;
+        cout << "dag usage: " << argv[0] << " <yeastnet> <mapping> <precollapse> <mapping> <align> <c> <d> <k> <g>" << endl;
         return EXIT_FAILURE;
     }
-    int c = stoi(argv[argc - 3]);
-    string d = argv[argc - 2];
-    double k = stod(argv[argc - 1]);
+    ::c = stoi(argv[argc - 4]);
+    string d = argv[argc - 3];
+    double k = stod(argv[argc - 2]);
     assert(c >= 0 && c <= 2);
     assert(d == "j" || d == "s");
 
-    LP lp(*t1, *t2, d, k, dag);
-    lp.MatchingConstraints();
-    int cnt = 1, i;
+    Solver* solver = MakeSolver(*t1, *t2, d, k, dag, greedy);
+
     Timer T;
     T.start();
-    for (i = 0; cnt; i++)
-    {
-        Timer T_lp, T_cross, T_indep;
-        T_lp.start();
-        lp.Solve();
-        T_lp.stop();
-        clog << ">>> Time for solve: \t\t" << T_lp.secs() << " secs" << endl;
-        if (c == 0)
-            break;
-
-        T_cross.start();
-        cnt = lp.Add<CrossingConstraint>();
-        T_cross.stop();
-        clog << ">>> Time for crossing constraints: \t\t" << T_cross.secs() << " secs" << endl;
-
-        if (c == 2)
-        {
-            T_indep.start();
-            if (dag)
-                cnt += lp.Add<AntichainConstraint>();
-            else
-                cnt += lp.Add<IndependentSetConstraint>();
-            T_indep.stop();
-            clog << ">>> Time for independent set constraints: \t\t" << T_indep.secs() << " secs" << endl;
-        }
-
-        clog << "Added " << cnt << " rows." << endl;
-    }
+    solver->Solve();
     T.stop();
     clog << "TOTAL TIME : \t\t" << T.secs() << " secs" << endl;
-    clog << "Total number of iterations: " <<  i + 1 << endl;
-    lp.WriteSolution(out);
+    solver->WriteSolution(out);
     delete t1;
     delete t2;
+    delete solver;
 }
