@@ -889,7 +889,7 @@ public:
     void Solve()
     {
         for (iii& e : E)
-            if (none_of(M.begin(), M.end(), bind(&Greedy::CC, *this, _1, cref(e))))
+            if (all_of(M.begin(), M.end(), bind(&Greedy::CC, *this, _1, cref(e))))
                 M.push_back(e), A[get<0>(e)][get<1>(e)] = true;
     }
 
