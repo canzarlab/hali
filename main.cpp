@@ -908,7 +908,7 @@ private:
         GDAG &t2 = static_cast<GDAG&>(this->t2);
         int i = get<0>(a), j = get<0>(b);
         int x = get<1>(a), y = get<1>(b);
-        bool c2 = (t1.D[j][i] || t1.D[i][j]) && (t2.D[x][y] || t2.D[y][x]);
+        bool c2 = (t1.D[j][i] || t1.D[i][j]) == (t2.D[x][y] || t2.D[y][x]);
         bool c1 = (t1.D[i][j] == t2.D[x][y]); // assuming c2 is satisfied
         return c2 && c1;
     }
