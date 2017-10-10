@@ -9,6 +9,8 @@ using namespace std;
 
 typedef vector<int> vi;
 typedef pair<int, int> ii;
+typedef vector<bool> vb;
+typedef vector<vb> vbb;
 
 class segtree
 {
@@ -263,25 +265,25 @@ private:
     ii get_c_i()
     {
         c1 = c2 = 0;
-        vector<bool> C(t1->get_size());
+        vbb C(t1->get_size(), vb(t2->get_size()));
         for (newick_node* leaf : t1->leaves)
             dfs_c_i(leaf, leaf, C);
         swap(t1, t2);
         return make_pair(c1, c2);
     }
 
-    void dfs_c_i(newick_node* node, newick_node* rnode, vector<bool>& C)
+    void dfs_c_i(newick_node* node, newick_node* rnode, vbb& C)
     {
         if (node != rnode)
             check_c(node->taxoni, rnode->taxoni);
-        else
-            C[node->taxoni] = true;
 
+        C[node->taxoni][rnode->taxoni] = true;
         for (newick_parent* parent = node->parent; parent; parent = parent->next)
         {
             newick_node* pn = parent->node;
-            dfs_c_i(pn, rnode, C);
-            if (!C[pn->taxoni])
+            if (!C[pn->taxoni][rnode->taxoni])
+                dfs_c_i(pn, rnode, C);
+            if (!C[pn->taxoni][pn->taxoni])
                 dfs_c_i(pn, pn, C);
         }
     }
