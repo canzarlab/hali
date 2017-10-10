@@ -553,6 +553,41 @@ public:
 
 protected:
     Graph &t1, &t2;
+    string d;
+    double k;
+    bool dag;
+
+    template <class F>
+    void DFSLeft(newick_node* node, vb& P, F f)
+    {
+        P[node->taxoni] = true;
+        {
+            vb Q(t2.GetNumNodes());
+            DFSRight(node, t2.GetRoot(), Q, f);
+        }
+        for (newick_child* child = node->child; child; child = child->next)
+            if (!P[child->node->taxoni])
+                DFSLeft(child->node, P, f);
+    }
+
+private:
+    template <class F>
+    void DFSRight(newick_node* nodel, newick_node* noder, vb& Q, F f)
+    {
+        Q[noder->taxoni] = true;
+        double w = 0;
+        if (d == "j")
+            w = JaccardSim(t1.clade[nodel], t2.clade[noder]);
+        else
+            w = SymdifSim(t1.clade[nodel], t2.clade[noder]);
+
+        if (w != 0)
+            f(nodel, noder, w);
+
+        for (newick_child* child = noder->child; child; child = child->next)
+            if (!Q[child->node->taxoni])
+                DFSRight(nodel, child->node, Q, f);
+    }
 
     double JaccardSim(const list<string>& L1, const list<string>& L2)
     {
@@ -570,10 +605,6 @@ protected:
         I.resize(iit - I.begin());
         return 2 * I.size();
     }
-
-    string d;
-    double k;
-    bool dag;
 };
 
 int c;
@@ -583,21 +614,33 @@ class LP : public Solver
 public:
     LP(Graph& t1, Graph& t2, string d, double k, bool dag) : Solver(t1, t2, d, k, dag), c(t1.GetNumNodes() * t2.GetNumNodes()), nr_rows(0), nr_cols(0)
     {
-        K.resize(t1.GetNumNodes());
-        for (auto& v : K)
-            v.resize(t2.GetNumNodes());
+        K.resize(t1.GetNumNodes(), vi(t2.GetNumNodes(), -1));
     }
 
     ~LP()
     {
     }
 
+    int cnt;
     void MatchingConstraints()
     {
         cnt = 0;
         vb P(t1.GetNumNodes());
-        DFSLeft(t1.GetRoot(), P);
         int n = t1.GetNumNodes(), m = t2.GetNumNodes();
+        DFSLeft(t1.GetRoot(), P, [&](newick_node* nodel, newick_node* noder, double w)
+        {
+            if ((dag || nodel->parent) && nodel->child && (dag || noder->parent) && noder->child)
+            {
+                int i = nodel->taxoni, j = noder->taxoni;
+                int col = i * m + j - cnt;
+                K[i][j] = col;
+                Triplets.emplace_back(i, col, 1.);
+                Triplets.emplace_back(n + j, col, 1.);
+                c(col) = w;
+            }
+            else
+                ++cnt;
+        });
         nr_rows = n + m;
         nr_cols = n * m - cnt;
         c.conservativeResize(nr_cols);
@@ -774,58 +817,6 @@ public:
     }
 
 private:
-    void DFSLeft(newick_node* node, vb& P)
-    {
-        P[node->taxoni] = true;
-        {
-            vb Q(t2.GetNumNodes());
-            DFSRight(node, t2.GetRoot(), Q);
-        }
-        for (newick_child* child = node->child; child; child = child->next)
-            if (!P[child->node->taxoni])
-                DFSLeft(child->node, P);
-    }
-
-    void DFSRight(newick_node* nodel, newick_node* noder, vb& Q)
-    {
-        Q[noder->taxoni] = true;
-        int i = nodel->taxoni, j = noder->taxoni;
-        if ((dag || nodel->parent) && nodel->child && (dag || noder->parent) && noder->child)
-        {
-            double w = 0;
-            if (d == "j")
-                w = JaccardSim(t1.clade[nodel], t2.clade[noder]);
-            else
-                w = SymdifSim(t1.clade[nodel], t2.clade[noder]);
-
-            if (w != 0)
-            {
-                int n = t1.GetNumNodes(), m = t2.GetNumNodes();
-                int col = i * m + j - cnt;
-                K[i][j] = col;
-                Triplets.push_back(ET(i, col, 1.));
-                Triplets.push_back(ET(n + j, col, 1.));
-                c(col) = w;
-            }
-            else
-            {
-                K[i][j] = -1;
-                ++cnt;
-            }
-        }
-        else
-        {
-            K[i][j] = -1;
-            ++cnt;
-        }
-
-        for (newick_child* child = noder->child; child; child = child->next)
-            if (!Q[child->node->taxoni])
-                DFSRight(nodel, child->node, Q);
-    }
-
-    int cnt;
-
     float SymdifDist(float weight)
     {
         int max1 = 0, max2 = 0;
@@ -882,7 +873,11 @@ public:
     Greedy(Graph& t1, Graph& t2, string d, double k, bool dag) : Solver(t1, t2, d, k, dag), A(t1.GetNumNodes(), vb(t2.GetNumNodes()))
     {
         vb P(t1.GetNumNodes());
-        DFSLeft(t1.GetRoot(), P);
+        DFSLeft(t1.GetRoot(), P, [&](newick_node* nodel, newick_node* noder, double w)
+        {
+            if ((dag || nodel->parent) && nodel->child && (dag || noder->parent) && noder->child)
+                E.emplace_back(nodel->taxoni, noder->taxoni, w);
+        });
         sort(E.begin(), E.end(), [](const iii& a, const iii& b){return get<2>(a) > get<2>(b);});
     }
 
@@ -918,38 +913,6 @@ private:
         return c2 && c1;
     }
 
-    void DFSLeft(newick_node* node, vb& P)
-    {
-        P[node->taxoni] = true;
-        {
-            vb Q(t2.GetNumNodes());
-            DFSRight(node, t2.GetRoot(), Q);
-        }
-        for (newick_child* child = node->child; child; child = child->next)
-            if (!P[child->node->taxoni])
-                DFSLeft(child->node, P);
-    }
-
-    void DFSRight(newick_node* nodel, newick_node* noder, vb& Q)
-    {
-        Q[noder->taxoni] = true;
-        int i = nodel->taxoni, j = noder->taxoni;
-        if ((dag || nodel->parent) && nodel->child && (dag || noder->parent) && noder->child)
-        {
-            double w = 0;
-            if (d == "j")
-                w = JaccardSim(t1.clade[nodel], t2.clade[noder]);
-            else
-                w = SymdifSim(t1.clade[nodel], t2.clade[noder]);
-
-            if (w != 0)
-                E.emplace_back(i, j, w);
-        }
-
-        for (newick_child* child = noder->child; child; child = child->next)
-            if (!Q[child->node->taxoni])
-                DFSRight(nodel, child->node, Q);
-    }
     vvb A;
     viii E, M;
 };
