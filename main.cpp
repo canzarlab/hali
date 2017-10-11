@@ -558,10 +558,9 @@ private:
                 for (newick_node* nodel : P)
                     PN.emplace_back(nodel->taxoni, i);
 
-        cmutex.lock();
+        lock_guard<mutex> g(cmutex);
         AddConstraint(*Triplets, nr_rows + ncr, PN);
         ++ncr;
-        cmutex.unlock();
     }
 
     vvi& G;
