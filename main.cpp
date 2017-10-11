@@ -420,14 +420,10 @@ private:
     void DFSRight(newick_node* nodel, newick_node* noder, vb& Q, F f)
     {
         Q[noder->taxoni] = true;
-        double w = 0;
         if (d == "j")
-            w = JaccardSim(t1.clade[nodel], t2.clade[noder]);
+            f(nodel, noder, JaccardSim(t1.clade[nodel], t2.clade[noder]));
         else
-            w = SymdifSim(t1.clade[nodel], t2.clade[noder]);
-
-        if (w != 0)
-            f(nodel, noder, w);
+            f(nodel, noder, SymdifSim(t1.clade[nodel], t2.clade[noder]));
 
         for (newick_child* child = noder->child; child; child = child->next)
             if (!Q[child->node->taxoni])
@@ -474,7 +470,7 @@ public:
         int n = t1.GetNumNodes(), m = t2.GetNumNodes();
         DFSLeft(t1.GetRoot(), P, [&](newick_node* nodel, newick_node* noder, double w)
         {
-            if ((dag || nodel->parent) && nodel->child && (dag || noder->parent) && noder->child)
+            if (w != 0 && (dag || nodel->parent) && nodel->child && (dag || noder->parent) && noder->child)
             {
                 int i = nodel->taxoni, j = noder->taxoni;
                 int col = i * m + j - cnt;
@@ -720,7 +716,7 @@ public:
         vb P(t1.GetNumNodes());
         DFSLeft(t1.GetRoot(), P, [&](newick_node* nodel, newick_node* noder, double w)
         {
-            if ((dag || nodel->parent) && nodel->child && (dag || noder->parent) && noder->child)
+            if (w != 0 && (dag || nodel->parent) && nodel->child && (dag || noder->parent) && noder->child)
                 E.emplace_back(nodel->taxoni, noder->taxoni, w);
         });
         sort(E.begin(), E.end(), [](const iii& a, const iii& b){return get<2>(a) > get<2>(b);});
