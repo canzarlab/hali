@@ -14,6 +14,8 @@ typedef vector<vd> vvd;
 typedef vector<bool> vb;
 typedef vector<vb> vvb;
 
+const size_t NR_THREADS = 4;
+
 class Graph
 {
 public:
@@ -41,7 +43,7 @@ public:
     ~DAG() { }
 
     vvi G;
-    vvd R[4];
+    vvd R[NR_THREADS];
 private:
     void BuildNetwork(newick_node* node, newick_node* rnode, vvb& C);
 };

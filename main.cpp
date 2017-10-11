@@ -455,10 +455,10 @@ private:
     void RunParallel()
     {
         vector<thread> vt;
-        for (int i = 0; i < 4; ++i)
+        for (int i = 0; i < NR_THREADS; ++i)
             vt.emplace_back(&AntichainConstraint::AntichainJob, this, i);
 
-        for (int i = 0; i < 4; ++i)
+        for (int i = 0; i < NR_THREADS; ++i)
             vt[i].join();
     }
 
