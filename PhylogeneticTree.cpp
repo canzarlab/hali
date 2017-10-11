@@ -14,9 +14,8 @@ DAG::DAG(const char* f1, const char* f2, bool y)
     Init(root);
     size_t SZ = _n * 2 + 2;
     G.resize(SZ);
-    R.resize(SZ);
-    for (vd& v : R)
-        v.resize(SZ);
+    for (int j = 0; j < 4; ++j)
+        R[j].resize(SZ, vd(SZ));
 
     int S = SZ - 2, T = SZ - 1;
     for (int i = 0; i < _n; ++i)
@@ -37,7 +36,8 @@ void DAG::BuildNetwork(newick_node* node, newick_node* rnode, vvb& C)
     int i = node->taxoni;
     if (node != rnode)
     {
-        R[l][i + _n] = numeric_limits<double>::infinity();
+        for (int j = 0; j < 4; ++j)
+            R[l][i + _n][j] = numeric_limits<double>::infinity();
         G[l].push_back(i + _n);
         G[i + _n].push_back(l);
     }

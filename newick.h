@@ -3,6 +3,7 @@
 
 #include <string>
 #include <map>
+#include <vector>
 using namespace std;
 
 struct newick_node;
@@ -31,6 +32,7 @@ struct newick_node
 };
 
 typedef map<string, newick_node*> msn;
+typedef vector<newick_node*> vn;
 
 newick_node* load_tree(const char* filename);
 newick_node* load_dag(const char* f1, bool y, msn& M);

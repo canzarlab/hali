@@ -2,7 +2,6 @@
 #include <fstream>
 #include <iostream>
 #include <iomanip>
-#include <vector>
 
 newick_child::newick_child(newick_node* node) : node(node), next(nullptr)
 {
@@ -24,7 +23,7 @@ newick_node::~newick_node()
     delete child;
 }
 
-static void get_nodes(newick_node* node, vector<newick_node*>& N, vector<bool>& C)
+static void get_nodes(newick_node* node, vn& N, vector<bool>& C)
 {
     C[node->taxoni] = true;
     N.push_back(node);
@@ -36,7 +35,7 @@ static void get_nodes(newick_node* node, vector<newick_node*>& N, vector<bool>& 
 void dealloc_dag(newick_node* node, int n)
 {
     vector<bool> C(n);
-    vector<newick_node*> N;
+    vn N;
     get_nodes(node, N, C);
     for (newick_node* node : N)
         delete node;

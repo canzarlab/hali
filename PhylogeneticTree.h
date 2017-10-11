@@ -23,7 +23,7 @@ public:
     int GetNumNodes() const { return _n; }
     newick_node* GetRoot() const { return root; }
 
-    vector<newick_node*> L;
+    vn L;
     map<newick_node*, list<string> > clade;
 
 protected:
@@ -41,7 +41,7 @@ public:
     ~DAG() { }
 
     vvi G;
-    vvd R;
+    vvd R[4];
 private:
     void BuildNetwork(newick_node* node, newick_node* rnode, vvb& C);
 };

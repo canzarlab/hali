@@ -1,5 +1,5 @@
 CXX = g++
-CFLAGS = -O2 -std=c++11
+CFLAGS = -O2 -std=c++11 -pthread
 INCL = -I.
 BINARIES = solver filter bgen conflicts
 GENO_OBJS = main.o geno/augmentedLagrangian.o geno/lbfgsb.o geno/lineSearch.o

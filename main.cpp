@@ -5,6 +5,8 @@
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
+#include <thread>
+#include <mutex>
 #include "Eigen/Dense"
 #include "Eigen/Sparse"
 #include <queue>
@@ -419,7 +421,7 @@ private:
 class AntichainConstraint : Constraint
 {
 public:
-    AntichainConstraint(Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp) : Constraint(t1, t2, K, x, swp), G(((DAG*)&t2)->G), R(((DAG*)&t2)->R)
+    AntichainConstraint(Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp) : Constraint(t1, t2, K, x, swp), G(((DAG*)&t2)->G)
     {
         Z = t2.GetNumNodes();
         SZ = Z * 2 + 2;
@@ -432,20 +434,48 @@ public:
         ncr = 0;
         this->nr_rows = nr_rows;
         this->Triplets = &Triplets;
+        vn P;
         for (newick_node* leaf : t1.L)
-            DFSLeft(leaf);
+            DFSLeft(leaf, P);
+        RunParallel();
         return ncr;
     }
 
 private:
-    void DFSLeft(newick_node* node)
+    void DFSLeft(newick_node* node, vn& P)
     {
         P.push_back(node);
         if (!node->parent)
-            Antichain();
+            PQ.push(P);
         for (newick_parent* parent = node->parent; parent; parent = parent->next)
-            DFSLeft(parent->node);
+            DFSLeft(parent->node, P);
         P.pop_back();
+    }
+
+    void RunParallel()
+    {
+        vector<thread> vt;
+        for (int i = 0; i < 4; ++i)
+            vt.emplace_back(&AntichainConstraint::AntichainJob, this, i);
+
+        for (int i = 0; i < 4; ++i)
+            vt[i].join();
+    }
+
+    void AntichainJob(int id)
+    {
+        while (true)
+        {
+            vn P;
+            {
+                lock_guard<mutex> g(qmutex);
+                if (PQ.empty())
+                    break;
+                P = move(PQ.front());
+                PQ.pop();
+            }
+            Antichain(P, ((DAG&)t2).R[id]);
+        }
     }
 
     bool AugmentingPath(vvi& G, vi& Q, vvd& R)
@@ -466,7 +496,7 @@ private:
         return false;
     }
 
-    double MaxFlow(vi& Q)
+    double MaxFlow(vi& Q, vvd& R)
     {
         double flow = 0;
         while (AugmentingPath(G, Q, R))
@@ -483,7 +513,7 @@ private:
         return flow;
     }
 
-    void BFS(vi& Q)
+    void BFS(vi& Q, vvd& R)
     {
         queue<int> W;
         W.push(S);
@@ -496,7 +526,7 @@ private:
         }
     }
 
-    double Reset()
+    double Reset(vn& P, vvd& R)
     {
         double sum = 0;
         for (int i = 0; i < Z; ++i)
@@ -514,29 +544,31 @@ private:
         return sum;
     }
 
-    void Antichain()
+    void Antichain(vn& P, vvd& R)
     {
         vi Q(SZ, -1);
-        if (Reset() - MaxFlow(Q) <= 1 + EPS)
+        if (Reset(P, R) - MaxFlow(Q, R) <= 1 + EPS)
             return;
 
         fill(Q.begin(), Q.end(), -1);
-        BFS(Q);
+        BFS(Q, R);
         vii PN;
         for (int i = 0; i < Z; ++i)
             if (Q[i] != -1 && Q[i + Z] == -1)
                 for (newick_node* nodel : P)
                     PN.emplace_back(nodel->taxoni, i);
 
+        cmutex.lock();
         AddConstraint(*Triplets, nr_rows + ncr, PN);
         ++ncr;
+        cmutex.unlock();
     }
 
     vvi& G;
-    vvd& R;
     int ncr, nr_rows, S, T, Z, SZ;
     vector<ET>* Triplets;
-    vector<newick_node*> P;
+    mutex cmutex, qmutex;
+    queue<vn> PQ;
 };
 
 class LP
