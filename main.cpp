@@ -26,22 +26,22 @@ public:
     virtual int AddTriplets(vector<ET>& Triplets, int nr_rows) = 0;
 
 protected:
-    int GetCol(int i, int j)
+    int GetCol(int i, int j) const
     {
         return swp ? K[j][i] : K[i][j];
     }
 
-    int GetCol(newick_node* nodel, newick_node* noder)
+    int GetCol(newick_node* nodel, newick_node* noder) const
     {
         return GetCol(nodel->taxoni, noder->taxoni);
     }
 
-    double GetWeight(newick_node* nodel, newick_node* noder)
+    double GetWeight(newick_node* nodel, newick_node* noder) const
     {
         return GetWeight(nodel->taxoni, noder->taxoni);
     }
 
-    double GetWeight(int i, int j)
+    double GetWeight(int i, int j) const
     {
         int in = GetCol(i, j);
         return in == -1 ? 0 : x(in);
@@ -208,7 +208,7 @@ public:
     }
 
 private:
-    double PathSum(newick_node* nodel, newick_node* noder)
+    double PathSum(newick_node* nodel, newick_node* noder) const
     {
         return nodel ? GetWeight(nodel, noder) + PathSum(nodel->parent ? nodel->parent->node : nullptr, noder) : 0;
     }
