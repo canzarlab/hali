@@ -37,7 +37,7 @@ void DAG::BuildNetwork(newick_node* node, newick_node* rnode, vvb& C)
     if (node != rnode)
     {
         for (int j = 0; j < 4; ++j)
-            R[l][i + _n][j] = numeric_limits<double>::infinity();
+            R[j][l][i + _n] = numeric_limits<double>::infinity();
         G[l].push_back(i + _n);
         G[i + _n].push_back(l);
     }
