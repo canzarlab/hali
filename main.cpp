@@ -715,7 +715,7 @@ private:
 class Greedy : public Solver
 {
 public:
-    Greedy(Graph& t1, Graph& t2, string d, double k, bool dag) : Solver(t1, t2, d, k, dag), A(t1.GetNumNodes(), vb(t2.GetNumNodes()))
+    Greedy(Graph& t1, Graph& t2, string d, double k, bool dag) : Solver(t1, t2, d, k, dag), A(t1.GetNumNodes(), vd(t2.GetNumNodes()))
     {
         vb P(t1.GetNumNodes());
         DFSLeft(t1.GetRoot(), P, [&](newick_node* nodel, newick_node* noder, double w)
@@ -730,17 +730,17 @@ public:
     {
         for (iii& e : E)
             if (all_of(M.begin(), M.end(), bind(&Greedy::CC, *this, _1, cref(e))))
-                M.push_back(e), A[get<0>(e)][get<1>(e)] = true;
+                M.push_back(e), A[get<0>(e)][get<1>(e)] = get<2>(e);
     }
 
     void WriteSolution(string fileName)
     {
         ofstream sol_file(fileName);
-        int weight = 0;
-        for (vb& v : A)
+        double weight = 0;
+        for (vd& v : A)
         {
-            for (bool b : v)
-                sol_file << b << "\t", weight += b;
+            for (double d : v)
+                sol_file << d << "\t", weight += d;
             sol_file << endl;
         }
         cout << weight << " ";
@@ -758,7 +758,7 @@ private:
         return c2 && c1;
     }
 
-    vvb A;
+    vvd A;
     viii E, M;
 };
 
