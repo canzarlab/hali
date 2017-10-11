@@ -2,6 +2,7 @@
 #define __TIMER_H__
 
 #include <sys/time.h>
+#include <sys/types.h>
 
 //
 //! A SIMPLE CLASS FOR TIME MEASUREMENTS.

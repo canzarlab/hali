@@ -1,12 +1,18 @@
+#ifndef GENO_H
+#define GENO_H
+
 #include "Eigen/Dense"
 #include "Eigen/Sparse"
 #include "geno/genoNLP.hpp"
 #include "geno/augmentedLagrangian.hpp"
+#include <limits>
+using namespace std;
 
 Scalar const INF = numeric_limits<Scalar>::infinity();
 
 // declares a column-major sparse matrix type of double
 typedef Eigen::SparseMatrix<Scalar> SpMat;
+typedef Eigen::Triplet<Scalar> ET;
 
 class SimpleJRF : public GenoNLP
 {
@@ -186,3 +192,5 @@ class IntegerPackingJRF : public SimpleJRF {
        }
 
 };
+
+#endif

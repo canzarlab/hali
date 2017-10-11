@@ -1,5 +1,5 @@
-#ifndef PHYLO_TREE_H
-#define PHYLO_TREE_H
+#ifndef GRAPH_H
+#define GRAPH_H
 
 #include <vector>
 #include <map>
@@ -57,6 +57,16 @@ public:
 protected:
     void Leaf(newick_node* node);
     void Child(newick_node* node, newick_node* child);
+};
+
+class GDAG : public DAG
+{
+public:
+    GDAG(const char* f1, const char* f2, bool y);
+
+    vvb D;
+private:
+    void DFS(newick_node* node, vb& C);
 };
 
 #endif

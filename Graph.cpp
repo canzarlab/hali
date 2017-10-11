@@ -1,4 +1,4 @@
-#include "PhylogeneticTree.h"
+#include "Graph.h"
 #include <fstream>
 #include <limits>
 
@@ -98,4 +98,23 @@ void Tree::Child(newick_node* node, newick_node* child)
 {
     list<string> &cl = clade[node], &cr = clade[child];
     cl.insert(cl.end(), cr.begin(), cr.end());
+}
+
+GDAG::GDAG(const char* f1, const char* f2, bool y) : DAG(f1, f2, y)
+{
+    D.resize(_n, vb(_n));
+    vb C(_n);
+    DFS(root, C);
+}
+
+void GDAG::DFS(newick_node* node, vb& C)
+{
+    int y = node->taxoni;
+    C[y] = true;
+    for (int x : G[y])
+        D[y][x - _n] = true;
+
+    for (newick_child* child = node->child; child; child = child->next)
+        if (!C[child->node->taxoni])
+            DFS(child->node, C);
 }

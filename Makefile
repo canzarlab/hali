@@ -1,4 +1,4 @@
-CXX = g++
+CXX = clang++
 CFLAGS = -O2 -std=c++11 -pthread
 INCL = -I.
 BINARIES = solver filter bgen conflicts
@@ -22,7 +22,7 @@ geno/%.o: geno/%.cpp
 %.o: %.cpp $(HEADERS)
 	$(CXX) -c $< $(CFLAGS) $(INCL)
 
-solver: $(GENO_OBJS) PhylogeneticTree.o newick.o
+solver: $(GENO_OBJS) Graph.o Greedy.o Solver.o LP.o AntichainConstraint.o Constraint.o IndependentSetConstraint.o CrossingConstraint.o newick.o
 	$(CXX) -o $@ $^ $(CFLAGS)
 
 filter: filter.o
