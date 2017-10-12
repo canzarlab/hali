@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <iomanip>
+#include <algorithm>
 
 newick_child::newick_child(newick_node* node) : node(node), next(nullptr)
 {
@@ -23,7 +24,7 @@ newick_node::~newick_node()
     delete child;
 }
 
-static void get_nodes(newick_node* node, vn& N, vector<bool>& C)
+static void get_nodes(newick_node* node, vn& N, vb& C)
 {
     C[node->taxoni] = true;
     N.push_back(node);
@@ -34,7 +35,7 @@ static void get_nodes(newick_node* node, vn& N, vector<bool>& C)
 
 void dealloc_dag(newick_node* node, int n)
 {
-    vector<bool> C(n);
+    vb C(n);
     vn N;
     get_nodes(node, N, C);
     for (newick_node* node : N)
@@ -92,7 +93,11 @@ newick_node* load_tree(const char* filename)
     return parse_tree(str, itr);
 }
 
-typedef map<string, vector<string> > msvs;
+typedef vector<string> vs;
+typedef map<string, vs> msvs;
+typedef pair<string, vs> svs;
+typedef pair<string, string> ss;
+typedef vector<ss> vss;
 
 static newick_node* load_dag_internal(const string& r, msn& M, msvs& C)
 {
@@ -109,22 +114,41 @@ static newick_node* load_dag_internal(const string& r, msn& M, msvs& C)
     return M[r] = new newick_node("", 0, child);
 }
 
-newick_node* load_dag(const char* f1, bool y, msn& M)
+newick_node* load_dag(const char* f1, const char* f2, mnls& clade, msn& M)
 {
+    vss S;
     msvs C, P;
     ifstream ef(f1);
     string n1, n2, s;
-    while (ef >> n1 >> n2)
+    while (ef >> n1 >> n2 >> s)
     {
-        if (y) ef >> s;
-        P[n1].push_back(n2);
-        P[n2];
-        C[n2].push_back(n1);
+        if (s == "default")
+        {
+            P[n1].push_back(n2);
+            P[n2];
+            C[n2].push_back(n1);
+        }
+        else if (s == "gene" && !f2)
+            S.emplace_back(n1, n2);
+        else
+            cerr << "WARNING: unsupported entry!\n";
     }
-    for (auto& i : P)
-        if (i.second.empty())
-            return load_dag_internal(i.first, M, C);
-    return nullptr;
+
+    const auto& l = [](const svs& i){return i.second.empty();};
+    const string& r = find_if(P.begin(), P.end(), l)->first;
+    newick_node* root = load_dag_internal(r, M, C);
+
+    if (f2)
+    {
+        ifstream lf(f2);
+        while (lf >> n1 >> n2)
+            clade[M[n2]].push_back(n1);
+    }
+    else
+        for (const ss& p : S)
+            clade[M[p.first]].push_back(p.second);
+
+    return root;
 }
 
 void print_tree(newick_node* root, ostream& file)

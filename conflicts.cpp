@@ -9,7 +9,6 @@ using namespace std;
 
 typedef vector<int> vi;
 typedef pair<int, int> ii;
-typedef vector<bool> vb;
 typedef vector<vb> vbb;
 
 class segtree
@@ -356,14 +355,15 @@ private:
 
 class ccd : public cc
 {
+    mnls cl1, cl2; // TODO: use clades for scoring
     msn A, B;
 public:
-    ccd(const char* fn1, const char* fn2, const char* fn3, const char* fn4, const char* fn5) :
+    ccd(const char* fn1, const char* fn2, const char* fn3, const char* fn4) :
         cc(nullptr, nullptr)
     {
-        (t1 = new dag(load_dag(fn1, true, A)))->init();
-        (t2 = new dag(load_dag(fn3, false, B)))->init();
-        ifstream f(fn5);
+        (t1 = new dag(load_dag(fn1, fn2, cl1, A)))->init();
+        (t2 = new dag(load_dag(fn3, nullptr, cl2, B)))->init();
+        ifstream f(fn4);
         string a, b;
         float p;
         while (getline(f, a), a != "Matched");
@@ -394,16 +394,16 @@ public:
 
 int main(int argc, char** argv)
 {
-    int c1, c2;
-    if (argc != 5 && argc != 6)
+    int c1, c2, opt = (argc == 6 ? stoi(argv[5]) : -1);
+    if (opt > 1 || opt < 0)
     {
-        cout << "tree usage " << argv[0] << " <t1.newick> <t2.newick> <align> <n>" << endl;
-        cout << "dag usage: " << argv[0] << " <yeastnet> <mapping> <precollapse> <mapping> <align>" << endl;
+        cout << "tree usage " << argv[0] << " <t1.newick> <t2.newick> <align> <n> 0" << endl;
+        cout << "dag usage: " << argv[0] << " <yeastnet> <mapping> <go> <align> 1" << endl;
         return EXIT_FAILURE;
     }
-    else if (argc == 5)
+    else if (opt == 0)
         tie(c1, c2) = cct(argv[1], argv[2], argv[3], stoi(argv[4])).get_c();
     else
-        tie(c1, c2) = ccd(argv[1], argv[2], argv[3], argv[4], argv[5]).get_c();
+        tie(c1, c2) = ccd(argv[1], argv[2], argv[3], argv[4]).get_c();
     cout << c1 << " " << c2 << "\n";
 }

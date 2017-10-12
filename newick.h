@@ -4,6 +4,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <list>
 using namespace std;
 
 struct newick_node;
@@ -33,9 +34,12 @@ struct newick_node
 
 typedef map<string, newick_node*> msn;
 typedef vector<newick_node*> vn;
+typedef list<string> ls;
+typedef map<newick_node*, ls> mnls;
+typedef vector<bool> vb;
 
 newick_node* load_tree(const char* filename);
-newick_node* load_dag(const char* f1, bool y, msn& M);
+newick_node* load_dag(const char* f1, const char* f2, mnls& clade, msn& M);
 void dealloc_dag(newick_node* node, int n);
 void print_tree(newick_node* root, ostream& file);
 

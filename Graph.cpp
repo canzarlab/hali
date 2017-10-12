@@ -2,19 +2,13 @@
 #include <fstream>
 #include <limits>
 
-DAG::DAG(const char* f1, const char* f2, bool y)
+DAG::DAG(const char* f1, const char* f2)
 {
     msn M;
-    root = load_dag(f1, y, M);
-    ifstream lf(f2);
-    string s, n1;
-    while (lf >> s >> n1)
-        clade[M[n1]].push_back(s);
-
-    Init(root);
+    Init(root = load_dag(f1, f2, clade, M));
 }
 
-LDAG::LDAG(const char* f1, const char* f2, bool y) : DAG(f1, f2, y)
+LDAG::LDAG(const char* f1, const char* f2) : DAG(f1, f2)
 {
     size_t SZ = _n * 2 + 2;
     G.resize(SZ);
@@ -104,7 +98,7 @@ void Tree::Child(newick_node* node, newick_node* child)
     cl.insert(cl.end(), cr.begin(), cr.end());
 }
 
-GDAG::GDAG(const char* f1, const char* f2, bool y) : DAG(f1, f2, y), D(_n, vb(_n))
+GDAG::GDAG(const char* f1, const char* f2) : DAG(f1, f2), D(_n, vb(_n))
 {
 }
 

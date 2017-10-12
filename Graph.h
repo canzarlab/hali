@@ -11,7 +11,6 @@ typedef vector<int> vi;
 typedef vector<vi> vvi;
 typedef vector<double> vd;
 typedef vector<vd> vvd;
-typedef vector<bool> vb;
 typedef vector<vb> vvb;
 
 const size_t NR_THREADS = 4;
@@ -26,7 +25,7 @@ public:
     newick_node* GetRoot() const { return root; }
 
     vn L;
-    map<newick_node*, list<string> > clade;
+    mnls clade;
 
 protected:
     void Init(newick_node* node);
@@ -39,7 +38,7 @@ protected:
 class DAG : public Graph
 {
 public:
-    DAG(const char* f1, const char* f2, bool y);
+    DAG(const char* f1, const char* f2);
     ~DAG() { }
 
     DAG* BuildNetwork();
@@ -63,7 +62,7 @@ protected:
 class LDAG : public DAG
 {
 public:
-    LDAG(const char* f1, const char* f2, bool y);
+    LDAG(const char* f1, const char* f2);
 
     vvi G;
     vvd R[NR_THREADS];
@@ -74,7 +73,7 @@ protected:
 class GDAG : public DAG
 {
 public:
-    GDAG(const char* f1, const char* f2, bool y);
+    GDAG(const char* f1, const char* f2);
 
     vvb D;
 protected:
