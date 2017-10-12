@@ -29,7 +29,7 @@ void Greedy::WriteSolution(string fileName)
     for (vd& v : A)
     {
         for (double d : v)
-            sol_file << d << "\t", weight += d;
+            sol_file << (d != 0.) << "\t", weight += d;
         sol_file << endl;
     }
     cout << weight << " ";
