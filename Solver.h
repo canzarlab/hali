@@ -26,11 +26,9 @@ protected:
 private:
     template <class F>
     void DFSRight(newick_node* nodel, newick_node* noder, vb& Q, F f);
-
     double JaccardSim(const list<string>& L1, const list<string>& L2) const;
     double SymdifSim(const list<string>& L1, const list<string>& L2) const;
 };
-
 
 template <class F>
 void Solver::DFSLeft(newick_node* node, vb& P, F f)
@@ -44,7 +42,6 @@ void Solver::DFSLeft(newick_node* node, vb& P, F f)
         if (!P[child->node->taxoni])
             DFSLeft(child->node, P, f);
 }
-
 
 template <class F>
 void Solver::DFSRight(newick_node* nodel, newick_node* noder, vb& Q, F f)

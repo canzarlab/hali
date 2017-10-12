@@ -4,8 +4,8 @@
 #include "Solver.h"
 #include <tuple>
 
-typedef tuple<int, int, int> iii;
-typedef vector<iii> viii;
+typedef tuple<int, int, double> iid;
+typedef vector<iid> viid;
 
 class Greedy : public Solver
 {
@@ -15,10 +15,10 @@ public:
     void Solve();
     void WriteSolution(string fileName);
 private:
-    bool CC(const iii& a, const iii& b);
+    bool CC(const iid& a, const iid& b);
 
     vvd A;
-    viii E, M;
+    viid E, M;
 };
 
 #endif
