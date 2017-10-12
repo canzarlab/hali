@@ -12,11 +12,11 @@ public:
     LP(Graph& t1, Graph& t2, string d, double k, bool dag);
     ~LP();
 
-    void Solve();
+    virtual void Solve();
     void WriteSolution(string fileName);
 
     static int cf;
-private:    
+protected:
     template<class T>
     int Add()
     {
@@ -29,11 +29,11 @@ private:
     }
 
     void MatchingConstraints();
-    void SolveLP();
+    virtual bool SolveLP();
 
-    int GetMax(newick_node* node, int& hmax);
-    float SymdifDist(float weight);
-    float JaccardDist(float weight);
+    int GetMax(newick_node* node, int& hmax) const;
+    float SymdifDist(float weight) const;
+    float JaccardDist(float weight) const;
 
     vector<ET> Triplets;
     Vector x, y;

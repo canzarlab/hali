@@ -72,7 +72,7 @@ void LP::Solve()
     }
 }
 
-void LP::SolveLP()
+bool LP::SolveLP()
 {
     clog << "nr_rows = " << nr_rows << " and nr_cols = " << nr_cols << endl;
 
@@ -99,9 +99,10 @@ void LP::SolveLP()
 
     x = Vector::ConstMapType(solver.x(), nr_cols);
     y = Vector::ConstMapType(solver.y(), nr_rows);
+    return true;
 }
 
-int LP::GetMax(newick_node* node, int& hmax)
+int LP::GetMax(newick_node* node, int& hmax) const
 {
     int sum = 0;
     for (newick_child* child = node->child; child; child = child->next)
@@ -134,7 +135,7 @@ void LP::WriteSolution(string fileName)
         cout << ((d == "j") ? JaccardDist(weight) : SymdifDist(weight)) << " ";
 }
 
-float LP::SymdifDist(float weight)
+float LP::SymdifDist(float weight) const
 {
     int max1 = 0, max2 = 0;
     int r1 = GetMax(t1.GetRoot(), max1);
@@ -142,7 +143,7 @@ float LP::SymdifDist(float weight)
     return max1 + max2 - r1 - r2 - weight;
 }
 
-float LP::JaccardDist(float weight)
+float LP::JaccardDist(float weight) const
 {
     return t1.GetNumNodes() - t1.L.size() - 1 + t2.GetNumNodes() - 1 - t2.L.size() - weight;
 }
