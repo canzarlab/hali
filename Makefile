@@ -1,4 +1,4 @@
-CXX = clang++
+CXX = g++
 CFLAGS = -O2 -std=c++11 -pthread
 INCL = -I.
 BINARIES = solver filter bgen conflicts
