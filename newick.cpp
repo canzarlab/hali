@@ -124,6 +124,7 @@ newick_node* load_dag(const char* f1, const char* f2, mnls& clade, msn& M)
     {
         if (s == "default")
         {
+            if (!f2) swap(n1, n2);
             P[n1].push_back(n2);
             P[n2];
             C[n2].push_back(n1);
