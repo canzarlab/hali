@@ -42,8 +42,9 @@ public:
     DAG(const char* f1, const char* f2, bool y);
     ~DAG() { }
 
-    vvi G;
-    vvd R[NR_THREADS];
+    DAG* BuildNetwork();
+protected:
+    virtual void Relation(int d, int a) = 0;
 private:
     void BuildNetwork(newick_node* node, newick_node* rnode, vvb& C);
 };
@@ -59,14 +60,26 @@ protected:
     void Child(newick_node* node, newick_node* child);
 };
 
+class LDAG : public DAG
+{
+public:
+    LDAG(const char* f1, const char* f2, bool y);
+
+    vvi G;
+    vvd R[NR_THREADS];
+protected:
+    virtual void Relation(int d, int a);
+};
+
 class GDAG : public DAG
 {
 public:
     GDAG(const char* f1, const char* f2, bool y);
 
     vvb D;
-private:
-    void DFS(newick_node* node, vb& C);
+protected:
+    virtual void Relation(int d, int a);
 };
+
 
 #endif

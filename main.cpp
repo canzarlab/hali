@@ -15,8 +15,8 @@ Solver* MakeSolver(Graph& t1, Graph& t2, string d, double k, bool dag, bool gree
 DAG* MakeDAG(const char* f1, const char* f2, bool y, bool greedy)
 {
     if (greedy)
-        return new GDAG(f1, f2, y);
-    return new DAG(f1, f2, y);
+        return (new GDAG(f1, f2, y))->BuildNetwork();
+    return (new LDAG(f1, f2, y))->BuildNetwork();
 }
 
 int main(int argc, char** argv)
