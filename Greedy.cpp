@@ -18,7 +18,7 @@ Greedy::Greedy(Graph& t1, Graph& t2, string d, double k, bool dag) : Solver(t1, 
 void Greedy::Solve()
 {
     for (iii& e : E)
-        if (all_of(M.begin(), M.end(), bind(&Greedy::CC, *this, _1, cref(e))))
+        if (all_of(M.begin(), M.end(), bind(&Greedy::CC, this, _1, cref(e))))
             M.push_back(e), A[get<0>(e)][get<1>(e)] = get<2>(e);
 }
 
