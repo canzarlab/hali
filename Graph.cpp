@@ -104,7 +104,7 @@ void Tree::Child(newick_node* node, newick_node* child)
     cl.insert(cl.end(), cr.begin(), cr.end());
 }
 
-GDAG::GDAG(const char* f1, const char* f2, bool y) : DAG(f1, f2, y)
+GDAG::GDAG(const char* f1, const char* f2, bool y) : DAG(f1, f2, y), D(_n, vb(_n))
 {
 }
 
