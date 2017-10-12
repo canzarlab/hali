@@ -29,7 +29,7 @@ int main(int argc, char** argv)
         t1 = new Tree(argv[1]);
         t2 = new Tree(argv[2]);
     }
-    else if (argc == 10)
+    else if (argc == 9)
     {
         clog << "Comparing dags " << argv[1] << " " << argv[3] << endl;
         greedy = stoi(argv[argc - 1]);
