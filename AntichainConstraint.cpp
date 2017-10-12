@@ -2,7 +2,7 @@
 #include "AntichainConstraint.h"
 #include <thread>
 
-AntichainConstraint::AntichainConstraint(Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp) : Constraint(t1, t2, K, x, swp), G(((DAG*)&t2)->G)
+AntichainConstraint::AntichainConstraint(Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp) : Constraint(t1, t2, K, x, swp), G(((LDAG*)&t2)->G)
 {
     Z = t2.GetNumNodes();
     SZ = Z * 2 + 2;
@@ -54,7 +54,7 @@ void AntichainConstraint::AntichainJob(int id)
             P = move(PQ.front());
             PQ.pop();
         }
-        Antichain(P, ((DAG&)t2).R[id]);
+        Antichain(P, ((LDAG&)t2).R[id]);
     }
 }
 
