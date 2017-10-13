@@ -1,48 +1,52 @@
 #include "Timer.h"
 #include "Greedy.h"
 #include "LP.h"
+#include "BnB.h"
 #include <iostream>
 
 int LP::cf;
 
-Solver* MakeSolver(Graph& t1, Graph& t2, string d, double k, bool dag, bool greedy)
+Solver* MakeSolver(Graph& t1, Graph& t2, string d, double k, bool dag, int s)
 {
-    if (greedy)
+    if (s == 0)
         return new Greedy(t1, t2, d, k, dag);
-    return new LP(t1, t2, d, k, dag);
+    else if (s == 1)
+        return new LP(t1, t2, d, k, dag);
+    return new BnB(t1, t2, d, k, dag);
 }
 
-DAG* MakeDAG(const char* f1, const char* f2, bool greedy)
+DAG* MakeDAG(const char* f1, const char* f2, int s)
 {
-    if (greedy)
+    if (s == 0)
         return (new GDAG(f1, f2))->BuildNetwork();
     return (new LDAG(f1, f2))->BuildNetwork();
 }
 
 int main(int argc, char** argv)
 {
-    bool dag = false, greedy = false;
+    bool dag = false;
     Graph *t1, *t2;
-    if (argc == 7)
+    if (argc != 7 && argc != 9)
+    {
+        cout << "tree usage: " << argv[0] << " <filename.newick> <filename.newick> <align> <0=matching 1=crossing 2=strict> <j=jaccard s=symdif> <k>" << endl;
+        cout << "dag usage: " << argv[0] << " <yeastnet> <mapping> <go> <align> <0=matching 1=crossing 2=strict> <j=jaccard s=symdif> <k> <0=greedy 1=fractional 2=bnb>" << endl;
+        return EXIT_FAILURE;
+    }
+    else if (argc == 7)
     {
         clog << "Comparing trees " << argv[1] << " " << argv[2] << endl;
         t1 = new Tree(argv[1]);
         t2 = new Tree(argv[2]);
     }
-    else if (argc == 9)
-    {
-        clog << "Comparing dags " << argv[1] << " " << argv[3] << endl;
-        greedy = stoi(argv[argc - 1]);
-        t1 = MakeDAG(argv[1], argv[2], greedy);
-        t2 = MakeDAG(argv[3], nullptr, greedy);
-        dag = true;
-    }
     else
     {
-        cout << "tree usage: " << argv[0] << " <filename.newick> <filename.newick> <align> <c> <d> <k>" << endl;
-        cout << "dag usage: " << argv[0] << " <yeastnet> <mapping> <go> <align> <c> <d> <k> <g>" << endl;
-        return EXIT_FAILURE;
+        int s = stoi(argv[argc - 1]);
+        clog << "Comparing dags " << argv[1] << " " << argv[3] << endl;
+        t1 = MakeDAG(argv[1], argv[2], s);
+        t2 = MakeDAG(argv[3], nullptr, s);
+        dag = true;
     }
+
     const char* out = argv[argc - 5];
     LP::cf = stoi(argv[argc - 4]);
     string d = argv[argc - 3];
@@ -50,7 +54,7 @@ int main(int argc, char** argv)
     assert(LP::cf >= 0 && LP::cf <= 2);
     assert(d == "j" || d == "s");
 
-    Solver* solver = MakeSolver(*t1, *t2, d, k, dag, greedy);
+    Solver* solver = MakeSolver(*t1, *t2, d, k, dag, stoi(argv[argc - 1]));
 
     Timer T;
     T.start();

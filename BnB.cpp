@@ -1,8 +1,9 @@
 #include "BnB.h"
-#include "IndependentSetConstraint.h"
-#include "AntichainConstraint.h"
-#include "CrossingConstraint.h"
 #include <iostream>
+
+BnB::BnB(Graph& t1, Graph& t2, string d, double k, bool dag) : LP(t1, t2, d, k, dag)
+{
+}
 
 void BnB::Solve()
 {
@@ -54,9 +55,9 @@ bool BnB::SolveLP()
 
         if (cf == 0)
             return 1;
-        else if (cf == 1 && Add<CrossingConstraint>())
+        else if (cf == 1 && Add<1>())
             continue;
-        else if (cf == 2 && (Add<CrossingConstraint>() + Add<IndependentSetConstraint>()))
+        else if (cf == 2 && (Add<1>() + Add<2>()))
             continue;
 
 

@@ -1,8 +1,5 @@
 #include "LP.h"
 #include "Timer.h"
-#include "CrossingConstraint.h"
-#include "IndependentSetConstraint.h"
-#include "AntichainConstraint.h"
 #include <iostream>
 #include <fstream>
 
@@ -54,17 +51,14 @@ void LP::Solve()
             break;
 
         T_cross.start();
-        cnt = Add<CrossingConstraint>();
+        cnt = Add<1>();
         T_cross.stop();
         clog << ">>> Time for crossing constraints: \t\t" << T_cross.secs() << " secs" << endl;
 
         if (cf == 2)
         {
             T_indep.start();
-            if (dag)
-                cnt += Add<AntichainConstraint>();
-            else
-                cnt += Add<IndependentSetConstraint>();
+            cnt += Add<2>();
             T_indep.stop();
             clog << ">>> Time for independent set constraints: \t\t" << T_indep.secs() << " secs" << endl;
         }
