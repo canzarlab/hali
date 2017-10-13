@@ -22,7 +22,7 @@ geno/%.o: geno/%.cpp
 %.o: %.cpp $(HEADERS)
 	$(CXX) -c $< $(CFLAGS) $(INCL)
 
-solver: $(GENO_OBJS) Graph.o Greedy.o Solver.o LP.o AntichainConstraint.o Constraint.o IndependentSetConstraint.o CrossingConstraint.o newick.o BnB.o Similarity.o
+solver: $(GENO_OBJS) Graph.o Greedy.o Solver.o LP.o AntichainConstraint.o Constraint.o IndependentSetConstraint.o CrossingConstraint.o newick.o BnB.o Similarity.o LPInt.o
 	$(CXX) -o $@ $^ $(CFLAGS)
 
 filter: filter.o
