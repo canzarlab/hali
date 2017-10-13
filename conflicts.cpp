@@ -265,7 +265,7 @@ private:
     ii get_c_i()
     {
         c1 = c2 = 0;
-        vbb C(t1->get_size(), vb(t2->get_size()));
+        vbb C(t1->get_size(), vb(t1->get_size()));
         for (newick_node* leaf : t1->leaves)
             dfs_c_i(leaf, leaf, C);
         swap(t1, t2);
