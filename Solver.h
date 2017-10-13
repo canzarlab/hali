@@ -2,8 +2,7 @@
 #define SOLVER_H
 
 #include "Graph.h"
-#include <algorithm>
-#include <cmath>
+#include "Similarity.h"
 
 class Solver
 {
@@ -26,8 +25,6 @@ protected:
 private:
     template <class F>
     void DFSRight(newick_node* nodel, newick_node* noder, vb& Q, F f);
-    double JaccardSim(const list<string>& L1, const list<string>& L2) const;
-    double SymdifSim(const list<string>& L1, const list<string>& L2) const;
 };
 
 template <class F>
@@ -48,7 +45,7 @@ void Solver::DFSRight(newick_node* nodel, newick_node* noder, vb& Q, F f)
 {
     Q[noder->taxoni] = true;
     if (d == "j")
-        f(nodel, noder, JaccardSim(t1.clade[nodel], t2.clade[noder]));
+        f(nodel, noder, JaccardSim(t1.clade[nodel], t2.clade[noder], k));
     else
         f(nodel, noder, SymdifSim(t1.clade[nodel], t2.clade[noder]));
 

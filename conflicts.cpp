@@ -5,6 +5,7 @@
 #include <utility>
 #include <tuple>
 #include "newick.h"
+#include "Similarity.h"
 using namespace std;
 
 typedef vector<int> vi;
@@ -355,7 +356,7 @@ private:
 
 class ccd : public cc
 {
-    mnls cl1, cl2; // TODO: use clades for scoring
+    mnls cl1, cl2;
     msn A, B;
 public:
     ccd(const char* fn1, const char* fn2, const char* fn3, const char* fn4) :
@@ -365,15 +366,19 @@ public:
         (t2 = new dag(load_dag(fn3, nullptr, cl2, B)))->init();
         ifstream f(fn4);
         string a, b;
-        float p;
+        double p, w = 0;
         while (getline(f, a), a != "Matched");
         while (f >> a >> b >> p)
         {
-            int l = A[a]->taxoni;
-            int r = B[b]->taxoni;
+            newick_node* ln = A[a];
+            newick_node* rn = B[b];
+            int l = ln->taxoni;
+            int r = rn->taxoni;
             t1->matches[l] = r;
             t2->matches[r] = l;
+            w += JaccardSim(cl1[ln], cl2[rn], 1);
         }
+        cout << "Weight of matching: " << w << endl;
     }
 
     virtual void check_c(int p, int q)
@@ -405,5 +410,6 @@ int main(int argc, char** argv)
         tie(c1, c2) = cct(argv[1], argv[2], argv[3], stoi(argv[4])).get_c();
     else
         tie(c1, c2) = ccd(argv[1], argv[2], argv[3], argv[4]).get_c();
-    cout << c1 << " " << c2 << "\n";
+    cout << "C1 violations: " << c1 << endl;
+    cout << "C2 violations: " << c2 << endl;
 }
