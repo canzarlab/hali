@@ -6,8 +6,17 @@
 
 int LP::cf;
 
-Solver* MakeSolver(Graph& t1, Graph& t2, string d, double k, bool dag, int s)
+Solver* MakeSolver(Graph& t1, Graph& t2, int argc, char** argv)
 {
+    bool dag = (argc == 9);
+    LP::cf = stoi(argv[argc - 4]);
+    string d = argv[argc - 3];
+    double k = stod(argv[argc - 2]);
+    int s = stoi(argv[argc - 1]);
+    assert(LP::cf >= 0 && LP::cf <= 2);
+    assert(d == "j" || d == "s");
+    assert(s >= 0 && s <= 2);
+
     if (s == 0)
         return new Greedy(t1, t2, d, k, dag);
     else if (s == 1)
@@ -22,9 +31,17 @@ DAG* MakeDAG(const char* f1, const char* f2, int s)
     return (new LDAG(f1, f2))->BuildNetwork();
 }
 
+pair<Graph*, Graph*> MakeGraphs(int argc, char** argv)
+{
+    if (argc == 7)
+        return make_pair(new Tree(argv[1]), new Tree(argv[2]));
+
+    int s = stoi(argv[argc - 1]);
+    return make_pair(MakeDAG(argv[1], argv[2], s), MakeDAG(argv[3], nullptr, s));
+}
+
 int main(int argc, char** argv)
 {
-    bool dag = false;
     Graph *t1, *t2;
     if (argc != 7 && argc != 9)
     {
@@ -32,36 +49,15 @@ int main(int argc, char** argv)
         cout << "dag usage: " << argv[0] << " <yeastnet> <mapping> <go> <align> <0=matching 1=crossing 2=strict> <j=jaccard s=symdif> <k> <0=greedy 1=fractional 2=bnb>" << endl;
         return EXIT_FAILURE;
     }
-    else if (argc == 7)
-    {
-        clog << "Comparing trees " << argv[1] << " " << argv[2] << endl;
-        t1 = new Tree(argv[1]);
-        t2 = new Tree(argv[2]);
-    }
-    else
-    {
-        int s = stoi(argv[argc - 1]);
-        clog << "Comparing dags " << argv[1] << " " << argv[3] << endl;
-        t1 = MakeDAG(argv[1], argv[2], s);
-        t2 = MakeDAG(argv[3], nullptr, s);
-        dag = true;
-    }
-
-    const char* out = argv[argc - 5];
-    LP::cf = stoi(argv[argc - 4]);
-    string d = argv[argc - 3];
-    double k = stod(argv[argc - 2]);
-    assert(LP::cf >= 0 && LP::cf <= 2);
-    assert(d == "j" || d == "s");
-
-    Solver* solver = MakeSolver(*t1, *t2, d, k, dag, stoi(argv[argc - 1]));
 
     Timer T;
     T.start();
+    tie(t1, t2) = MakeGraphs(argc, argv);
+    Solver* solver = MakeSolver(*t1, *t2, argc, argv);
     solver->Solve();
     T.stop();
     clog << "TOTAL TIME : \t\t" << T.secs() << " secs" << endl;
-    solver->WriteSolution(out);
+    solver->WriteSolution(argv[argc - 5]);
     delete t1;
     delete t2;
     delete solver;

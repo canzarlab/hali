@@ -52,7 +52,7 @@ int LP::Add()
 {
     static_assert(N == 1 || N == 2, "invalid constraint");
     if (N == 1)
-        return  Add<CrossingConstraint>();
+        return Add<CrossingConstraint>();
     return (dag ? Add<AntichainConstraint>() : Add<IndependentSetConstraint>());
 }
 
