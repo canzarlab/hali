@@ -119,8 +119,6 @@ void LP::WriteSolution(string fileName)
                 weight += x(K[i][j]) * c(K[i][j]);
                 sol_file << i << " " << j << " " << x(K[i][j]) << "\n";
             }
-            else
-                sol_file << i << " " << j << " " << 0 << "\n";
         }
         sol_file << endl;
     }
