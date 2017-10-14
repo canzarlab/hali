@@ -10,7 +10,7 @@ public:
     Solver(Graph& t1, Graph& t2, string d, double k, bool dag);
 
     virtual ~Solver() {}
-    virtual void Solve() = 0;
+    virtual void Solve(string filename) = 0;
     virtual void WriteSolution(string fileName) = 0;
 
 protected:

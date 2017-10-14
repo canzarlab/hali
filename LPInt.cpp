@@ -6,12 +6,12 @@ LPInt::LPInt(Graph& t1, Graph& t2, string d, double k, bool dag) : LP(t1, t2, d,
 {
 }
 
-void LPInt::Solve()
+void LPInt::Solve(string filename)
 {
     // set warm_x and warm_y initialy to zeroes
     warm_x = Vector::Zero(nr_cols);
     warm_y = Vector::Zero(nr_rows);
-    LP::Solve();
+    LP::Solve(filename);
 }
 
 bool LPInt::SolveLP()

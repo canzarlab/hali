@@ -57,10 +57,9 @@ int main(int argc, char** argv)
     Graph *t1, *t2;
     tie(t1, t2) = MakeGraphs(argc, argv);
     Solver* solver = MakeSolver(*t1, *t2, argc, argv);
-    solver->Solve();
+    solver->Solve(argv[argc - 5]);
     T.stop();
     clog << "TOTAL TIME : \t\t" << T.secs() << " secs" << endl;
-    solver->WriteSolution(argv[argc - 5]);
     delete t1;
     delete t2;
     delete solver;

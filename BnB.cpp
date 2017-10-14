@@ -5,7 +5,7 @@ BnB::BnB(Graph& t1, Graph& t2, string d, double k, bool dag) : LP(t1, t2, d, k, 
 {
 }
 
-void BnB::Solve()
+void BnB::Solve(string filename)
 {
     MatchingConstraints();
     sys_lb = (double)INF;
@@ -20,6 +20,7 @@ void BnB::Solve()
         sum += c(i) * x(i);
     }
     clog << -sys_lb << ' ' << sum << endl;
+    WriteSolution(filename);
 }
 
 void BnB::Cleanup(size_t nr_t, size_t nr_r)

@@ -36,7 +36,7 @@ void LP::MatchingConstraints()
     c.conservativeResize(nr_cols);
 }
 
-void LP::Solve()
+void LP::Solve(string filename)
 {
     MatchingConstraints();
     int cnt = 1;
@@ -45,6 +45,7 @@ void LP::Solve()
         Timer T_lp, T_cross, T_indep;
         T_lp.start();
         SolveLP();
+        WriteSolution(filename);
         T_lp.stop();
         clog << ">>> Time for solve: \t\t" << T_lp.secs() << " secs" << endl;
         if (cf == 0)
@@ -108,18 +109,18 @@ int LP::GetMax(newick_node* node, int& hmax) const
 void LP::WriteSolution(string fileName)
 {
     ofstream sol_file(fileName);
-    float weight = 0;
+    double weight = 0;
     for (size_t i = 0; i < K.size(); i++)
     {
         for (size_t j = 0; j < K[i].size(); j++)
         {
-            if (K[i][j] != -1)
+            if (K[i][j] != -1 && x(K[i][j]) > 0)
             {
                 weight += x(K[i][j]) * c(K[i][j]);
-                sol_file << x(K[i][j]) << "\t" ;
+                sol_file << i << " " << j << " " << x(K[i][j]) << "\n";
             }
             else
-                sol_file << 0 << "\t";
+                sol_file << i << " " << j << " " << 0 << "\n";
         }
         sol_file << endl;
     }

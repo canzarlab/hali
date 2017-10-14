@@ -7,7 +7,7 @@ class BnB : public LP
 {
 public:
     BnB(Graph& t1, Graph& t2, string d, double k, bool dag);
-    void Solve();
+    virtual void Solve(string filename);
 
 private:
     void Cleanup(size_t nr_t, size_t nr_r);

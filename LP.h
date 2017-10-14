@@ -15,7 +15,7 @@ public:
     LP(Graph& t1, Graph& t2, string d, double k, bool dag);
     ~LP();
 
-    virtual void Solve();
+    virtual void Solve(string filename);
     void WriteSolution(string fileName);
 
     static int cf;

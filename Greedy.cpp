@@ -16,23 +16,20 @@ Greedy::Greedy(Graph& t1, Graph& t2, string d, double k, bool dag) : Solver(t1, 
     sort(E.begin(), E.end(), [](const iid& a, const iid& b){return get<2>(a) > get<2>(b);});
 }
 
-void Greedy::Solve()
+void Greedy::Solve(string filename)
 {
     for (const iid& e : E)
         if (all_of(M.begin(), M.end(), bind(&Greedy::CC, this, _1, cref(e))))
             M.push_back(e), A[get<0>(e)][get<1>(e)] = get<2>(e);
+    WriteSolution(filename);
 }
 
 void Greedy::WriteSolution(string fileName)
 {
     ofstream sol_file(fileName);
     double weight = 0.0;
-    for (vd& v : A)
-    {
-        for (double d : v)
-            sol_file << (d != 0.0) << "\t", weight += d;
-        sol_file << endl;
-    }
+    for (const iid& e : M)
+        sol_file << get<0>(e) << " " << get<1>(e) << " " << get<2>(e) << '\n', weight += get<2>(e);
     cout << weight << " ";
 }
 

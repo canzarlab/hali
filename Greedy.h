@@ -12,7 +12,7 @@ class Greedy : public Solver
 public:
     Greedy(Graph& t1, Graph& t2, string d, double k, bool dag);
 
-    void Solve();
+    virtual void Solve(string filename);
     void WriteSolution(string fileName);
 private:
     bool CC(const iid& a, const iid& b);
