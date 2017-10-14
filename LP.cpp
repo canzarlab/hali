@@ -120,7 +120,6 @@ void LP::WriteSolution(string fileName)
                 sol_file << i << " " << j << " " << x(K[i][j]) << "\n";
             }
         }
-        sol_file << endl;
     }
     if (dag)
         cout << weight << " ";
