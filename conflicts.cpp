@@ -364,6 +364,10 @@ public:
     {
         (t1 = new dag(load_dag(fn1, fn2, cl1, A)))->init();
         (t2 = new dag(load_dag(fn3, nullptr, cl2, B)))->init();
+        for (auto& l : cl1)
+            l.second.sort();
+        for (auto& l : cl2)
+            l.second.sort();
         ifstream f(fn4);
         string a, b;
         double p, w = 0;

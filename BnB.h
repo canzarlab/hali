@@ -7,11 +7,11 @@ class BnB : public LP
 {
 public:
     BnB(Graph& t1, Graph& t2, string d, double k, bool dag);
-    virtual void Solve(string filename);
+    virtual void Solve(string filename) override;
 
 private:
     void Cleanup(size_t nr_t, size_t nr_r);
-    bool SolveLP();
+    bool SolveLP() override;
     bool SolveRec(size_t pos, bool b);
 
     double       sys_lb;
