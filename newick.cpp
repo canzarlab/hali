@@ -119,6 +119,9 @@ newick_node* load_dag(const char* f1, const char* f2, mnls& clade, msn& M)
     vss S;
     msvs C, P;
     ifstream ef(f1);
+    if (!ef)
+        return nullptr;
+
     string n1, n2, s;
     while (ef >> n1 >> n2 >> s)
     {
