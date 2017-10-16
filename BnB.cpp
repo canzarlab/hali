@@ -35,6 +35,8 @@ bool BnB::SolveLP()
     int nr_t = Triplets.size();
     int nr_r = nr_rows;
 
+    x = warm_x;
+
     while (1)
     {
         SpMat A(nr_rows, nr_cols);
@@ -45,14 +47,14 @@ bool BnB::SolveLP()
         x = Vector::Zero(nr_cols);
         y = Vector::Zero(nr_rows);
 
-        PackingJRF simpleJRF(A, sys_b, d, x, y);
+        PackingJRF simpleJRF(A, sys_b, d, warm_x, y);
         AugmentedLagrangian solver(simpleJRF, 15);
         solver.setParameter("verbose", false);
         solver.setParameter("pgtol", 1e-1);
         solver.setParameter("constraintsTol", 1e-4);
         solver.solve();
 
-        x = Vector::ConstMapType(solver.x(), nr_cols);
+        warm_x = x = Vector::ConstMapType(solver.x(), nr_cols);
 
         if (cf == 0)
             return 1;
@@ -70,9 +72,6 @@ bool BnB::SolveLP()
             Cleanup(nr_t, nr_r);
             return 0;
         }
-
-        x = Vector::ConstMapType(solver.x(), nr_cols);
-
         break;
     }
 

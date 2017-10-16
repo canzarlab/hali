@@ -29,6 +29,8 @@ protected:
     float JaccardDist(float weight) const;
 
     vector<ET> Triplets;
+    // backup x->warm_x and y->warm_y for two consecutive iterations
+    Vector warm_x, warm_y;
     Vector x, y;
     vvi K;
     Vector c;

@@ -11,8 +11,6 @@ public:
     virtual void Solve(string filename) override;
 private:
     bool SolveLP() override;
-    // backup x->warm_x and y->warm_y for two consecutive iterations
-    Vector warm_x, warm_y;
 };
 
 #endif

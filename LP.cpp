@@ -34,6 +34,9 @@ void LP::MatchingConstraints()
     nr_rows = n + m;
     nr_cols = n * m - cnt;
     c.conservativeResize(nr_cols);
+    // set warm_x and warm_y initialy to zeroes
+    warm_x = Vector::Zero(nr_cols);
+    warm_y = Vector::Zero(nr_rows);
 }
 
 void LP::Solve(string filename)
@@ -76,11 +79,12 @@ bool LP::SolveLP()
     SpMat A_t = A.transpose();
     Vector b = Vector::Ones(nr_rows);
 
-    x = Vector::Zero(nr_cols);
+    x = warm_x;
+    //x = Vector::Zero(nr_cols);
     y = Vector::Zero(nr_rows);
 
     Vector c1 = -c;
-    PackingJRF simpleJRF(A, b, c1, x, y);
+    PackingJRF simpleJRF(A, b, c1, warm_x, y);
     AugmentedLagrangian solver(simpleJRF, 15);
     solver.setParameter("verbose", false);
     solver.setParameter("pgtol", 1e-1); // should influence running time a lot
@@ -92,7 +96,7 @@ bool LP::SolveLP()
 
     clog << "f = " << solver.f() << " computed in time: " << timeGeno.secs() << " secs" << endl;
 
-    x = Vector::ConstMapType(solver.x(), nr_cols);
+    warm_x = x = Vector::ConstMapType(solver.x(), nr_cols);
     y = Vector::ConstMapType(solver.y(), nr_rows);
     return true;
 }
