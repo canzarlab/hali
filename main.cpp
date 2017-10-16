@@ -23,7 +23,7 @@ Solver* MakeSolver(Graph& t1, Graph& t2, int argc, char** argv)
     else if (s == 1)
         return new LP(t1, t2, d, k, dag);
     else if (s == 2)
-        new BnB(t1, t2, d, k, dag);
+        return new BnB(t1, t2, d, k, dag);
     return new LPInt(t1, t2, d, k, dag);
 }
 
