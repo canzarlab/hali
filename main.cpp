@@ -36,7 +36,7 @@ DAG* MakeDAG(const char* f1, const char* f2, int s)
 
 pair<Graph*, Graph*> MakeGraphs(int argc, char** argv)
 {
-    if (argc == 7)
+    if (argc == 8)
         return make_pair(new Tree(argv[1]), new Tree(argv[2]));
 
     int s = stoi(argv[argc - 1]);
