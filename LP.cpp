@@ -88,7 +88,7 @@ bool LP::SolveLP()
     AugmentedLagrangian solver(simpleJRF, 15);
     solver.setParameter("verbose", false);
     solver.setParameter("pgtol", 1e-1); // should influence running time a lot
-    solver.setParameter("constraintsTol", 1e-4);
+    solver.setParameter("constraintsTol", 1e-3);
     Timer timeGeno;
     timeGeno.start();
     solver.solve();
