@@ -15,7 +15,7 @@ private:
     pair<newick_node*, double> GetMaxChild(newick_node* nodel, newick_node* noder);
     pair<newick_node*, double> GetMaxParent(newick_node* nodel, newick_node* noder);
 
-    void DFSLeft(newick_node* node);
+    void DFSLeft(newick_node* node, vb& C);
     void KahnLeft(newick_node* node);
     double DFSRight(newick_node* node, newick_node* nodel);
     void Reconstruct(vii& P, newick_node* nodel, newick_node* noder);

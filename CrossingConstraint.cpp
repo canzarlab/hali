@@ -43,12 +43,14 @@ pair<newick_node*, double> CrossingConstraint::GetMaxParent(newick_node* nodel, 
     return GetMaxPC(nodel, noder, [](newick_node* n){return n->parent;}, true);
 }
 
-void CrossingConstraint::DFSLeft(newick_node* node)
+void CrossingConstraint::DFSLeft(newick_node* node, vb& C)
 {
+    C[node->taxoni] = true;
     for (newick_child* child = node->child; child; child = child->next)
     {
         PA[child->node->taxoni]++;
-        DFSLeft(child->node);
+        if (!C[child->node->taxoni])
+            DFSLeft(child->node, C);
     }
 }
 
@@ -56,7 +58,8 @@ void CrossingConstraint::KahnLeft(newick_node* node)
 {
     queue<newick_node*> Q;
     Q.push(node);
-    DFSLeft(node);
+    vb C(t1.GetNumNodes());
+    DFSLeft(node, C);
     while (!Q.empty())
     {
         node = Q.front(); Q.pop();
