@@ -125,6 +125,10 @@ void LP::WriteSolution(string fileName)
             }
         }
     }
+    ofstream trp_file(fileName + ".trp");
+    for (auto& t : Triplets)
+        trp_file << t.row() << " " << t.col() << " " << t.value() << '\n';
+
     if (dag)
         cout << weight << " ";
     else

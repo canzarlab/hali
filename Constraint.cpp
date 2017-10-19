@@ -4,7 +4,6 @@ Constraint::Constraint(Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp) : t1(t
 {
 }
 
-
 int Constraint::GetCol(int i, int j) const
 {
     return swp ? K[j][i] : K[i][j];
