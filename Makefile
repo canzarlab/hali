@@ -1,7 +1,7 @@
 CXX = g++
 CFLAGS = -DEIGEN_USE_MKL_ALL -O2 -std=c++11 -pthread -m64 -I$(MKLROOT)/include
 INCL = -I.
-BINARIES = solver filter bgen conflicts
+BINARIES = solver filter bgen conflicts convert
 GENO_OBJS = main.o geno/augmentedLagrangian.o geno/lbfgsb.o geno/lineSearch.o
 TEST_BINARIES = 
 HEADERS = 
@@ -33,3 +33,6 @@ bgen: generator.o newick.o
 
 conflicts: conflicts.o newick.o Similarity.o
 	$(CXX) -o $@ $^ $(CFLAGS)
+
+convert: convert.o newick.o Similarity.o
+	$(CXX) -o $@ $^ $(CFLAGS) -lboost_graph
