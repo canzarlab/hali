@@ -60,7 +60,7 @@ int main(int argc, char** argv)
     ofstream fdag(argv[2]);
     graph_traits<graph_t>::edge_iterator ei, ei_end;
     for (tie(ei, ei_end) = edges(graph); ei != ei_end; ++ei)
-        fdag << name[source(*ei, graph)] << " " << name[target(*ei, graph)] << " default\n";
+        fdag << name[target(*ei, graph)] << " " << name[source(*ei, graph)] << " default\n";
 
     ofstream fmap(argv[3]);
     graph_traits<graph_t>::vertex_iterator vi, vi_end;
