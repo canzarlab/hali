@@ -34,5 +34,5 @@ bgen: generator.o newick.o
 conflicts: conflicts.o newick.o Similarity.o
 	$(CXX) -o $@ $^ $(CFLAGS)
 
-convert: convert.o newick.o Similarity.o
+convert: convert.o
 	$(CXX) -o $@ $^ $(CFLAGS) -lboost_graph

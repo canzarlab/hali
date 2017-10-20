@@ -51,12 +51,21 @@ private:
 class Tree : public Graph
 {
 public:
+    Tree() { }
     Tree(const char* f1);
     ~Tree() { }
 
 protected:
-    void Leaf(newick_node* node);
-    void Child(newick_node* node, newick_node* child);
+    virtual void Leaf(newick_node* node) override;
+    virtual void Child(newick_node* node, newick_node* child) override;
+};
+
+class TTree : public Tree
+{
+public:
+    TTree(const char* f1, const char* f2);
+protected:
+    virtual void Leaf(newick_node* node) override { }
 };
 
 class LDAG : public DAG

@@ -38,6 +38,8 @@ pair<Graph*, Graph*> MakeGraphs(int argc, char** argv)
 {
     if (argc == 8)
         return make_pair(new Tree(argv[1]), new Tree(argv[2]));
+    else if (argc == 10)
+        return make_pair(new TTree(argv[1], argv[2]), new TTree(argv[3], argv[4]));
 
     int s = stoi(argv[argc - 1]);
     return make_pair(MakeDAG(argv[1], argv[2], s), MakeDAG(argv[3], nullptr, s));
@@ -45,10 +47,11 @@ pair<Graph*, Graph*> MakeGraphs(int argc, char** argv)
 
 int main(int argc, char** argv)
 {
-    if (argc != 8 && argc != 9)
+    if (argc < 8 || argc > 10)
     {
         cout << "tree usage: " << argv[0] << " <filename.newick> <filename.newick> <align> <0=matching 1=crossing 2=strict> <j=jaccard s=symdif> <k> <0=greedy 1=fractional 2=bnb 3=integral>" << endl;
         cout << "dag usage: " << argv[0] << " <yeastnet> <mapping> <go> <align> <0=matching 1=crossing 2=strict> <j=jaccard s=symdif> <k> <0=greedy 1=fractional 2=bnb 3=integral>" << endl;
+        cout << "tree usage (2): " << argv[0] << " <tree> <map> <tree> <map> <align> <0=matching 1=crossing 2=strict> <j=jaccard s=symdif> <k> <0=greedy 1=fractional 2=bnb 3=integral>" << endl;
         return EXIT_FAILURE;
     }
 

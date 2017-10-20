@@ -65,7 +65,13 @@ int main(int argc, char** argv)
     ofstream fmap(argv[3]);
     graph_traits<graph_t>::vertex_iterator vi, vi_end;
     for (tie(vi, vi_end) = vertices(graph); vi != vi_end; ++vi)
-        fmap << vertex_label[*vi] << " " << name[*vi] << '\n';
+    {
+        string lab = vertex_label[*vi];
+        size_t beg = lab.find('=') + 1;
+        size_t end = lab.find('|');
+        size_t len = end - beg;
+        fmap << lab.substr(beg, len) << " " << name[*vi] << '\n';
+    }
 
     return EXIT_SUCCESS;
 }

@@ -82,6 +82,12 @@ void Graph::Init(newick_node* node)
     clade[node].sort();
 }
 
+TTree::TTree(const char* f1, const char* f2)
+{
+    msn M;
+    Init(root = load_dag(f1, f2, clade, M));
+}
+
 Tree::Tree(const char* f1)
 {
     Init(root = load_tree(f1));
