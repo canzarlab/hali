@@ -17,6 +17,7 @@ private:
     double       sys_lb;
     Vector       sys_b;
     vector<bool> sys_x;
+	Vector       sys_s;
 };
 
 #endif
