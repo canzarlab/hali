@@ -193,4 +193,37 @@ class IntegerPackingJRF : public SimpleJRF {
 
 };
 
+class BranchingJRF : public SimpleJRF
+{
+ 	public:
+
+    BranchingJRF(const SpMat& A, const Vector& b, const Vector& c, Vector& x, Vector& y) : 
+	SimpleJRF(A, b, c, x, y) 
+	{ 
+		lo.conservativeResizeLike(Vector::Zero(_n));
+		hi.conservativeResizeLike(Vector::Ones(_n));
+	}
+
+	virtual bool getBounds(Scalar* lb, Scalar* ub) override
+	{
+		Vector::MapType(lb, _n) = lo;
+        Vector::MapType(ub, _n) = hi;
+		return true;
+	}
+
+    bool getBoundsConstraints(Scalar* cl, Scalar* cu) override
+    {
+        Vector::MapType(cu, _m) = _b;
+        Vector::MapType(cl, _m) = Vector::Constant(_m, -INF);
+        return true;
+    }
+
+	Vector hi, lo;
+};
+
+
+
+
+
+
 #endif

@@ -8,9 +8,15 @@ BnG::BnG(Graph& t1, Graph& t2, string d, double k, bool dag) : LP(t1, t2, d, k, 
 void BnG::Solve(string filename)
 {
 	MatchingConstraints();
-	sys_x.resize(nr_cols);				
+
+	sys_lo.conservativeResizeLike(Vector::Zero(nr_cols));
+	sys_hi.conservativeResizeLike(Vector::Ones(nr_cols));
+	sys_x.resize(nr_cols);	
+	sys_x.assign(nr_cols, false);
+	
 	Geno();
 	SolveLP();
+
 	for (size_t i = 0; i < x.size(); ++i)
 		x(i) = round(x(i));
 	WriteSolution(filename);
@@ -18,8 +24,7 @@ void BnG::Solve(string filename)
 
 void BnG::Cleanup(size_t nr_t, size_t nr_r)
 {
-    Triplets.resize(nr_t);
-	sys_b.conservativeResizeLike(Vector::Ones(nr_r));		
+    Triplets.resize(nr_t);	
 	nr_rows = nr_r;
 }
 
@@ -28,36 +33,46 @@ bool BnG::SolveLP()
     size_t pos = x.size();
 	double val = 0;
 
+	int qwe = 0;
+
 	for (size_t i = 0; i < x.size(); ++i)
-		if (x(i) > 1e-3 && x(i) < 1 - 1e-3 && !sys_x[i])
-		    if (c(i) > val) 
+		if (x(i) > 0.05 && x(i) < 0.95 && !sys_x[i])
+		{    
+			if (c(i) > val) 
 			{
 				pos = i;
 				val = c(i);				
-			}
+			} 
+			qwe++;
+		}
 
 	if (pos < x.size())
 	{	
-		sys_x[pos] = 1;
+		sys_x[pos] = true;
 
 		size_t nr_t = Triplets.size();
 		size_t nr_r = nr_rows;
 
-		Vector y;
 		float f1, f2;
+		Vector y;
 
-		Setup(pos, 1); 
+		sys_lo(pos) = 1;
+		sys_hi(pos) = 1;
 		f1 = Geno();
 		y = x;		
 		Cleanup(nr_t, nr_r);			
 
-		Setup(pos, 0);
+		sys_lo(pos) = 0;
+		sys_hi(pos) = 0;
 		f2 = Geno();
+
+		cout << max(f1, f2) << ' ' << qwe << endl;
 
 		if (f1 < f2)
 		{
-			Cleanup(nr_t, nr_r);
-			Setup(pos, 1); 
+			sys_lo(pos) = 1;
+			sys_hi(pos) = 1;
+			Cleanup(nr_t, nr_r); 
 			x = y;
 		}
 
@@ -73,13 +88,14 @@ float BnG::Geno()
 	{
 	    SpMat A(nr_rows, nr_cols);
 	    A.setFromTriplets(Triplets.begin(), Triplets.end());
-		sys_b.conservativeResizeLike(Vector::Ones(nr_rows));
-		//y.conservativeResizeLike(Vector::Zero(nr_rows));	    	
+		Vector b = Vector::Ones(nr_rows);   	
 		x = Vector::Zero(nr_cols);
 		y = Vector::Zero(nr_rows);
 		Vector d = -c;	
 
-	    PackingJRF simpleJRF(A, sys_b, d, x, y);
+	    BranchingJRF simpleJRF(A, b, d, x, y);
+		simpleJRF.lo = sys_lo;
+		simpleJRF.hi = sys_hi;
 	    AugmentedLagrangian solver(simpleJRF, 15);
 	    solver.setParameter("verbose", false);
 	    solver.setParameter("pgtol", 1e-1); 
@@ -88,26 +104,11 @@ float BnG::Geno()
 
 		x = Vector::ConstMapType(solver.x(), nr_cols);
 
-		if (LP::cf == 0) 
-			return solver.f();
-		else if (LP::cf == 1 && Add<CrossingConstraint>())
+		if (LP::cf == 1 && Add<CrossingConstraint>())
 			continue;
 		else if (LP::cf == 2 && (Add<CrossingConstraint>() + Add<IndependentSetConstraint>()))
 			continue;			
 
 		return solver.f();	
 	}
-}
-
-void BnG::Setup(size_t pos, bool b)
-{
-	Triplets.push_back(ET(nr_rows++, pos, 1.0));
-	if (b)
-	{
-		Triplets.push_back(ET(nr_rows++, pos, -1.0));
-		sys_b.conservativeResizeLike(Vector::Ones(nr_rows));						
-		sys_b(nr_rows - 1) = -1.0;
-	}
-	else
-		sys_b.conservativeResizeLike(Vector::Zero(nr_rows));
 }
