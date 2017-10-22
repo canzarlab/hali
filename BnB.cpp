@@ -8,9 +8,13 @@ BnB::BnB(Graph& t1, Graph& t2, string d, double k, bool dag) : LP(t1, t2, d, k, 
 void BnB::Solve(string filename)
 {
 	MatchingConstraints();	
-	x = Vector::Zero(nr_cols);
+	
 	sys_lb = (double)INF;
-	sys_x.resize(nr_cols);
+	sys_lo.conservativeResizeLike(Vector::Zero(nr_cols));
+	sys_hi.conservativeResizeLike(Vector::Ones(nr_cols));
+	sys_x.resize(nr_cols);	
+	sys_x.assign(nr_cols, false);
+
 	SolveLP();
 	x = sys_s;
 
@@ -22,8 +26,7 @@ void BnB::Solve(string filename)
 
 void BnB::Cleanup(size_t nr_t, size_t nr_r)
 {
-    Triplets.resize(nr_t);
-	sys_b.conservativeResizeLike(Vector::Ones(nr_r));		
+    Triplets.resize(nr_t);	
 	nr_rows = nr_r;
 }
 
@@ -37,12 +40,14 @@ bool BnB::SolveLP()
 	{
 	    SpMat A(nr_rows, nr_cols);
 	    A.setFromTriplets(Triplets.begin(), Triplets.end());
-		sys_b.conservativeResizeLike(Vector::Ones(nr_rows));		    
-		x = Vector::Zero(nr_cols);	
-		y = Vector::Zero(nr_rows);		
-		Vector d = -c;		
+		Vector b = Vector::Ones(nr_rows);   	
+		x = Vector::Zero(nr_cols);
+		y = Vector::Zero(nr_rows);
+		Vector d = -c;			
 
-	    PackingJRF simpleJRF(A, sys_b, d, x, y);
+	    BranchingJRF simpleJRF(A, b, d, x, y);
+		simpleJRF.lo = sys_lo;
+		simpleJRF.hi = sys_hi;
 	    AugmentedLagrangian solver(simpleJRF, 15);
 	    solver.setParameter("verbose", false);
 	    solver.setParameter("pgtol", 1e-1); 
@@ -50,6 +55,8 @@ bool BnB::SolveLP()
 	    solver.solve();	
 
 		x = Vector::ConstMapType(solver.x(), nr_cols); 
+
+		cout << 1 << endl;
 
 		if (LP::cf == 0)
 		{
@@ -104,20 +111,15 @@ bool BnB::SolveLP()
 
 bool BnB::SolveRec(size_t pos, bool b)
 {
-	Triplets.push_back(ET(nr_rows++, pos, 1.0));
-	if (b)
-	{
-		Triplets.push_back(ET(nr_rows++, pos, -1.0));
-		sys_b.conservativeResizeLike(Vector::Ones(nr_rows));			
-		sys_b(nr_rows - 1) = -1.0;
-	}
-	else
-		sys_b.conservativeResizeLike(Vector::Zero(nr_rows));
+	sys_lo(pos) = b;
+	sys_hi(pos) = b;
 
 	sys_x[pos] = 1;
 	bool f = SolveLP();		
 	sys_x[pos] = 0;
 
-	Cleanup(Triplets.size() - 1 - b, nr_rows - 1 - b);
+	sys_lo(pos) = 0;
+	sys_hi(pos) = 1;
+
 	return f;
 }

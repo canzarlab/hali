@@ -33,18 +33,13 @@ bool BnG::SolveLP()
     size_t pos = x.size();
 	double val = 0;
 
-	int qwe = 0;
-
 	for (size_t i = 0; i < x.size(); ++i)
-		if (x(i) > 0.05 && x(i) < 0.95 && !sys_x[i])
-		{    
+		if (x(i) > 0.05 && x(i) < 0.95 && !sys_x[i])    
 			if (c(i) > val) 
 			{
 				pos = i;
 				val = c(i);				
 			} 
-			qwe++;
-		}
 
 	if (pos < x.size())
 	{	
@@ -65,8 +60,6 @@ bool BnG::SolveLP()
 		sys_lo(pos) = 0;
 		sys_hi(pos) = 0;
 		f2 = Geno();
-
-		cout << max(f1, f2) << ' ' << qwe << endl;
 
 		if (f1 < f2)
 		{
