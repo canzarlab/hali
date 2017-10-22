@@ -56,8 +56,6 @@ bool BnB::SolveLP()
 
 		x = Vector::ConstMapType(solver.x(), nr_cols); 
 
-		cout << 1 << endl;
-
 		if (LP::cf == 0)
 		{
 			sys_s = x;
