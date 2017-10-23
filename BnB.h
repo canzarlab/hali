@@ -15,8 +15,10 @@ private:
     bool SolveRec(size_t pos, bool b);
 
     double       sys_lb;
-    Vector       sys_b;
     vector<bool> sys_x;
+	Vector       sys_s;
+	Vector		 sys_lo;
+	Vector		 sys_hi;
 };
 
 #endif
