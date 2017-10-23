@@ -10,7 +10,7 @@ void BnB::Solve(string filename)
 	MatchingConstraints();	
 
 	G.Solve("");
-	sys_lb = G.GetSolution();
+	sys_lb = -G.GetSolution();
 	sys_lo.conservativeResizeLike(Vector::Zero(nr_cols));
 	sys_hi.conservativeResizeLike(Vector::Ones(nr_cols));
 	sys_x.resize(nr_cols);	
