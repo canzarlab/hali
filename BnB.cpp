@@ -11,6 +11,7 @@ void BnB::Solve(string filename)
 
 	G.Solve("");
 	sys_lb = -G.GetSolution();
+	float g = sys_lb;
 	sys_lo.conservativeResizeLike(Vector::Zero(nr_cols));
 	sys_hi.conservativeResizeLike(Vector::Ones(nr_cols));
 	sys_x.resize(nr_cols);	
@@ -19,9 +20,16 @@ void BnB::Solve(string filename)
 	SolveLP();
 	x = sys_s;
 
+	float weight = 0.0;
 	for (size_t i = 0; i < x.size(); ++i)
+	{
 		x(i) = round(x(i));
+		weight += x(i) * c(i);	
+	}
 
+	cout << endl;
+	cout << "Greedy: " << -g << endl;
+	cout << "Optimal: " << weight << endl;
     WriteSolution(filename);
 }
 
@@ -67,7 +75,7 @@ bool BnB::SolveLP()
 		else if (LP::cf == 2 && (Add<CrossingConstraint>() + Add<IndependentSetConstraint>()))
 			continue;
 
-		f = solver.f();			
+		f = solver.f();	
 
 		if (sys_lb != double(INF) && f >= sys_lb * 1.0) 
 		{				
