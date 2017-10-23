@@ -30,13 +30,11 @@ void Greedy::WriteSolution(string fileName)
     double weight = 0.0;
     for (const iid& e : M)
         sol_file << get<0>(e) << " " << get<1>(e) << " " << get<2>(e) << '\n', weight += get<2>(e);
-    cout << weight << " ";
+    PrintScore(weight);
 }
 
 bool Greedy::CC(const iid& a, const iid& b)
 {
-    GDAG &t1 = static_cast<GDAG&>(this->t1);
-    GDAG &t2 = static_cast<GDAG&>(this->t2);
     int i = get<0>(a), j = get<0>(b);
     int x = get<1>(a), y = get<1>(b);
     if (i == j || x == y) return false;

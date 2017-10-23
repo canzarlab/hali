@@ -21,10 +21,13 @@ protected:
 
     template <class F>
     void DFSLeft(newick_node* node, vb& P, F f);
-
+    void PrintScore(double weight);
 private:
     template <class F>
     void DFSRight(newick_node* nodel, newick_node* noder, vb& Q, F f);
+    int GetMax(newick_node* node, int& hmax) const;
+    double SymdifDist(double weight) const;
+    double JaccardDist(double weight) const;
 };
 
 template <class F>

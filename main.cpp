@@ -27,11 +27,9 @@ Solver* MakeSolver(Graph& t1, Graph& t2, int argc, char** argv)
     return new LPInt(t1, t2, d, k, dag);
 }
 
-DAG* MakeDAG(const char* f1, const char* f2, int s)
+Graph* MakeDAG(const char* f1, const char* f2, int s)
 {
-    if (s == 0)
-        return (new GDAG(f1, f2))->BuildNetwork();
-    return (new LDAG(f1, f2))->BuildNetwork();
+    return (s == 0) ? new DAG(f1, f2) : new LDAG(f1, f2);
 }
 
 pair<Graph*, Graph*> MakeGraphs(int argc, char** argv)
@@ -39,7 +37,7 @@ pair<Graph*, Graph*> MakeGraphs(int argc, char** argv)
     if (argc == 8)
         return make_pair(new Tree(argv[1]), new Tree(argv[2]));
     else if (argc == 10)
-        return make_pair(new TTree(argv[1], argv[2]), new TTree(argv[3], argv[4]));
+        return make_pair(new Tree(argv[1], argv[2]), new Tree(argv[3], argv[4]));
 
     int s = stoi(argv[argc - 1]);
     return make_pair(MakeDAG(argv[1], argv[2], s), MakeDAG(argv[3], nullptr, s));

@@ -23,14 +23,17 @@ public:
 
     int GetNumNodes() const { return _n; }
     newick_node* GetRoot() const { return root; }
+    Graph* TransitiveClosure();
 
     vn L;
     mnls clade;
-
+    vvb D;
 protected:
+    void TransitiveClosure(newick_node* node, newick_node* rnode, vvb& C);
     void Init(newick_node* node);
     virtual void Leaf(newick_node* node) { }
     virtual void Child(newick_node* node, newick_node* child) { }
+    virtual void Relation(int d, int a) { }
     newick_node* root;
     long _n;
 };
@@ -41,11 +44,8 @@ public:
     DAG(const char* f1, const char* f2);
     ~DAG() { }
 
-    DAG* BuildNetwork();
 protected:
-    virtual void Relation(int d, int a) = 0;
-private:
-    void BuildNetwork(newick_node* node, newick_node* rnode, vvb& C);
+    virtual void Relation(int d, int a) { }
 };
 
 class Tree : public Graph
@@ -53,19 +53,15 @@ class Tree : public Graph
 public:
     Tree() { }
     Tree(const char* f1);
+    Tree(const char* f1, const char* f2);
     ~Tree() { }
 
+    Tree* BuildNetwork();
 protected:
+    void BuildNetwork(newick_node* node, newick_node* rnode);
     virtual void Leaf(newick_node* node) override;
     virtual void Child(newick_node* node, newick_node* child) override;
-};
-
-class TTree : public Tree
-{
-public:
-    TTree(const char* f1, const char* f2);
-protected:
-    virtual void Leaf(newick_node* node) override { }
+    bool t;
 };
 
 class LDAG : public DAG
@@ -76,18 +72,7 @@ public:
     vvi G;
     vvd R[NR_THREADS];
 protected:
-    virtual void Relation(int d, int a);
+    virtual void Relation(int d, int a) override;
 };
-
-class GDAG : public DAG
-{
-public:
-    GDAG(const char* f1, const char* f2);
-
-    vvb D;
-protected:
-    virtual void Relation(int d, int a);
-};
-
 
 #endif

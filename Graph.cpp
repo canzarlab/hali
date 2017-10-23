@@ -6,6 +6,7 @@ DAG::DAG(const char* f1, const char* f2)
 {
     msn M;
     Init(root = load_dag(f1, f2, clade, M));
+    TransitiveClosure();
 }
 
 LDAG::LDAG(const char* f1, const char* f2) : DAG(f1, f2)
@@ -23,22 +24,27 @@ LDAG::LDAG(const char* f1, const char* f2) : DAG(f1, f2)
         G[T].push_back(i + _n);
         G[i + _n].push_back(T);
     }
+    TransitiveClosure();
 }
 
-DAG* DAG::BuildNetwork()
+Graph* Graph::TransitiveClosure()
 {
+    D.resize(_n, vb(_n));
     vvb C(_n, vb(_n));
     for (newick_node* leaf : L)
-        BuildNetwork(leaf, leaf, C);
+        TransitiveClosure(leaf, leaf, C);
     return this;
 }
 
-void DAG::BuildNetwork(newick_node* node, newick_node* rnode, vvb& C)
+void Graph::TransitiveClosure(newick_node* node, newick_node* rnode, vvb& C)
 {
     int l = rnode->taxoni;
     int i = node->taxoni;
     if (l != i)
+    {
+        D[l][i] = true;
         Relation(l, i);
+    }
 
     C[i][l] = true;
     for (newick_parent* parent = node->parent; parent; parent = parent->next)
@@ -46,9 +52,9 @@ void DAG::BuildNetwork(newick_node* node, newick_node* rnode, vvb& C)
         newick_node* pn = parent->node;
         int pnt = pn->taxoni;
         if (!C[pnt][l])
-            BuildNetwork(pn, rnode, C);
+            TransitiveClosure(pn, rnode, C);
         if (!C[pnt][pnt])
-            BuildNetwork(pn, pn, C);
+            TransitiveClosure(pn, pn, C);
     }
 }
 
@@ -82,20 +88,23 @@ void Graph::Init(newick_node* node)
     clade[node].sort();
 }
 
-TTree::TTree(const char* f1, const char* f2)
+Tree::Tree(const char* f1, const char* f2) : t(true)
 {
     msn M;
     Init(root = load_dag(f1, f2, clade, M));
+    TransitiveClosure();
 }
 
-Tree::Tree(const char* f1)
+Tree::Tree(const char* f1) : t(false)
 {
     Init(root = load_tree(f1));
+    TransitiveClosure();
 }
 
 void Tree::Leaf(newick_node* node)
 {
-    clade[node].push_back(node->taxon);
+    if (!t)
+        clade[node].push_back(node->taxon);
 }
 
 void Tree::Child(newick_node* node, newick_node* child)
@@ -104,19 +113,10 @@ void Tree::Child(newick_node* node, newick_node* child)
     cl.insert(cl.end(), cr.begin(), cr.end());
 }
 
-GDAG::GDAG(const char* f1, const char* f2) : DAG(f1, f2), D(_n, vb(_n))
-{
-}
-
 void LDAG::Relation(int l, int i)
 {
     for (int j = 0; j < NR_THREADS; ++j)
         R[j][l][i + _n] = numeric_limits<double>::infinity();
     G[l].push_back(i + _n);
     G[i + _n].push_back(l);
-}
-
-void GDAG::Relation(int l, int i)
-{
-    D[l][i] = true;
 }

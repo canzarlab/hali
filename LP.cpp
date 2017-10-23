@@ -101,15 +101,6 @@ bool LP::SolveLP()
     return true;
 }
 
-int LP::GetMax(newick_node* node, int& hmax) const
-{
-    int sum = 0;
-    for (newick_child* child = node->child; child; child = child->next)
-        sum += GetMax(child->node, hmax);
-    hmax += sum;
-    return node->child ? sum : 1;
-}
-
 void LP::WriteSolution(string fileName)
 {
     ofstream sol_file(fileName);
@@ -128,22 +119,5 @@ void LP::WriteSolution(string fileName)
     ofstream trp_file(fileName + ".trp");
     for (auto& t : Triplets)
         trp_file << t.row() << " " << t.col() << " " << t.value() << '\n';
-
-    if (dag)
-        cout << weight << " ";
-    else
-        cout << ((d == "j") ? JaccardDist(weight) : SymdifDist(weight)) << " ";
-}
-
-float LP::SymdifDist(float weight) const
-{
-    int max1 = 0, max2 = 0;
-    int r1 = GetMax(t1.GetRoot(), max1);
-    int r2 = GetMax(t2.GetRoot(), max2);
-    return max1 + max2 - r1 - r2 - weight;
-}
-
-float LP::JaccardDist(float weight) const
-{
-    return t1.GetNumNodes() - t1.L.size() - 1 + t2.GetNumNodes() - 1 - t2.L.size() - weight;
+    PrintScore(weight);
 }

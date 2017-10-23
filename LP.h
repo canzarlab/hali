@@ -24,9 +24,6 @@ protected:
     template<int N> int Add();
     virtual bool SolveLP();
     void MatchingConstraints();
-    int GetMax(newick_node* node, int& hmax) const;
-    float SymdifDist(float weight) const;
-    float JaccardDist(float weight) const;
 
     vector<ET> Triplets;
     // backup x->warm_x and y->warm_y for two consecutive iterations
