@@ -2,6 +2,7 @@
 #define BNB_H
 
 #include "LP.h"
+#include "Greedy.h"
 
 class BnB : public LP
 {
@@ -14,6 +15,7 @@ private:
     bool SolveLP() override;
     bool SolveRec(size_t pos, bool b);
 
+	Greedy       G;
     double       sys_lb;
     vector<bool> sys_x;
 	Vector       sys_s;

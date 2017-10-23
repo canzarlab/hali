@@ -1,15 +1,16 @@
 #include "BnB.h"
 #include <iostream>
 
-BnB::BnB(Graph& t1, Graph& t2, string d, double k, bool dag) : LP(t1, t2, d, k, dag)
+BnB::BnB(Graph& t1, Graph& t2, string d, double k, bool dag) : LP(t1, t2, d, k, dag), G(Greedy(t1, t2, d, k, dag))
 {
 }
 
 void BnB::Solve(string filename)
 {
 	MatchingConstraints();	
-	
-	sys_lb = (double)INF;
+
+	G.Solve("");
+	sys_lb = G.GetSolution();
 	sys_lo.conservativeResizeLike(Vector::Zero(nr_cols));
 	sys_hi.conservativeResizeLike(Vector::Ones(nr_cols));
 	sys_x.resize(nr_cols);	

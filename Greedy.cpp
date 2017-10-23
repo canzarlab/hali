@@ -33,6 +33,14 @@ void Greedy::WriteSolution(string fileName)
     PrintScore(weight);
 }
 
+float Greedy::GetSolution()
+{
+	double weight = 0.0;
+    for (const iid& e : M)
+        weight += get<2>(e);
+	return weight;
+}
+
 bool Greedy::CC(const iid& a, const iid& b)
 {
     int i = get<0>(a), j = get<0>(b);
