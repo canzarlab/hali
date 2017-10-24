@@ -108,9 +108,9 @@ bool BnB::SolveLP()
 			sys_s = x;
 			return 1;
 		}
-		else if (LP::cf == 1 && Add<CrossingConstraint>())
+		else if (LP::cf == 1 && Add<1>())
 			continue;
-		else if (LP::cf == 2 && (Add<CrossingConstraint>() + Add<IndependentSetConstraint>()))
+        else if (LP::cf == 2 && (Add<1>() + Add<2>()))
 			continue;
 
 		f = solver.f();	

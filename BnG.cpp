@@ -112,9 +112,9 @@ float BnG::Geno()
 
 		x = Vector::ConstMapType(solver.x(), nr_cols);
 
-		if (LP::cf == 1 && Add<CrossingConstraint>())
+		if (LP::cf == 1 && Add<1>())
 			continue;
-		else if (LP::cf == 2 && (Add<CrossingConstraint>() + Add<IndependentSetConstraint>()))
+		else if (LP::cf == 2 && (Add<1>() + Add<2>()))
 			continue;			
 
 		return solver.f();	
