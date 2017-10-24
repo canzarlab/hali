@@ -24,23 +24,33 @@ void BnB::Solve(string filename)
 	sys_x.assign(nr_cols, false);
 
 	SolveLP();
-	x = sys_s;
+	if (sys_s.size() == x.size())	
+	{
+		x = sys_s;
+		for (size_t i = 0; i < x.size(); ++i)
+			x(i) = round(x(i));
+		WriteSolution(filename);
+	}	
+	else
+		G.WriteSolution(filename);
 
-	cout << "total geno calls: " << geno_calls << endl;
-	cout << "total geno time: " << geno_time << endl;
+	//cout << "total geno calls: " << geno_calls << endl;
+	//cout << "total geno time: " << geno_time << endl;
 
-	float weight = 0.0;
+	/*float weight = 0.0;
 	for (size_t i = 0; i < x.size(); ++i)
 	{
-		x(i) = round(x(i));
+		x(i) = round(x(i));		
 		weight += x(i) * c(i);	
-	}
+	}*/
 
-	cout << endl;
-	cout << "Greedy: " << -g << endl;
-	cout << "Optimal: " << weight << endl;
-    WriteSolution(filename);
+	//cout << endl;
+	//cout << "Greedy: " << -g << endl;
+	//cout << "Optimal: " << weight << endl;
+    //WriteSolution(filename);
 }
+
+// ./solver inputs/T2_s200_25.ploidyless.dag inputs/T2_s200_25.ploidyless.map inputs/T9_s200_25.ploidyless.dag inputs/T9_s200_25.ploidyless.map align 2 j 1 2
 
 void BnB::Cleanup(size_t nr_t, size_t nr_r)
 {
@@ -86,7 +96,7 @@ bool BnB::SolveLP()
 
 		if (status == INFEASIBLE) 
 		{	
-			cout << "ERROR: infeasible solution" << endl;			
+			clog << "ERROR: infeasible solution" << endl;			
 			Cleanup(nr_t, nr_r);			
 			return 0; 
 		}
@@ -105,24 +115,24 @@ bool BnB::SolveLP()
 
 		f = solver.f();	
 
-		cout << "geno calls: " << qwe << endl;
-		cout << "geno time: " << qwer << endl;
-		cout << "total geno calls: " << geno_calls << endl;
-		cout << "total geno time: " << geno_time << endl;
-		cout << "upper: " << f << endl;
-		cout << "lower: " << sys_lb << endl;
+		//cout << "geno calls: " << qwe << endl;
+		//cout << "geno time: " << qwer << endl;
+		//cout << "total geno calls: " << geno_calls << endl;
+		//cout << "total geno time: " << geno_time << endl;
+		//cout << "upper: " << f << endl;
+		//cout << "lower: " << sys_lb << endl;
 		
-
 		if (sys_lb != double(INF) && f >= sys_lb * 1.0) 
 		{				
-			cout << "The branch was cut." << endl << endl;
+			//cout << "The branch was cut." << endl << endl;
 			Cleanup(nr_t, nr_r);			
 			return 0; 
 		}			
 
-		cout << endl;
+		//cout << endl;
 
-		// ./solver T2_s200_25.ploidyless.dag T2_s200_25.ploidyless.map T2_s200_25.ploidyless.dag T2_s200_25.ploidyless.map align 2 j 1 2
+		// ./solver T9_s200_25.ploidyless.dag T9_s200_25.ploidyless.map T2_s200_25.ploidyless.dag T2_s200_25.ploidyless.map align 2 j 1 2
+		// ./solver inputs/a28 inputs/a10028 outputs/out 2 j 1 2 2>/dev/null > stats2.txt
 
 		break;
 	}
@@ -135,7 +145,7 @@ bool BnB::SolveLP()
 		 	if (c(i) > val) 
 			{
 				pos = i;
-				val = abs(0.5 - x(i)); // c(i);				
+				val = c(i);				
 			} 
 
 	if (pos < x.size())

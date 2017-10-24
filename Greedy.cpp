@@ -29,7 +29,7 @@ void Greedy::WriteSolution(string fileName)
     ofstream sol_file(fileName);
     double weight = 0.0;
     for (const iid& e : M)
-        sol_file << get<0>(e) << " " << get<1>(e) << " " << get<2>(e) << '\n', weight += get<2>(e);
+        sol_file << get<0>(e) << " " << get<1>(e) << " 1\n", weight += get<2>(e);
     PrintScore(weight);
 }
 
