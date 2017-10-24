@@ -21,6 +21,9 @@ private:
 	Vector       sys_s;
 	Vector		 sys_lo;
 	Vector		 sys_hi;
+	
+	int    geno_calls;
+	double geno_time;
 };
 
 #endif
