@@ -58,7 +58,7 @@ void AntichainConstraint::AntichainJob(int id)
     }
 }
 
-bool AntichainConstraint::AugmentingPath(vvi& G, vi& Q, vvd& R)
+bool AntichainConstraint::AugmentingPath(vi& Q, vvd& R)
 {
     queue<int> W;
     W.push(S);
@@ -79,7 +79,7 @@ bool AntichainConstraint::AugmentingPath(vvi& G, vi& Q, vvd& R)
 double AntichainConstraint::MaxFlow(vi& Q, vvd& R)
 {
     double flow = 0;
-    while (AugmentingPath(G, Q, R))
+    while (AugmentingPath(Q, R))
     {
         double aug = numeric_limits<double>::infinity();
         for (int x = T; x != S; x = Q[x])
@@ -91,19 +91,6 @@ double AntichainConstraint::MaxFlow(vi& Q, vvd& R)
         flow += aug;
     }
     return flow;
-}
-
-void AntichainConstraint::BFS(vi& Q, vvd& R)
-{
-    queue<int> W;
-    W.push(S);
-    while (!W.empty())
-    {
-        int k = W.front(); W.pop();
-        for (int x : G[k])
-            if (Q[x] == -1 && R[k][x] > 0)
-                Q[x] = k, W.push(x);
-    }
 }
 
 double AntichainConstraint::Reset(vn& P, vvd& R)
@@ -130,8 +117,6 @@ void AntichainConstraint::Antichain(vn& P, vvd& R)
     if (Reset(P, R) - MaxFlow(Q, R) <= 1 + EPS)
         return;
 
-    fill(Q.begin(), Q.end(), -1);
-    BFS(Q, R);
     vii PN;
     for (int i = 0; i < Z; ++i)
         if (Q[i] != -1 && Q[i + Z] == -1)

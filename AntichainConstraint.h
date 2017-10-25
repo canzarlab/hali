@@ -15,9 +15,8 @@ private:
     void DFSLeft(newick_node* node, vn& P);
     void RunParallel();
     void AntichainJob(int id);
-    bool AugmentingPath(vvi& G, vi& Q, vvd& R);
+    bool AugmentingPath(vi& Q, vvd& R);
     double MaxFlow(vi& Q, vvd& R);
-    void BFS(vi& Q, vvd& R);
     double Reset(vn& P, vvd& R);
     void Antichain(vn& P, vvd& R);
 
