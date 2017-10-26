@@ -7,7 +7,7 @@
 class BnB : public LP
 {
 public:
-    BnB(Graph& t1, Graph& t2, string d, double k, bool dag, double e, double c);
+    BnB(Graph& t1, Graph& t2, string d, double k, bool dag, double c);
     virtual void Solve(string filename) override;
 
 private:
@@ -23,7 +23,6 @@ private:
 	Vector		 sys_hi;
 	
 	double       con_eps;
-	double       var_eps;
 
 	//int    geno_calls;
 	//double geno_time;

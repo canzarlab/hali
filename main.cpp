@@ -4,6 +4,7 @@
 #include "BnB.h"
 #include "BnG.h"
 #include "LPInt.h"
+#include "Similarity.h"
 #include <iostream>
 
 int LP::cf;
@@ -11,11 +12,11 @@ int LP::cf;
 Solver* MakeSolver(Graph& t1, Graph& t2, int argc, char** argv)
 {
 	int    s = stoi(argv[argc - 1]);
-    LP::cf   = stoi(argv[4 + (argc == 9) + 2 * (argc == 12)]);
+    LP::cf   = stoi(argv[4 + (argc == 9) + 2 * (argc == 12)]);	
 	string d =      argv[5 + (argc == 9) + 2 * (argc == 12)];
     double k = stod(argv[6 + (argc == 9) + 2 * (argc == 12)]);
-	double e = (argc == 9)  ? 0 : stod(argv[7 + 2 * (argc == 12)]);
 	double c = (s != 2) ? 0 : stod(argv[8 + 2 * (argc == 12)]);
+	var_eps  = (argc == 9) ? 0 : stod(argv[7 + 2 * (argc == 12)]);
 
     assert(LP::cf >= 0 && LP::cf <= 2);
     assert(d == "j" || d == "s");
@@ -26,11 +27,11 @@ Solver* MakeSolver(Graph& t1, Graph& t2, int argc, char** argv)
     else if (s == 1)
         return new LP(t1, t2, d, k, argc == 9);
     else if (s == 2)
-        return new BnB(t1, t2, d, k, argc == 9, e, c);
+        return new BnB(t1, t2, d, k, argc == 9, c);
 	else if (s == 3)
     	return new LPInt(t1, t2, d, k, argc == 9);
 	else if (s == 4)
-		return new BnG(t1, t2, d, k, argc == 9, e);
+		return new BnG(t1, t2, d, k, argc == 9);
 	
 	return nullptr;
 }

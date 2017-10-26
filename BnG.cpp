@@ -2,7 +2,7 @@
 #include "Timer.h"
 #include <iostream>
 
-BnG::BnG(Graph& t1, Graph& t2, string d, double k, bool dag, double e) : LP(t1, t2, d, k, dag), var_eps(e)
+BnG::BnG(Graph& t1, Graph& t2, string d, double k, bool dag) : LP(t1, t2, d, k, dag)
 {
 }
 
@@ -36,7 +36,7 @@ bool BnG::SolveLP()
 	double val = 0;
 
 	for (size_t i = 0; i < x.size(); ++i)
-		if (x(i) > var_eps && x(i) < 1 - var_eps && !sys_x[i])    
+		if (x(i) > 1e-3 && x(i) < 1 - 1e-3 && !sys_x[i])    
 		{	if (c(i) > val) 
 			{
 				pos = i;
@@ -105,10 +105,7 @@ float BnG::Geno()
 	    SolverStatus status = solver.solve();	 
 
 		if (status == INFEASIBLE)
-		{
-			cout << "ERROR: infeasible solution" << endl;
 			return 0.0;
-		}
 
 		x = Vector::ConstMapType(solver.x(), nr_cols);
 

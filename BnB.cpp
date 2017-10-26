@@ -2,7 +2,7 @@
 #include "Timer.h"
 #include <iostream>
 
-BnB::BnB(Graph& t1, Graph& t2, string d, double k, bool dag, double e, double c) : LP(t1, t2, d, k, dag), G(Greedy(t1, t2, d, k, dag)), var_eps(e), con_eps(c)
+BnB::BnB(Graph& t1, Graph& t2, string d, double k, bool dag, double c) : LP(t1, t2, d, k, dag), G(Greedy(t1, t2, d, k, dag)), con_eps(c)
 {
 }
 
@@ -95,8 +95,7 @@ bool BnB::SolveLP()
 		//geno_time += T.secs();
 
 		if (status == INFEASIBLE) 
-		{	
-			clog << "ERROR: infeasible solution" << endl;			
+		{				
 			Cleanup(nr_t, nr_r);			
 			return 0; 
 		}
@@ -132,7 +131,7 @@ bool BnB::SolveLP()
 		//cout << endl;
 
 		// ./solver T9_s200_25.ploidyless.dag T9_s200_25.ploidyless.map T2_s200_25.ploidyless.dag T2_s200_25.ploidyless.map align 2 j 1 2
-		// ./solver inputs/a28 inputs/a10028 outputs/out 2 j 1 0.15 0.01 2 2>/dev/null
+		// ./solver inputs/a28 inputs/a10028 outputs/out 2 j 1 0.05 0.01 2 2>/dev/null
 
 		break;
 	}
