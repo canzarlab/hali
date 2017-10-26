@@ -10,24 +10,29 @@ int LP::cf;
 
 Solver* MakeSolver(Graph& t1, Graph& t2, int argc, char** argv)
 {
-    bool dag = (argc == 9);
-    LP::cf = stoi(argv[argc - 4]);
-    string d = argv[argc - 3];
-    double k = stod(argv[argc - 2]);
-    int s = stoi(argv[argc - 1]);
+	int    s = stoi(argv[argc - 1]);
+    LP::cf   = stoi(argv[4 + (argc == 9) + 2 * (argc == 12)]);
+	string d =      argv[5 + (argc == 9) + 2 * (argc == 12)];
+    double k = stod(argv[6 + (argc == 9) + 2 * (argc == 12)]);
+	double e = (argc == 9)  ? 0 : stod(argv[7 + 2 * (argc == 12)]);
+	double c = (s != 2) ? 0 : stod(argv[8 + 2 * (argc == 12)]);
+
     assert(LP::cf >= 0 && LP::cf <= 2);
     assert(d == "j" || d == "s");
     assert(s >= 0 && s <= 4);
 
     if (s == 0)
-        return new Greedy(t1, t2, d, k, dag);
+        return new Greedy(t1, t2, d, k, argc == 9);
     else if (s == 1)
-        return new LP(t1, t2, d, k, dag);
+        return new LP(t1, t2, d, k, argc == 9);
     else if (s == 2)
-        return new BnB(t1, t2, d, k, dag);
+        return new BnB(t1, t2, d, k, argc == 9, e, c);
 	else if (s == 3)
-    	return new LPInt(t1, t2, d, k, dag);
-	return new BnG(t1, t2, d, k, dag);
+    	return new LPInt(t1, t2, d, k, argc == 9);
+	else if (s == 4)
+		return new BnG(t1, t2, d, k, argc == 9, e);
+	
+	return nullptr;
 }
 
 Graph* MakeDAG(const char* f1, const char* f2, int s)
@@ -37,9 +42,9 @@ Graph* MakeDAG(const char* f1, const char* f2, int s)
 
 pair<Graph*, Graph*> MakeGraphs(int argc, char** argv)
 {
-    if (argc == 8)
+    if (argc == 10)
         return make_pair(new Tree(argv[1]), new Tree(argv[2]));
-    else if (argc == 10)
+    else if (argc == 12)
         return make_pair(new Tree(argv[1], argv[2]), new Tree(argv[3], argv[4]));
 
     int s = stoi(argv[argc - 1]);
@@ -48,11 +53,11 @@ pair<Graph*, Graph*> MakeGraphs(int argc, char** argv)
 
 int main(int argc, char** argv)
 {
-    if (argc < 8 || argc > 10)
+    if (argc < 9 || argc > 12)
     {
-        cout << "tree usage: " << argv[0] << " <filename.newick> <filename.newick> <align> <0=matching 1=crossing 2=strict> <j=jaccard s=symdif> <k> <0=greedy 1=fractional 2=bnb 3=integral 4=bng>" << endl;
+        cout << "tree usage: " << argv[0] << " <filename.newick> <filename.newick> <align> <0=matching 1=crossing 2=strict> <j=jaccard s=symdif> <k> <varcut> <constreps> <0=greedy 1=fractional 2=bnb 3=integral 4=bng>" << endl;
         cout << "dag usage: " << argv[0] << " <yeastnet> <mapping> <go> <align> <0=matching 1=crossing 2=strict> <j=jaccard s=symdif> <k> <0=greedy 1=fractional 2=bnb 3=integral>" << endl;
-        cout << "tree usage (2): " << argv[0] << " <tree> <map> <tree> <map> <align> <0=matching 1=crossing 2=strict> <j=jaccard s=symdif> <k> <0=greedy 1=fractional 2=bnb 3=integral>" << endl;
+        cout << "tree usage (2): " << argv[0] << " <tree> <map> <tree> <map> <align> <0=matching 1=crossing 2=strict> <j=jaccard s=symdif> <k> <varcut> <constreps> <0=greedy 1=fractional 2=bnb 3=integral 4=bng>" << endl;
         return EXIT_FAILURE;
     }
 
@@ -60,8 +65,8 @@ int main(int argc, char** argv)
     T.start();
     Graph *t1, *t2;
     tie(t1, t2) = MakeGraphs(argc, argv);
-    Solver* solver = MakeSolver(*t1, *t2, argc, argv);
-    solver->Solve(argv[argc - 5]);
+    Solver* solver = MakeSolver(*t1, *t2, argc, argv);   
+	solver->Solve(argv[3 + 2 * (argc == 9) + (argc == 12)]);
     T.stop();
     clog << "TOTAL TIME : \t\t" << T.secs() << " secs" << endl;
     delete t1;

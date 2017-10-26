@@ -2,7 +2,7 @@
 #include "Timer.h"
 #include <iostream>
 
-BnB::BnB(Graph& t1, Graph& t2, string d, double k, bool dag) : LP(t1, t2, d, k, dag), G(Greedy(t1, t2, d, k, dag))
+BnB::BnB(Graph& t1, Graph& t2, string d, double k, bool dag, double e, double c) : LP(t1, t2, d, k, dag), G(Greedy(t1, t2, d, k, dag)), var_eps(e), con_eps(c)
 {
 }
 
@@ -14,8 +14,8 @@ void BnB::Solve(string filename)
 	sys_lb = -G.GetSolution();
 	float g = sys_lb;
 
-	geno_calls = 0;
-	geno_time  = 0.0;
+	//geno_calls = 0;
+	//geno_time  = 0.0;
 
 	x = Vector::Zero(nr_cols);
 	sys_lo.conservativeResizeLike(Vector::Zero(nr_cols));
@@ -50,7 +50,7 @@ void BnB::Solve(string filename)
     //WriteSolution(filename);
 }
 
-// ./solver inputs/T2_s200_25.ploidyless.dag inputs/T2_s200_25.ploidyless.map inputs/T9_s200_25.ploidyless.dag inputs/T9_s200_25.ploidyless.map align 2 j 1 2
+// ./solver inputs/T2_s200_25.ploidyless.dag inputs/T2_s200_25.ploidyless.map inputs/T9_s200_25.ploidyless.dag inputs/T9_s200_25.ploidyless.map align 2 j 1 0.15 0.01 2
 
 void BnB::Cleanup(size_t nr_t, size_t nr_r)
 {
@@ -64,9 +64,9 @@ bool BnB::SolveLP()
 	int nr_r = nr_rows;
 	double f;
 
-	int qwe = 0;
-	double qwer = 0.0;
-	Timer T;
+	//int qwe = 0;
+	//double qwer = 0.0;
+	//Timer T;
 
 	while(1)
 	{
@@ -85,14 +85,14 @@ bool BnB::SolveLP()
 	    solver.setParameter("pgtol", 1e-1); 
 	    solver.setParameter("constraintsTol", 1e-4);
 
-		T.start();
+		//T.start();
 	    SolverStatus status = solver.solve();	 
-		T.stop();
+		//T.stop();
 
-		qwe++;
-		qwer += T.secs();
-		geno_calls++;
-		geno_time += T.secs();
+		//qwe++;
+		//qwer += T.secs();
+		//geno_calls++;
+		//geno_time += T.secs();
 
 		if (status == INFEASIBLE) 
 		{	
@@ -122,7 +122,7 @@ bool BnB::SolveLP()
 		//cout << "upper: " << f << endl;
 		//cout << "lower: " << sys_lb << endl;
 		
-		if (sys_lb != double(INF) && f >= sys_lb * 1.0) 
+		if (sys_lb != double(INF) && f >= sys_lb * (1.0 + con_eps)) 
 		{				
 			//cout << "The branch was cut." << endl << endl;
 			Cleanup(nr_t, nr_r);			
@@ -132,7 +132,7 @@ bool BnB::SolveLP()
 		//cout << endl;
 
 		// ./solver T9_s200_25.ploidyless.dag T9_s200_25.ploidyless.map T2_s200_25.ploidyless.dag T2_s200_25.ploidyless.map align 2 j 1 2
-		// ./solver inputs/a28 inputs/a10028 outputs/out 2 j 1 2 2>/dev/null > stats2.txt
+		// ./solver inputs/a28 inputs/a10028 outputs/out 2 j 1 0.15 0.01 2 2>/dev/null
 
 		break;
 	}
@@ -141,7 +141,7 @@ bool BnB::SolveLP()
 	double val = 0;
 
 	for (size_t i = 0; i < x.size(); ++i)
-		if (x(i) > 1e-3 && x(i) < 1 - 1e-3 && !sys_x[i])
+		if (x(i) > var_eps && x(i) < 1 - var_eps && !sys_x[i])
 		 	if (c(i) > val) 
 			{
 				pos = i;
