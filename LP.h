@@ -18,7 +18,6 @@ public:
     virtual void Solve(string filename);
     void WriteSolution(string fileName);
 
-    static int cf;
 protected:
     template<class T> int Add();
     template<int N> int Add();

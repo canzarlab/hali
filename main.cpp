@@ -8,12 +8,12 @@
 #include "Similarity.h"
 #include <iostream>
 
-int LP::cf;
+int Solver::cf;
 
 Solver* MakeSolver(Graph& t1, Graph& t2, int argc, char** argv)
 {
     int    s = stoi(argv[argc - 1]);
-    LP::cf   = stoi(argv[4 + (argc == 9) + 2 * (argc == 12)]);
+    Solver::cf   = stoi(argv[4 + (argc == 9) + 2 * (argc == 12)]);
     string d =      argv[5 + (argc == 9) + 2 * (argc == 12)];
     double k = stod(argv[6 + (argc == 9) + 2 * (argc == 12)]);
     double c = (s != 2) ? 0 : stod(argv[8 + 2 * (argc == 12)]);

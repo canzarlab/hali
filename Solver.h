@@ -13,6 +13,7 @@ public:
     virtual void Solve(string filename) = 0;
     virtual void WriteSolution(string fileName) = 0;
 
+    static int cf;
 protected:
     Graph &t1, &t2;
     string d;

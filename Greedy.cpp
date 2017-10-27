@@ -48,5 +48,6 @@ bool Greedy::CC(const iid& a, const iid& b)
     if (i == j || x == y) return false;
     bool c2 = (t1.D[j][i] || t1.D[i][j]) == (t2.D[x][y] || t2.D[y][x]);
     bool c1 = (t1.D[i][j] == t2.D[x][y]); // assuming c2 is satisfied
+    if (cf == 1) return !c2 || c1;
     return c2 && c1;
 }
