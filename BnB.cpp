@@ -6,6 +6,10 @@ BnB::BnB(Graph& t1, Graph& t2, string d, double k, bool dag, double c) : LP(t1, 
 {
 }
 
+// DEBUG - uncomment me
+// int geno_calls = 0;
+// float geno_time = 0;
+
 void BnB::Solve(string filename)
 {
 	MatchingConstraints();	
@@ -13,9 +17,6 @@ void BnB::Solve(string filename)
 	G.Solve("");
 	sys_lb = -G.GetSolution();
 	float g = sys_lb;
-
-	//geno_calls = 0;
-	//geno_time  = 0.0;
 
 	x = Vector::Zero(nr_cols);
 	sys_lo.conservativeResizeLike(Vector::Zero(nr_cols));
@@ -36,21 +37,7 @@ void BnB::Solve(string filename)
 
 	//cout << "total geno calls: " << geno_calls << endl;
 	//cout << "total geno time: " << geno_time << endl;
-
-	/*float weight = 0.0;
-	for (size_t i = 0; i < x.size(); ++i)
-	{
-		x(i) = round(x(i));		
-		weight += x(i) * c(i);	
-	}*/
-
-	//cout << endl;
-	//cout << "Greedy: " << -g << endl;
-	//cout << "Optimal: " << weight << endl;
-    //WriteSolution(filename);
 }
-
-// ./solver inputs/T2_s200_25.ploidyless.dag inputs/T2_s200_25.ploidyless.map inputs/T9_s200_25.ploidyless.dag inputs/T9_s200_25.ploidyless.map align 2 j 1 0.15 0.01 2
 
 void BnB::Cleanup(size_t nr_t, size_t nr_r)
 {
@@ -103,9 +90,7 @@ bool BnB::SolveLP()
 		x = Vector::ConstMapType(solver.x(), nr_cols); 
 
 		if (LP::cf == 0)
-		{
 			sys_s = x;
-		}
 		else if (LP::cf == 1 && Add<1>())
 			continue;
         else if (LP::cf == 2 && (Add<1>() + Add<2>()))
@@ -128,9 +113,6 @@ bool BnB::SolveLP()
 		}			
 
 		//cout << endl;
-
-		// ./solver T9_s200_25.ploidyless.dag T9_s200_25.ploidyless.map T2_s200_25.ploidyless.dag T2_s200_25.ploidyless.map align 2 j 1 2
-		// ./solver inputs/a28 inputs/a10028 outputs/out 2 j 1 0.05 0.01 2 2>/dev/null
 
 		break;
 	}
