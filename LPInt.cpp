@@ -26,10 +26,12 @@ void LPInt::Solve(string filename)
             for (size_t j = 0; j < K[i].size(); j++)
                 if (K[i][j] != -1 && x(K[i][j]) > 1-1e-1)
                     E.emplace_back(i, j);
+
+        cnt = 0;
         for (int i = 0; i < E.size(); ++i)
             for (int j = i + 1; j < E.size(); ++j)
                 if (!CC(E[i], E[j]))
-                    AddConstraint(E[i], E[j]);
+                    AddConstraint(E[i], E[j]), cnt++;
         clog << "Added " << cnt << " rows." << endl;
     }
 }
