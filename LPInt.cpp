@@ -8,26 +8,65 @@ LPInt::LPInt(Graph& t1, Graph& t2, string d, double k, bool dag) : LP(t1, t2, d,
 
 void LPInt::Solve(string filename)
 {
-    LP::Solve(filename);
+    MatchingConstraints();
+    int cnt = 1;
+    for (int i = 0; cnt; i++)
+    {
+        Timer T_lp, T_cross, T_indep;
+        T_lp.start();
+        SolveLP();
+        WriteSolution(filename);
+        T_lp.stop();
+        clog << ">>> Time for solve: \t\t" << T_lp.secs() << " secs" << endl;
+        if (cf == 0)
+            break;
+
+        vector<ii> E;
+        for (size_t i = 0; i < K.size(); i++)
+            for (size_t j = 0; j < K[i].size(); j++)
+                if (K[i][j] != -1 && x(K[i][j]) > 1-1e-1)
+                    E.emplace_back(i, j);
+        for (int i = 0; i < E.size(); ++i)
+            for (int j = i + 1; j < E.size(); ++j)
+                if (!CC(E[i], E[j]))
+                    AddConstraint(E[i], E[j]);
+        clog << "Added " << cnt << " rows." << endl;
+    }
+}
+
+bool LPInt::CC(const ii& a, const ii& b)
+{
+    int i = get<0>(a), j = get<0>(b);
+    int x = get<1>(a), y = get<1>(b);
+    if (i == j || x == y) return false;
+    bool c2 = (t1.D[j][i] || t1.D[i][j]) == (t2.D[x][y] || t2.D[y][x]);
+    bool c1 = (t1.D[i][j] == t2.D[x][y]); // assuming c2 is satisfied
+    return c2 && c1;
+}
+
+void LPInt::AddConstraint(const ii& a, const ii& b)
+{
+    int i = get<0>(a), j = get<1>(a);
+    int k = get<0>(b), l = get<1>(b);
+    Triplets.emplace_back(nr_rows, K[i][j], 1.);
+    Triplets.emplace_back(nr_rows++, K[k][l], 1.);
 }
 
 bool LPInt::SolveLP()
 {
     clog << "nr_rows = " << nr_rows << " and nr_cols = " << nr_cols << endl;
-    warm_y.conservativeResizeLike(Vector::Zero(nr_rows)); // resizes y with 0's, but keeping old values intact.
 
     SpMat A(nr_rows, nr_cols);
     A.setFromTriplets(Triplets.begin(), Triplets.end());
     SpMat A_t = A.transpose();
     Vector b = Vector::Ones(nr_rows);
 
+    x = warm_x;
     //x = Vector::Zero(nr_cols);
-    //y = Vector::Zero(nr_rows);
-
-    CoveringJRF simpleJRF(A_t, c, b, warm_y, warm_x);
+    y = Vector::Zero(nr_rows + nr_cols);
 
     Vector c1 = -c;
-//        PackingJRF simpleJRF(A, b, c1, x, y);
+    IntegerPackingJRF simpleJRF(A, b, c1, warm_x, y);
     AugmentedLagrangian solver(simpleJRF, 15);
     solver.setParameter("verbose", false);
     solver.setParameter("pgtol", 1e-1); // should influence running time a lot
@@ -39,61 +78,7 @@ bool LPInt::SolveLP()
 
     clog << "f = " << solver.f() << " computed in time: " << timeGeno.secs() << " secs" << endl;
 
-    /* when Packing: x->x, y->y, when Covering: -y -> x, x -> y */
-    x = -Vector::ConstMapType(solver.y(), nr_cols);
-    y = Vector::ConstMapType(solver.x(), nr_rows);
-
-    warm_x = Vector::ConstMapType(solver.y(), nr_cols);
-    warm_y = Vector::ConstMapType(solver.x(), nr_rows);
-
-
-    Vector t = A_t*y-c;
-    int nr_tight_constr =  nr_cols - (t.array() > 0.1).count();
-    clog << "Number of tight constraints in the dual: " << nr_tight_constr << endl;
-    //idea, truncate matrix A for columns that correspond to non-tight constraints in dual
-    SpMat truncA(nr_rows, nr_tight_constr);
-    Vector truncc(nr_tight_constr);
-    Vector truncx(nr_tight_constr);
-    int truncA_col = 0;
-    for (int i=0; i<nr_cols; i++)
-        if (t(i)> 0.1)
-            x(i) = 0.0;
-        else {
-            for (SpMat::InnerIterator it(A,i); it; ++it)
-            {
-                truncA.coeffRef(it.row(), truncA_col) = it.value();
-            }
-            truncc(truncA_col) = - c(i);
-            truncx(truncA_col) = x(i);
-            truncA_col ++;
-        }
-
-    assert(truncA_col == nr_tight_constr);
-
-    clog << "Truncated matrix formed ... resolve" << endl;
-    Vector expy = Vector::Zero(truncA.rows() + truncA.cols());
-    IntegerPackingJRF simpleJRF1(truncA, b, truncc, truncx, expy);
-    //PackingJRF simpleJRF1(truncA, b, truncc, truncx, y);
-    AugmentedLagrangian solver1(simpleJRF1, 15);
-    solver1.setParameter("verbose", false);
-    solver1.setParameter("pgtol", 1e-1); // should influence running time a lot
-    solver1.setParameter("constraintsTol", 1e-5);
-    Timer timeGeno1;
-    timeGeno1.start();
-    solver1.solve();
-    timeGeno1.stop();
-    clog << "trunc f = " << solver1.f() << " computed in time: " << timeGeno1.secs() << " secs" << endl;
-
-    // map the solution back to vector x
-    truncx = Vector::ConstMapType(solver1.x(), nr_tight_constr);
-    clog <<"MAX INTEGER PACKING VALUE: " <<  truncx.maxCoeff() << endl;
-    truncA_col = 0;
-    for (int i=0; i<nr_cols; i++)
-        if (t(i)<= 0.1){
-            x(i) = truncx(truncA_col);
-            truncA_col++;
-        }
-
-    assert(truncA_col == nr_tight_constr);
+    warm_x = x = Vector::ConstMapType(solver.x(), nr_cols);
+    y = Vector::ConstMapType(solver.y(), nr_rows);
     return true;
 }

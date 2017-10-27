@@ -3,6 +3,8 @@
 
 #include "LP.h"
 
+typedef tuple<int, int> ii;
+
 class LPInt : public LP
 {
 public:
@@ -10,7 +12,9 @@ public:
 
     virtual void Solve(string filename) override;
 private:
-    bool SolveLP() override;
+    bool CC(const ii& a, const ii& b);
+    void AddConstraint(const ii& a, const ii& b);
+    virtual bool SolveLP() override;
 };
 
 #endif

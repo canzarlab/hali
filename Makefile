@@ -24,7 +24,7 @@ geno/%.o: geno/%.cpp
 %.o: %.cpp $(HEADERS)
 	$(CXX) -c $< $(CFLAGS) $(INCL)
 
-solver: $(GENO_OBJS) Graph.o Greedy.o Solver.o LP.o AntichainConstraint.o Constraint.o IndependentSetConstraint.o CrossingConstraint.o newick.o BnB.o BnG.o Similarity.o LPInt.o
+solver: $(GENO_OBJS) Graph.o Greedy.o Solver.o LP.o AntichainConstraint.o Constraint.o IndependentSetConstraint.o CrossingConstraint.o newick.o BnB.o BnG.o Similarity.o LPInt.o LPCP.o
 	$(CXX) -o $@ $^ $(CFLAGS) #-L$(MKLROOT)/lib/intel64 -Wl,--no-as-needed -lmkl_intel_lp64 -lmkl_tbb_thread -lmkl_core -ltbb -lstdc++ -lpthread -lm -ldl
 
 filter: filter.o
