@@ -105,7 +105,6 @@ bool BnB::SolveLP()
 		if (LP::cf == 0)
 		{
 			sys_s = x;
-			return 1;
 		}
 		else if (LP::cf == 1 && Add<1>())
 			continue;
