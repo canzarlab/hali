@@ -2,14 +2,6 @@
 #include "Timer.h"
 #include <iostream>
 
-// ./solver inputs/C5.new.dag inputs/C5.new.map inputs/C32.new.dag inputs/C32.new.map align 0 j 1 0.025 0 2 2>/dev/null
-// ./solver inputs/C5.new.dag inputs/C5.new.map inputs/C32.new.dag inputs/C32.new.map align 1 j 1 0.025 0 2 2>/dev/null
-// ./solver inputs/C5.new.dag inputs/C5.new.map inputs/C32.new.dag inputs/C32.new.map align 2 j 1 0.025 0 2 2>/dev/null 185.395
-
-// 182.445
-// 182.469
-// 185.334
-
 #define DEBUG 0
 
 BnB::BnB(Graph& t1, Graph& t2, string d, double k, bool dag, double c) : LP(t1, t2, d, k, dag), G(Greedy(t1, t2, d, k, dag)), con_eps(c)
