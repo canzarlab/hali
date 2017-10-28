@@ -2,13 +2,20 @@
 #include "Timer.h"
 #include <iostream>
 
+// ./solver inputs/C5.new.dag inputs/C5.new.map inputs/C32.new.dag inputs/C32.new.map align 0 j 1 0.025 0 2 2>/dev/null
+// ./solver inputs/C5.new.dag inputs/C5.new.map inputs/C32.new.dag inputs/C32.new.map align 1 j 1 0.025 0 2 2>/dev/null
+// ./solver inputs/C5.new.dag inputs/C5.new.map inputs/C32.new.dag inputs/C32.new.map align 2 j 1 0.025 0 2 2>/dev/null 185.395
+
+// 182.445
+// 182.469
+// 185.334
+
 BnB::BnB(Graph& t1, Graph& t2, string d, double k, bool dag, double c) : LP(t1, t2, d, k, dag), G(Greedy(t1, t2, d, k, dag)), con_eps(c)
 {
 }
 
-// DEBUG - uncomment me
-// int geno_calls = 0;
-// float geno_time = 0;
+int geno_calls = 0;
+double geno_time = 0;
 
 void BnB::Solve(string filename)
 {
@@ -16,7 +23,6 @@ void BnB::Solve(string filename)
 
 	G.Solve("");
 	sys_lb = -G.GetSolution();
-	float g = sys_lb;
 
 	x = Vector::Zero(nr_cols);
 	sys_lo.conservativeResizeLike(Vector::Zero(nr_cols));
@@ -24,8 +30,7 @@ void BnB::Solve(string filename)
 	sys_x.resize(nr_cols);	
 	sys_x.assign(nr_cols, false);
 
-	SolveLP();
-	if (sys_s.size() == x.size())	
+	if (SolveLP())	
 	{
 		x = sys_s;
 		for (size_t i = 0; i < x.size(); ++i)
@@ -35,6 +40,7 @@ void BnB::Solve(string filename)
 	else
 		G.WriteSolution(filename);
 
+	//cout << endl;
 	//cout << "total geno calls: " << geno_calls << endl;
 	//cout << "total geno time: " << geno_time << endl;
 }
@@ -51,16 +57,15 @@ bool BnB::SolveLP()
 	int nr_r = nr_rows;
 	double f;
 
-	//int qwe = 0;
-	//double qwer = 0.0;
-	//Timer T;
+	int qwe = 0;
+	double qwer = 0.0;
+	Timer T;
 
 	while(1)
 	{
 	    SpMat A(nr_rows, nr_cols);
 	    A.setFromTriplets(Triplets.begin(), Triplets.end());
 		Vector b = Vector::Ones(nr_rows);   	
-		//x = Vector::Zero(nr_cols);
 		y = Vector::Zero(nr_rows);
 		Vector d = -c;			
 
@@ -76,10 +81,10 @@ bool BnB::SolveLP()
 	    SolverStatus status = solver.solve();	 
 		//T.stop();
 
-		//qwe++;
-		//qwer += T.secs();
-		//geno_calls++;
-		//geno_time += T.secs();
+		/*qwe++;
+		qwer += T.secs();
+		geno_calls++;
+		geno_time += T.secs();*/
 
 		if (status == INFEASIBLE) 
 		{				
@@ -89,22 +94,27 @@ bool BnB::SolveLP()
 
 		x = Vector::ConstMapType(solver.x(), nr_cols); 
 
-		if (LP::cf == 0)
-			sys_s = x;
-		else if (LP::cf == 1 && Add<1>())
+		if (LP::cf == 1 && Add<1>())
 			continue;
         else if (LP::cf == 2 && (Add<1>() + Add<2>()))
 			continue;
 
 		f = solver.f();	
 
-		//cout << "geno calls: " << qwe << endl;
-		//cout << "geno time: " << qwer << endl;
-		//cout << "total geno calls: " << geno_calls << endl;
-		//cout << "total geno time: " << geno_time << endl;
-		//cout << "upper: " << f << endl;
-		//cout << "lower: " << sys_lb << endl;
-		
+		/*cout << "rows: " << nr_rows << endl;
+		cout << "cols: " << nr_cols << endl;
+		cout << "geno calls: " << qwe << endl;
+		cout << "geno time: " << qwer << endl;
+		cout << "total geno calls: " << geno_calls << endl;
+		cout << "total geno time: " << geno_time << endl;
+		cout << "upper: " << f << endl;
+		cout << "lower: " << sys_lb << endl;
+		int qwert = 0;
+		for (size_t i = 0; i < x.size(); ++i)
+			if (x(i) > 1e-3 && x(i) < 1 - 1e-3 && !sys_x[i])
+			 	qwert++;
+		cout << "fracs: " << qwert << endl;*/
+
 		if (sys_lb != double(INF) && f >= sys_lb * (1.0 + con_eps)) 
 		{				
 			//cout << "The branch was cut." << endl << endl;
@@ -118,15 +128,11 @@ bool BnB::SolveLP()
 	}
 	
 	size_t pos = x.size();
-	double val = 0;
+	double val = 1;
 
 	for (size_t i = 0; i < x.size(); ++i)
-		if (x(i) > var_eps && x(i) < 1 - var_eps && !sys_x[i])
-		 	if (c(i) > val) 
-			{
-				pos = i;
-				val = c(i);				
-			} 
+		if (x(i) > 1e-3 && x(i) < 1 - 1e-3 && !sys_x[i])
+		 	if (abs(0.5 - x(i)) < val) pos = i, val = abs(0.5 - x(i));				
 
 	if (pos < x.size())
 		while(1)
