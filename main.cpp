@@ -12,12 +12,12 @@ int Solver::cf;
 
 Solver* MakeSolver(Graph& t1, Graph& t2, int argc, char** argv)
 {
-    int    s = stoi(argv[argc - 1]);
-    Solver::cf   = stoi(argv[4 + (argc == 9) + 2 * (argc == 12)]);
-    string d =      argv[5 + (argc == 9) + 2 * (argc == 12)];
+    int s = stoi(argv[argc - 1]);
+    Solver::cf = stoi(argv[4 + (argc == 9) + 2 * (argc == 12)]);
+    string d = argv[5 + (argc == 9) + 2 * (argc == 12)];
     double k = stod(argv[6 + (argc == 9) + 2 * (argc == 12)]);
     double c = (s != 2) ? 0 : stod(argv[8 + 2 * (argc == 12)]);
-    var_eps  = (argc == 9) ? 0 : stod(argv[7 + 2 * (argc == 12)]);
+    var_eps = (argc == 9) ? 0 : stod(argv[7 + 2 * (argc == 12)]);
 
     assert(LP::cf >= 0 && LP::cf <= 2);
     assert(d == "j" || d == "s");
@@ -67,7 +67,7 @@ int main(int argc, char** argv)
     Graph *t1, *t2;
     tie(t1, t2) = MakeGraphs(argc, argv);
     Solver* solver = MakeSolver(*t1, *t2, argc, argv);
-    solver->Solve(argv[3 + 2 * (argc == 9) + (argc == 12)]);
+    solver->Solve(argv[3 + (argc == 9) + 2 * (argc == 12)]);
     T.stop();
     clog << "TOTAL TIME : \t\t" << T.secs() << " secs" << endl;
     delete t1;
