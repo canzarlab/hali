@@ -2,6 +2,10 @@
 #include "Timer.h"
 #include <iostream>
 
+// ./solver inputs/C21.new.dag inputs/C21.new.map inputs/C28.new.dag inputs/C28.new.map align 1 s 1 0 0.001 2 2>/dev/null
+
+// ./solver inputs/a28 inputs/a10028 align 1 s 1 0 0.001 2 2>/dev/null
+
 #define DEBUG 0
 
 BnB::BnB(Graph& t1, Graph& t2, string d, double k, bool dag, double c) : LP(t1, t2, d, k, dag), G(Greedy(t1, t2, d, k, dag)), con_eps(c)
@@ -9,8 +13,8 @@ BnB::BnB(Graph& t1, Graph& t2, string d, double k, bool dag, double c) : LP(t1, 
 }
 
 #if DEBUG == 1
-int geno_calls = 0;
-double geno_time = 0;
+int    geno_calls = 0;
+double geno_time  = 0;
 #endif
 
 void BnB::Solve(string filename)
@@ -62,9 +66,11 @@ bool BnB::SolveLP()
 	int nr_r = nr_rows;
 	double f;
 
+	#if DEBUG == 1
 	int qwe = 0;
 	double qwer = 0.0;
 	Timer T;
+	#endif
 
 	while(1)
 	{
@@ -141,11 +147,12 @@ bool BnB::SolveLP()
 	}
 	
 	size_t pos = x.size();
-	double val = 1;
+	double val = 0; //1;
 
 	for (size_t i = 0; i < x.size(); ++i)
 		if (x(i) > 1e-3 && x(i) < 1 - 1e-3 && !sys_x[i])
-		 	if (abs(0.5 - x(i)) < val) pos = i, val = abs(0.5 - x(i));				
+			if (c(i) > val) pos = i, val = c(i);				
+			//if (abs(0.5 - x(i)) < val) pos = i, val = abs(0.5 - x(i)); // TODO fix this bug ...				
 
 	if (pos < x.size())
 		while(1)
