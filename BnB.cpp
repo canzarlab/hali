@@ -10,15 +10,24 @@
 // 182.469
 // 185.334
 
+#define DEBUG 0
+
 BnB::BnB(Graph& t1, Graph& t2, string d, double k, bool dag, double c) : LP(t1, t2, d, k, dag), G(Greedy(t1, t2, d, k, dag)), con_eps(c)
 {
 }
 
+#if DEBUG == 1
 int geno_calls = 0;
 double geno_time = 0;
+#endif
 
 void BnB::Solve(string filename)
 {
+	#if DEBUG == 1
+	Timer T;
+	T.start();
+	#endif
+
 	MatchingConstraints();	
 
 	G.Solve("");
@@ -40,9 +49,13 @@ void BnB::Solve(string filename)
 	else
 		G.WriteSolution(filename);
 
-	//cout << endl;
-	//cout << "total geno calls: " << geno_calls << endl;
-	//cout << "total geno time: " << geno_time << endl;
+	#if DEBUG == 1
+	T.stop();
+	cout << endl;
+	cout << "total geno calls: " << geno_calls << endl;
+	cout << "total geno time: " << geno_time << endl;
+	cout << "total time: " << T.secs() << endl;	
+	#endif
 }
 
 void BnB::Cleanup(size_t nr_t, size_t nr_r)
@@ -77,14 +90,17 @@ bool BnB::SolveLP()
 	    solver.setParameter("pgtol", 1e-1); 
 	    solver.setParameter("constraintsTol", 1e-4);
 
-		//T.start();
+		#if DEBUG == 1
+		T.start();
+		#endif
 	    SolverStatus status = solver.solve();	 
-		//T.stop();
-
-		/*qwe++;
+		#if DEBUG == 1		
+		T.stop();
+		qwe++;
 		qwer += T.secs();
 		geno_calls++;
-		geno_time += T.secs();*/
+		geno_time += T.secs();
+		#endif
 
 		if (status == INFEASIBLE) 
 		{				
@@ -101,7 +117,8 @@ bool BnB::SolveLP()
 
 		f = solver.f();	
 
-		/*cout << "rows: " << nr_rows << endl;
+		#if DEBUG == 1
+		cout << "rows: " << nr_rows << endl;
 		cout << "cols: " << nr_cols << endl;
 		cout << "geno calls: " << qwe << endl;
 		cout << "geno time: " << qwer << endl;
@@ -113,16 +130,20 @@ bool BnB::SolveLP()
 		for (size_t i = 0; i < x.size(); ++i)
 			if (x(i) > 1e-3 && x(i) < 1 - 1e-3 && !sys_x[i])
 			 	qwert++;
-		cout << "fracs: " << qwert << endl;*/
+		cout << "fracs: " << qwert << endl;
+		#endif
 
 		if (sys_lb != double(INF) && f >= sys_lb * (1.0 + con_eps)) 
-		{				
-			//cout << "The branch was cut." << endl << endl;
+		{	
+			#if DEBUG == 1			
+			cout << "The branch was cut." << endl << endl;
+			#endif
 			Cleanup(nr_t, nr_r);			
 			return 0; 
 		}			
-
-		//cout << endl;
+		#if DEBUG == 1
+		else cout << endl;		
+		#endif
 
 		break;
 	}
