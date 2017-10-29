@@ -22,8 +22,31 @@ int Solver::GetMax(newick_node* node, int& hmax) const
     return node->child ? sum : 1;
 }
 
+double Solver::GetMax(Graph& t1, Graph& t2, newick_node* root, newick_node* rnode) const
+{
+    double m = root->parent && root->child ? SymdifSim(t1.clade[rnode], t2.clade[root]) : 0;
+    for (newick_child* child = root->child; child; child = child->next)
+        m = max(m, GetMax(t1, t2, child->node, rnode));
+    return m;
+}
+
+double Solver::CalcY(Graph& t1, Graph& t2, newick_node* root) const
+{
+    double w = root->parent && root->child ? GetMax(t1, t2, t2.GetRoot(), root) : 0;
+    for (newick_child* child = root->child; child; child = child->next)
+        w += CalcY(t1, t2, child->node);
+    return w;
+}
+
+double Solver::TumorDist(double weight) const
+{
+    double y = CalcY(t1, t2, t1.GetRoot()) + CalcY(t2, t1, t2.GetRoot());
+    return (1 - (weight / (y - weight))) * 100;
+}
+
 double Solver::SymdifDist(double weight) const
 {
+    if (tt) return TumorDist(weight);
     int max1 = 0, max2 = 0;
     int r1 = GetMax(t1.GetRoot(), max1);
     int r2 = GetMax(t2.GetRoot(), max2);

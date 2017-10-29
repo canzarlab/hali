@@ -9,11 +9,13 @@
 #include <iostream>
 
 int Solver::cf;
+bool Solver::tt;
 
 Solver* MakeSolver(Graph& t1, Graph& t2, int argc, char** argv)
 {
     int s = stoi(argv[argc - 1]);
     Solver::cf = stoi(argv[4 + (argc == 9) + 2 * (argc == 12)]);
+    Solver::tt = argc == 12;
     string d = argv[5 + (argc == 9) + 2 * (argc == 12)];
     double k = stod(argv[6 + (argc == 9) + 2 * (argc == 12)]);
     double c = (s != 2) ? 0 : stod(argv[8 + 2 * (argc == 12)]);

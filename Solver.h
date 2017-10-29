@@ -14,6 +14,7 @@ public:
     virtual void WriteSolution(string fileName) = 0;
 
     static int cf;
+    static bool tt;
 protected:
     Graph &t1, &t2;
     string d;
@@ -27,6 +28,9 @@ private:
     template <class F>
     void DFSRight(newick_node* nodel, newick_node* noder, vb& Q, F f);
     int GetMax(newick_node* node, int& hmax) const;
+    double GetMax(Graph& t1, Graph& t2, newick_node* root, newick_node* rnode) const;
+    double CalcY(Graph& t1, Graph& t2, newick_node* root) const;
+    double TumorDist(double weight) const;
     double SymdifDist(double weight) const;
     double JaccardDist(double weight) const;
 };
