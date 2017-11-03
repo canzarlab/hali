@@ -98,15 +98,16 @@ double AntichainConstraint::Reset(vn& P, vvd& R)
     double sum = 0;
     for (int i = 0; i < Z; ++i)
     {
-        R[S][i] = R[i + Z][T] = 0;
+        R[S][i] = R[i][S] = R[T][i + Z] = 0;
+        for (int j : G[i + Z])
+            R[i + Z][j] = 0;
+
         for (newick_node* nodel : P)
         {
             R[S][i] += GetWeight(nodel->taxoni, i);
             R[i + Z][T] += GetWeight(nodel->taxoni, i);
         }
         sum += R[S][i];
-        for (int j : G[i + Z])
-            R[j][i] = 0;
     }
     return sum;
 }
