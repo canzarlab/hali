@@ -6,7 +6,7 @@
 #include <utility>
 using namespace std;
 
-#define EPS 1e-3
+#define EPS 1e-2
 
 typedef vector<pair<int, int> > vii;
 
