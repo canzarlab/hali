@@ -19,7 +19,7 @@ void LP::MatchingConstraints()
     int n = t1.GetNumNodes(), m = t2.GetNumNodes();
     DFSLeft(t1.GetRoot(), P, [&](newick_node* nodel, newick_node* noder, double w)
     {
-        if (w != 0 && (dag || nodel->parent) && nodel->child && (dag || noder->parent) && noder->child)
+        if (w != 0 && (dag || nodel->parent) && (dag || nodel->child) && (dag || noder->parent) && (dag || noder->child))
         {
             int i = nodel->taxoni, j = noder->taxoni;
             int col = i * m + j - cnt;
