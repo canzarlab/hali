@@ -5,6 +5,7 @@
 #include "BnG.h"
 #include "LPInt.h"
 #include "LPCP.h"
+#include "LPFInt.h"
 #include "Similarity.h"
 #include <iostream>
 
@@ -23,7 +24,7 @@ Solver* MakeSolver(Graph& t1, Graph& t2, int argc, char** argv)
 
     assert(LP::cf >= 0 && LP::cf <= 2);
     assert(d == "j" || d == "s");
-    assert(s >= 0 && s <= 5);
+    assert(s >= 0 && s <= 6);
 
     if (s == 0)
         return new Greedy(t1, t2, d, k, argc == 9);
@@ -35,7 +36,9 @@ Solver* MakeSolver(Graph& t1, Graph& t2, int argc, char** argv)
         return new LPCP(t1, t2, d, k, argc == 9);
     else if (s == 4)
         return new BnG(t1, t2, d, k, argc == 9);
-    return new LPInt(t1, t2, d, k, argc == 9);
+    else if (s == 5)
+        return new LPInt(t1, t2, d, k, argc == 9);
+    return new LPFInt(t1, t2, d, k, argc == 9);
 }
 
 Graph* MakeDAG(const char* f1, const char* f2, int s)
@@ -58,9 +61,9 @@ int main(int argc, char** argv)
 {
     if (argc < 9 || argc > 12)
     {
-        cout << "tree usage: " << argv[0] << " <filename.newick> <filename.newick> <align> <0=matching 1=crossing 2=strict> <j=jaccard s=symdif> <k> <vareps> <coneps> <0=greedy 1=fractional 2=bnb 3=covering-packing 4=bng 5=integral>" << endl;
-        cout << "dag usage: " << argv[0] << " <yeastnet> <mapping> <go> <align> <0=matching 1=crossing 2=strict> <j=jaccard s=symdif> <k> <0=greedy 1=fractional 2=bnb 3=covering-packing 4=bng 5=integral>" << endl;
-        cout << "tree usage (2): " << argv[0] << " <tree> <map> <tree> <map> <align> <0=matching 1=crossing 2=strict> <j=jaccard s=symdif> <k> <vareps> <coneps> <0=greedy 1=fractional 2=bnb 3=covering-packing 4=bng 5=integral>" << endl;
+        cout << "tree usage: " << argv[0] << " <filename.newick> <filename.newick> <align> <0=matching 1=crossing 2=strict> <j=jaccard s=symdif> <k> <vareps> <coneps> <0=greedy 1=fractional 2=bnb 3=covering-packing 4=bng 5=integral 6=fract/int>" << endl;
+        cout << "dag usage: " << argv[0] << " <yeastnet> <mapping> <go> <align> <0=matching 1=crossing 2=strict> <j=jaccard s=symdif> <k> <0=greedy 1=fractional 2=bnb 3=covering-packing 4=bng 5=integral 6=fract/int>" << endl;
+        cout << "tree usage (2): " << argv[0] << " <tree> <map> <tree> <map> <align> <0=matching 1=crossing 2=strict> <j=jaccard s=symdif> <k> <vareps> <coneps> <0=greedy 1=fractional 2=bnb 3=covering-packing 4=bng 5=integral 6=fract/int>" << endl;
         return EXIT_FAILURE;
     }
 

@@ -8,7 +8,6 @@ LPInt::LPInt(Graph& t1, Graph& t2, string d, double k, bool dag) : LP(t1, t2, d,
 
 void LPInt::Solve(string filename)
 {
-    MatchingConstraints();
     int cnt = 1;
     for (int i = 0; cnt; i++)
     {

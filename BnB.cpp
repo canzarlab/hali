@@ -24,8 +24,6 @@ void BnB::Solve(string filename)
 	T.start();
 	#endif
 
-	MatchingConstraints();	
-
 	G.Solve("");
 	sys_lb = -G.GetSolution();
 

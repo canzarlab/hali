@@ -8,8 +8,6 @@ BnG::BnG(Graph& t1, Graph& t2, string d, double k, bool dag) : LP(t1, t2, d, k, 
 
 void BnG::Solve(string filename)
 {
-	MatchingConstraints();
-
 	x = Vector::Zero(nr_cols);
 	sys_lo.conservativeResizeLike(Vector::Zero(nr_cols));
 	sys_hi.conservativeResizeLike(Vector::Ones(nr_cols));

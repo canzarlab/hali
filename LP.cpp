@@ -6,6 +6,7 @@
 LP::LP(Graph& t1, Graph& t2, string d, double k, bool dag) : Solver(t1, t2, d, k, dag), c(t1.GetNumNodes() * t2.GetNumNodes()), nr_rows(0), nr_cols(0)
 {
     K.resize(t1.GetNumNodes(), vi(t2.GetNumNodes(), -1));
+    MatchingConstraints();
 }
 
 LP::~LP()
@@ -41,13 +42,12 @@ void LP::MatchingConstraints()
 
 void LP::Solve(string filename)
 {
-    MatchingConstraints();
     int cnt = 1;
     for (int i = 0; cnt; i++)
     {
         Timer T_lp, T_cross, T_indep;
         T_lp.start();
-        SolveLP();
+        LP::SolveLP();
         WriteSolution(filename);
         T_lp.stop();
         clog << ">>> Time for solve: \t\t" << T_lp.secs() << " secs" << endl;
