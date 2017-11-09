@@ -56,9 +56,7 @@ public:
     Tree(const char* f1, const char* f2);
     ~Tree() { }
 
-    Tree* BuildNetwork();
 protected:
-    void BuildNetwork(newick_node* node, newick_node* rnode);
     virtual void Leaf(newick_node* node) override;
     virtual void Child(newick_node* node, newick_node* child) override;
     bool t;
