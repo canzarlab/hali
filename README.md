@@ -1,9 +1,15 @@
 # Hali #
 ### Comparison of (rooted) phylogenetic trees and directed acyclic graphs based on arboreal matchings. ###
 
+## Installing Hali ##
+
+## Running Hali ##
+
 SYNOPSIS
 hali <filename.newick> <filename.newick> <align> <constraints> <weightfunc> <k> <vareps> <coneps> <solver>
+
 hali <yeastnet> <mapping> <go> <align> <constraints> <weightfunc> <k> <solver>
+
 hali <tree> <map> <tree> <map> <align> <constraints> <weightfunc> <k> <vareps> <coneps> <solver>
 
 DESCRIPTION
