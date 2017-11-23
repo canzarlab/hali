@@ -1,5 +1,5 @@
-NAME
-hali - compute maximum weight bipartite matching subject to additional constraints
+# Hali #
+### Comparison of (rooted) phylogenetic trees and directed acyclic graphs based on arboreal matchings.###
 
 SYNOPSIS
 hali <filename.newick> <filename.newick> <align> <constraints> <weightfunc> <k> <vareps> <coneps> <solver>
