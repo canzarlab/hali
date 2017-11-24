@@ -11,18 +11,13 @@ make
 
 ## Running Hali ##
 
-SYNOPSIS
+### Usage ###
 
-hali <filename.newick> <filename.newick> <align> <constraints> <weightfunc> <k> <vareps> <coneps> <solver>
+```hali <filename.newick> <filename.newick> <align> <constraints> <weightfunc> <k> <vareps> <coneps> <solver>```
+```hali <yeastnet> <mapping> <go> <align> <constraints> <weightfunc> <k> <solver>```
+```hali <tree> <map> <tree> <map> <align> <constraints> <weightfunc> <k> <vareps> <coneps> <solver>```
 
-hali <yeastnet> <mapping> <go> <align> <constraints> <weightfunc> <k> <solver>
-
-hali <tree> <map> <tree> <map> <align> <constraints> <weightfunc> <k> <vareps> <coneps> <solver>
-
-DESCRIPTION
-**TODO**
-
-### ARGUMENTS ###
+### Arguments ###
 
 `<filename.newick>`
 : input tree in newick file format
