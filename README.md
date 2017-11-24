@@ -67,9 +67,9 @@ make
 
 `<solver>`
 : 0=greedy
-: 1=geno fractional
-: 2=branch and bound
-: 3=covering-packing
-: 4=greedy branch and bound
-: 5=geno integral
-: 6=geno fractional then integral
+  1=geno fractional
+  2=branch and bound
+  3=covering-packing
+  4=greedy branch and bound
+  5=geno integral
+  6=geno fractional then integral
