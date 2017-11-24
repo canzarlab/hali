@@ -61,9 +61,9 @@ int main(int argc, char** argv)
 {
     if (argc < 9 || argc > 12)
     {
-        cout << "tree usage: " << argv[0] << " <filename.newick> <filename.newick> <align> <0=matching 1=crossing 2=strict> <j=jaccard s=symdif> <k> <vareps> <coneps> <0=greedy 1=fractional 2=bnb 3=covering-packing 4=bng 5=integral 6=fract/int>" << endl;
-        cout << "dag usage: " << argv[0] << " <yeastnet> <mapping> <go> <align> <0=matching 1=crossing 2=strict> <j=jaccard s=symdif> <k> <0=greedy 1=fractional 2=bnb 3=covering-packing 4=bng 5=integral 6=fract/int>" << endl;
-        cout << "tree usage (2): " << argv[0] << " <tree> <map> <tree> <map> <align> <0=matching 1=crossing 2=strict> <j=jaccard s=symdif> <k> <vareps> <coneps> <0=greedy 1=fractional 2=bnb 3=covering-packing 4=bng 5=integral 6=fract/int>" << endl;
+        cout << "tree usage: " << argv[0] << " <filename.newick> <filename.newick> <align> <constraints> <weightfunc> <k> <vareps> <coneps> <solver>" << endl;
+        cout << "dag usage: " << argv[0] << " <yeastnet> <mapping> <go> <align> <constraints> <weightfunc> <k> <solver>" << endl;
+        cout << "tree usage (2): " << argv[0] << " <tree> <map> <tree> <map> <align> <constraints> <weightfunc> <k> <vareps> <coneps> <solver>" << endl;
         return EXIT_FAILURE;
     }
 

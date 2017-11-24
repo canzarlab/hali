@@ -3,6 +3,12 @@
 
 ## Installing Hali ##
 
+All dependencies are bundled with hali. However, if you wish to use the convert tool you need to additionaly install boost graph library. To build hali, simply run
+
+```
+make
+```
+
 ## Running Hali ##
 
 SYNOPSIS
@@ -16,37 +22,50 @@ hali <tree> <map> <tree> <map> <align> <constraints> <weightfunc> <k> <vareps> <
 DESCRIPTION
 **TODO**
 
-ARGUMENTS
+### ARGUMENTS ###
 
-<filename.newick> - input tree in newick file format
+`<filename.newick>`
+: input tree in newick file format
 
-<tree> - input tree file in the following format (use convert.cpp to convert from .dot):
-[child node] [parent node] default [newline] ...
+`<tree>`
+: input tree file in the following format (use convert.cpp to convert from .dot)
+  [child node] [parent node] default [newline] ...
 
-<map> - format:
-[label] [node] [newline] ...
+`<map>`
+: format
+  [label] [node] [newline] ...
 
-<yeastnet> - input dag in the following format:
-[child node] [parent node] default [newline] ...
+`<yeastnet>`
+: input dag in the following format:
+  [child node] [parent node] default [newline] ...
 
-<mapping> - input gene annotation in the following format:
-[gene] [node] [newline] ...
+`<mapping>`
+: input gene annotation in the following format:
+  [gene] [node] [newline] ...
 
-<go> - input dag in the following format:
-[parent node] [child node] default [newline] ...
-[node] [gene] gene [newline] ...
+`<go>`
+: input dag in the following format:
+  [parent node] [child node] default [newline] ...
+  [node] [gene] gene [newline] ...
 
-<align> - output alignment file in the following format:
-[node in first graph] [node in second graph] [fractional solution] [newline] ...
+`<align>`
+: output alignment file in the following format:
+  [node in first graph] [node in second graph] [fractional solution] [newline] ...
 
-<constraints> - 0=matching only 1=forbid crossing edges 2=forbid crossing and semi-independent edges
+`<constraints>`
+: 0=matching only 1=forbid crossing edges 2=forbid crossing and semi-independent edges
 
-<weightfunc> - j=jaccard s=symdif
+`<weightfunc>`
+: j=jaccard s=symdif
 
-<k> - jaccard exponent (ignored in case of symdif)
+`<k>`
+: jaccard exponent (ignored in case of symdif)
 
-<vareps> - weight function threshold (all edges with weight below vareps will be ignored)
+`<vareps>`
+: weight function threshold (all edges with weight below vareps will be ignored)
 
-<coneps> - **TODO**
+`<coneps>`
+: **TODO**
 
-<solver> - 0=greedy 1=geno fractional 2=branch and bound 3=covering-packing 4=greedy branch and bound 5=geno integral 6=geno fractional then integral
+`<solver>`
+: 0=greedy 1=geno fractional 2=branch and bound 3=covering-packing 4=greedy branch and bound 5=geno integral 6=geno fractional then integral
