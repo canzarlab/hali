@@ -43,7 +43,9 @@ strategy or enforce integrality by non-linear constraints.
   5=non-linear integral  
   6=warm-start integral from fractional  
 
-Options 3,4 and 6 combine different solver strategies. 
+Options 3,4 and 6 combine different solver strategies that require problem specific tuning.
+
+#### Input formats ####
 
 `<filename.newick>`
 : input tree in newick file format
