@@ -75,8 +75,8 @@ Options 3,4 and 6 combine different solver strategies that require problem speci
   : output the final alignment in file <align> in the following format:  
   [node in first graph] [node in second graph] [fractional solution] [newline] ...
   
-#### Model adjustment    
-    
+#### Model adjustment      
+        
 `<constraints>`
   : 0=unconstrained matching   
   1=forbid crossing edges  
