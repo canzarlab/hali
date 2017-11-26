@@ -3,7 +3,8 @@
 
 ## Installing Hali ##
 
-All dependencies are bundled with Hali. To ```convert``` different input formats accepted by Hali you need 
+All dependencies are bundled with Hali. In particular, Hali implements its own non-linear solver and does 
+not rely on any external (I)LP solver. To ```convert``` different input formats accepted by Hali you need 
 to additionaly install Boost graph library. To build Hali, simply run
 
 ```
@@ -27,6 +28,9 @@ On *tumor progression trees* produced by our tool convert from DOT trees.
 ```hali <tree> <map> <tree> <map> <align> <constraints> <weightfunc> <k> <vareps> <coneps> <solver>```
 
 ### Arguments ###
+
+Hali implements various strategies to find a (near) optimal solution. A simple greedy strategy, an exact 
+branch and bound scheme
 
 `<filename.newick>`
 : input tree in newick file format
