@@ -25,8 +25,8 @@ make
 
 `<tree>`
 
-   input tree file in the following format (use convert.cpp to convert from .dot)   
-   [child node] [parent node] default [newline] ...   
+  input tree file in the following format (use convert.cpp to convert from .dot)   
+  [child node] [parent node] default [newline] ...   
   
 
 `<map>`
