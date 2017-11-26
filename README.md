@@ -45,7 +45,7 @@ strategy or enforce integrality by non-linear constraints.
 
 Options 3,4 and 6 combine different solver strategies that require problem specific tuning.
 
-#### Input/Output formats ####       
+#### Input/Output formats        
 
 `<filename.newick>`
   : input tree in newick file format
@@ -75,7 +75,7 @@ Options 3,4 and 6 combine different solver strategies that require problem speci
   : output the final alignment in file <align> in the following format:  
   [node in first graph] [node in second graph] [fractional solution] [newline] ...
   
-#### Model adjustment ####     
+#### Model adjustment    
 
 `<constraints>`
   : 0=unconstrained matching   
@@ -89,7 +89,7 @@ Options 3,4 and 6 combine different solver strategies that require problem speci
 `<k>`
   : order of jaccard weight (ignored in case of symmetric difference )
 
-#### Miscellaneous ####     
+#### Miscellaneous   
 
 `<vareps>`
   : edge weight threshold (all edges with weight below vareps will be ignored) - default 0
