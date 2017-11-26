@@ -45,51 +45,54 @@ strategy or enforce integrality by non-linear constraints.
 
 Options 3,4 and 6 combine different solver strategies that require problem specific tuning.
 
-#### Input formats ####
+#### Input/Output formats ####   
 
 `<filename.newick>`
-: input tree in newick file format
+  : input tree in newick file format
 
 `<tree>`
-  : input tree file in the following format (use convert.cpp to convert from .dot)      
+  : input tree file in the following format (use convert.cpp to convert from .dot):        
   [child node] [parent node] default [newline] ...   
   
-
 `<map>`
-  : format  
-  [label] [node] [newline] ...
+  : format [label] [node] [newline] ...  
+  A label can encode, for example, the copy number of genes probed in FISH data from single cells.
 
 `<yeastnet>`
-  : input dag in the following format:  
+  : input DAG in the following format:  
   [child node] [parent node] default [newline] ...
 
 `<mapping>`
-  : input gene annotation in the following format:  
+  : input gene assignment in the following format:  
   [gene] [node] [newline] ...
 
 `<go>`
-  : input dag in the following format:  
+  : input DAG (GO) in the following format:  
   [parent node] [child node] default [newline] ...  
   [node] [gene] gene [newline] ...
 
 `<align>`
-  : output alignment file in the following format:  
+  : output the final alignment in file <align> in the following format:  
   [node in first graph] [node in second graph] [fractional solution] [newline] ...
+  
+#### Model adjustment ####
 
 `<constraints>`
-  : 0=matching only   
+  : 0=unconstrained matching   
   1=forbid crossing edges  
   2=forbid crossing and semi-independent edges
 
 `<weightfunc>`
   : j=jaccard  
-  s=symdif
+  s=symmetric difference
 
 `<k>`
-  : jaccard exponent (ignored in case of symdif)
+  : order of jaccard weight (ignored in case of symmetric difference )
+
+### Miscellaneous ####
 
 `<vareps>`
-  : weight function threshold (all edges with weight below vareps will be ignored)
+  : edge weight threshold (all edges with weight below vareps will be ignored) - default 0
 
 `<coneps>`
   : **TODO**
