@@ -18,11 +18,11 @@ Hali can be run in three different modes. On phylogenetic trees in newick format
 
 ```hali <filename.newick> <filename.newick> <align> <constraints> <weightfunc> <k> <vareps> <coneps> <solver>```
 
-In 
+On gene ontologies, given in a format described below: 
 
 ```hali <yeastnet> <mapping> <go> <align> <constraints> <weightfunc> <k> <solver>```
 
-In
+On tumor progression trees:
 
 ```hali <tree> <map> <tree> <map> <align> <constraints> <weightfunc> <k> <vareps> <coneps> <solver>```
 
