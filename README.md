@@ -14,15 +14,15 @@ make
 
 ### Usage ###
 
-Hali can be run in three different modes. On phylogenetic trees in newick format:
+Hali can be run in three different modes. On *phylogenetic trees* in newick format:
 
 ```hali <filename.newick> <filename.newick> <align> <constraints> <weightfunc> <k> <vareps> <coneps> <solver>```
 
-On gene ontologies, given in a format described below: 
+On *gene ontologies*, given in a format described below: 
 
 ```hali <yeastnet> <mapping> <go> <align> <constraints> <weightfunc> <k> <solver>```
 
-On tumor progression trees:
+On *tumor progression trees* produced by our tool convert from DOT trees. 
 
 ```hali <tree> <map> <tree> <map> <align> <constraints> <weightfunc> <k> <vareps> <coneps> <solver>```
 
