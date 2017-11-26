@@ -5,7 +5,7 @@
 
 All dependencies are bundled with Hali. In particular, Hali implements its own non-linear solver and does 
 not rely on any external (I)LP solver. To ```convert``` different input formats accepted by Hali you need 
-to additionaly install Boost graph library. To build Hali, simply run
+to install the Boost graph library. To build Hali, simply run
 
 ```
 make
@@ -29,8 +29,21 @@ On *tumor progression trees* produced by our tool convert from DOT trees.
 
 ### Arguments ###
 
-Hali implements various strategies to find a (near) optimal solution. A simple greedy strategy, an exact 
-branch and bound scheme
+Hali implements various strategies to find a (near) optimal solution. Its non-linear solver is based on an 
+augmented Lagrangian approach. Hali can provide an optimal fractional solution or an optimal integral solution
+obtained through branch and bound. It can also find a (suboptimal) integral solution based on a greedy 
+strategy or enforce integrality by non-linear constraints. 
+
+`<solver>`
+  : 0=greedy  
+  1=fractional  
+  2=branch and bound  
+  3=covering-packing  
+  4=greedy branch and bound  
+  5=non-linear integral  
+  6=warm-start integral from fractional  
+
+Options 3,4 and 6 combine different solver strategies. 
 
 `<filename.newick>`
 : input tree in newick file format
@@ -78,12 +91,3 @@ branch and bound scheme
 
 `<coneps>`
   : **TODO**
-
-`<solver>`
-  : 0=greedy  
-  1=geno fractional  
-  2=branch and bound  
-  3=covering-packing  
-  4=greedy branch and bound  
-  5=geno integral  
-  6=geno fractional then integral  
