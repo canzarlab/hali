@@ -3,8 +3,8 @@
 
 ## Installing Hali ##
 
-All dependencies are bundled with Hali. <!-- However, if you wish to use the convert tool you need to additionaly install boost graph library. --> 
-To build Hali, simply run
+All dependencies are bundled with Hali. To ```convert``` different input formats accepted by Hali you need 
+to additionaly install Boost graph library. To build Hali, simply run
 
 ```
 make
