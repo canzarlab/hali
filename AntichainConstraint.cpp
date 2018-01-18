@@ -15,21 +15,10 @@ int AntichainConstraint::AddTriplets(vector<ET>& Triplets, int nr_rows)
     ncr = 0;
     this->nr_rows = nr_rows;
     this->Triplets = &Triplets;
-    vn P;
-    for (newick_node* leaf : t1.L)
-        DFSLeft(leaf, P);
+    for (vn& v : ((LDAG*)&t1)->P)
+        PQ.push(v);
     RunParallel();
     return ncr;
-}
-
-void AntichainConstraint::DFSLeft(newick_node* node, vn& P)
-{
-    P.push_back(node);
-    if (!node->parent)
-        PQ.push(P);
-    for (newick_parent* parent = node->parent; parent; parent = parent->next)
-        DFSLeft(parent->node, P);
-    P.pop_back();
 }
 
 void AntichainConstraint::RunParallel()

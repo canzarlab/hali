@@ -1,12 +1,12 @@
 #include "Graph.h"
 #include <fstream>
 #include <limits>
+#include <algorithm>
 
 DAG::DAG(const char* f1, const char* f2)
 {
     msn M;
     Init(root = load_dag(f1, f2, clade, M));
-    TransitiveClosure();
 }
 
 LDAG::LDAG(const char* f1, const char* f2) : DAG(f1, f2)
@@ -24,16 +24,52 @@ LDAG::LDAG(const char* f1, const char* f2) : DAG(f1, f2)
         G[T].push_back(i + _n);
         G[i + _n].push_back(T);
     }
-    TransitiveClosure();
 }
 
-Graph* Graph::TransitiveClosure()
+Graph* Graph::Init()
+{
+    TransitiveClosure();
+    return this;
+}
+
+Graph* LDAG::Init()
+{
+    vn P;
+    vector<vn> Q;
+    for (newick_node* leaf : L)
+        GenPaths(leaf, P, Q);
+    sort(Q.begin(), Q.end(), [](vn& a, vn& b)
+    {
+        return a.size() > b.size();
+    });
+    for (vn& w : Q)
+        if (none_of(this->P.begin(), this->P.end(), [&](vn& v)
+        {
+            return includes(v.begin(), v.end(), w.begin(), w.end());
+        }))
+            this->P.push_back(w);
+    return Graph::Init();
+}
+
+void LDAG::GenPaths(newick_node* node, vn& P, vector<vn>& Q)
+{
+    P.push_back(node);
+    if (!node->parent)
+    {
+        Q.push_back(P);
+        sort(Q.back().begin(), Q.back().end());
+    }
+    for (newick_parent* parent = node->parent; parent; parent = parent->next)
+        GenPaths(parent->node, P, Q);
+    P.pop_back();
+}
+
+void Graph::TransitiveClosure()
 {
     D.resize(_n, vb(_n));
     vvb C(_n, vb(_n));
     for (newick_node* leaf : L)
         TransitiveClosure(leaf, leaf, C);
-    return this;
 }
 
 void Graph::TransitiveClosure(newick_node* node, newick_node* rnode, vvb& C)

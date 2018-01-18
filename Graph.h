@@ -23,12 +23,13 @@ public:
 
     int GetNumNodes() const { return _n; }
     newick_node* GetRoot() const { return root; }
-    Graph* TransitiveClosure();
+    virtual Graph* Init();
 
     vn L;
     mnls clade;
     vvb D;
 protected:
+    void TransitiveClosure();
     void TransitiveClosure(newick_node* node, newick_node* rnode, vvb& C);
     void Init(newick_node* node);
     virtual void Leaf(newick_node* node) { }
@@ -66,10 +67,13 @@ class LDAG : public DAG
 {
 public:
     LDAG(const char* f1, const char* f2);
+    Graph* Init();
 
     vvi G;
     vvd R[NR_THREADS];
+    vector<vn> P;
 protected:
+    void GenPaths(newick_node* node, vn& P, vector<vn>& Q);
     virtual void Relation(int d, int a) override;
 };
 

@@ -12,7 +12,6 @@ public:
     int AddTriplets(vector<ET>& Triplets, int nr_rows);
 
 private:
-    void DFSLeft(newick_node* node, vn& P);
     void RunParallel();
     void AntichainJob(int id);
     bool AugmentingPath(vi& Q, vvd& R);

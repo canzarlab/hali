@@ -43,7 +43,7 @@ Solver* MakeSolver(Graph& t1, Graph& t2, int argc, char** argv)
 
 Graph* MakeDAG(const char* f1, const char* f2, int s)
 {
-    return (s == 0) ? new DAG(f1, f2) : new LDAG(f1, f2);
+    return ((s == 0) ? new DAG(f1, f2) : new LDAG(f1, f2))->Init();
 }
 
 pair<Graph*, Graph*> MakeGraphs(int argc, char** argv)
