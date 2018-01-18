@@ -38,7 +38,7 @@ Graph* LDAG::Init()
     vector<vn> Q;
     for (newick_node* leaf : L)
         GenPaths(leaf, P, Q);
-    sort(Q.begin(), Q.end(), [](vn& a, vn& b)
+    sort(Q.begin(), Q.end(), [](const vn& a, const vn& b)
     {
         return a.size() > b.size();
     });
