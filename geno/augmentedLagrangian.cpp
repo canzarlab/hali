@@ -363,7 +363,6 @@ SolverStatus AugmentedLagrangian::solve()
   double muMax = 1E20;
   double muMin = -1E20;
   SolverStatus status = SOLVED;
-  int feasCounter = 0;
   
   for (size_t iter = 0; iter < _maxIter; ++iter) 
   {
@@ -456,16 +455,8 @@ SolverStatus AugmentedLagrangian::solve()
       factor = std::max(std::abs(std::max(constraintError(mEqualities + i), -_y(mEqualities + i) / rho)), factor);
     }
     if (factor > tau * oldFactor) {
-      // Please check if this happened 20 iterations consecutively. Set the counter to 0 if it was not satisfied in one iteration.
-      feasCounter++;
-      if (feasCounter > 20) {
-        return INFEASIBLE;
-      }
       rho *= gamma;
     }
-    else
-      feasCounter = 0;
-      
     oldFactor = factor;
   }
   _genoNLP.functionValueAndGradient(_x.data(), _f, dummyG.data());
