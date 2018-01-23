@@ -145,6 +145,9 @@ newick_node* load_dag(const char* f1, const char* f2, mnls& clade, msn& M)
     if (f2)
     {
         ifstream lf(f2);
+        if (!lf)
+            return nullptr;
+
         while (lf >> n1 >> n2)
             clade[M[n2]].push_back(n1);
     }

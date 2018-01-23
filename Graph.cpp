@@ -34,34 +34,34 @@ Graph* Graph::Init()
 
 Graph* LDAG::Init()
 {
-    vn P;
+    vn T;
     vector<vn> Q;
     for (newick_node* leaf : L)
-        GenPaths(leaf, P, Q);
+        GenPaths(leaf, T, Q);
     sort(Q.begin(), Q.end(), [](const vn& a, const vn& b)
     {
         return a.size() > b.size();
     });
     for (vn& w : Q)
-        if (none_of(this->P.begin(), this->P.end(), [&](vn& v)
+        if (none_of(P.begin(), P.end(), [&](vn& v)
         {
             return includes(v.begin(), v.end(), w.begin(), w.end());
         }))
-            this->P.push_back(w);
+            P.push_back(w);
     return Graph::Init();
 }
 
-void LDAG::GenPaths(newick_node* node, vn& P, vector<vn>& Q)
+void LDAG::GenPaths(newick_node* node, vn& T, vector<vn>& Q)
 {
-    P.push_back(node);
+    T.push_back(node);
     if (!node->parent)
     {
-        Q.push_back(P);
+        Q.push_back(T);
         sort(Q.back().begin(), Q.back().end());
     }
     for (newick_parent* parent = node->parent; parent; parent = parent->next)
-        GenPaths(parent->node, P, Q);
-    P.pop_back();
+        GenPaths(parent->node, T, Q);
+    T.pop_back();
 }
 
 void Graph::TransitiveClosure()
