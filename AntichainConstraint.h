@@ -8,8 +8,8 @@
 class AntichainConstraint : Constraint
 {
 public:
-    AntichainConstraint(Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp);
-    int AddTriplets(vector<ET>& Triplets, int nr_rows);
+    AntichainConstraint(vector<ET>& Triplets, Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp);
+    int AddTriplets(int nr_rows);
 
 private:
     void RunParallel();
@@ -20,9 +20,8 @@ private:
     void Antichain(int ci, vn& P, vvd& R);
 
     vvi& G;
-    int S, T, Z, SZ;
+    int ncr, nr_rows, S, T, Z, SZ;
     mutex qmutex;
-    vector<vii> C;
     vb B;
     int pi;
 };

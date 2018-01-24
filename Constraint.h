@@ -13,17 +13,18 @@ typedef vector<pair<int, int> > vii;
 class Constraint
 {
 public:
-    Constraint(Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp);
+    Constraint(vector<ET>& Triplets, Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp);
 
-    virtual int AddTriplets(vector<ET>& Triplets, int nr_rows) = 0;
+    virtual int AddTriplets(int nr_rows) = 0;
 
 protected:
     int GetCol(int i, int j) const;
     int GetCol(newick_node* nodel, newick_node* noder) const;
     double GetWeight(newick_node* nodel, newick_node* noder) const;
     double GetWeight(int i, int j) const;
-    void AddConstraint(vector<ET>& Triplets, int row, vii& P);
+    void AddConstraint(int row, vii& P);
 
+    vector<ET>& Triplets;
     Graph &t1, &t2;
     vvi& K;
     Vector& x;

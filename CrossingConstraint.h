@@ -6,9 +6,9 @@
 class CrossingConstraint : Constraint
 {
 public:
-    CrossingConstraint(Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp);
+    CrossingConstraint(vector<ET>& Triplets, Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp);
     
-    int AddTriplets(vector<ET>& Triplets, int nr_rows);
+    int AddTriplets(int nr_rows);
 private:
     template <class F>
     pair<newick_node*, double> GetMaxPC(newick_node* nodel, newick_node* noder, F f, bool s);

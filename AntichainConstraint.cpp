@@ -2,7 +2,7 @@
 #include "AntichainConstraint.h"
 #include <thread>
 
-AntichainConstraint::AntichainConstraint(Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp) : Constraint(t1, t2, K, x, swp), G(((LDAG*)&t2)->G), B(t1.GetNumNodes()), pi(0)
+AntichainConstraint::AntichainConstraint(vector<ET>& Triplets, Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp) : Constraint(Triplets, t1, t2, K, x, swp), G(((LDAG*)&t2)->G), ncr(0), B(t1.GetNumNodes()), pi(0)
 {
     Z = t2.GetNumNodes();
     SZ = Z * 2 + 2;
@@ -10,12 +10,10 @@ AntichainConstraint::AntichainConstraint(Graph& t1, Graph& t2, vvi& K, Vector& x
     T = SZ - 1;
 }
 
-int AntichainConstraint::AddTriplets(vector<ET>& Triplets, int nr_rows)
+int AntichainConstraint::AddTriplets(int nr_rows)
 {
-    int ncr = 0;
+    this->nr_rows = nr_rows;
     RunParallel();
-    for (int i = 0; i < C.size(); ++i)
-        AddConstraint(Triplets, nr_rows + ncr++, C[i]);
     return ncr;
 }
 
@@ -115,7 +113,7 @@ void AntichainConstraint::Antichain(int ci, vn& P, vvd& R)
 
     lock_guard<mutex> g(qmutex);
     if (!all_of(P.begin(), P.end(), [&](newick_node* node){return B[node->taxoni];}))
-        C.push_back(move(PN));
+        AddConstraint(nr_rows + ncr++, PN);
     for (newick_node* node : P)
         B[node->taxoni] = true;
 }

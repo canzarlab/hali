@@ -1,10 +1,10 @@
 #include "IndependentSetConstraint.h"
 
-IndependentSetConstraint::IndependentSetConstraint(Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp) : Constraint(t1, t2, K, x, swp)
+IndependentSetConstraint::IndependentSetConstraint(vector<ET>& Triplets, Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp) : Constraint(Triplets, t1, t2, K, x, swp)
 {
 }
 
-int IndependentSetConstraint::AddTriplets(vector<ET>& Triplets, int nr_rows)
+int IndependentSetConstraint::AddTriplets(int nr_rows)
 {
     int ncr = 0;
     for (newick_node* node : t1.L)
@@ -18,8 +18,7 @@ int IndependentSetConstraint::AddTriplets(vector<ET>& Triplets, int nr_rows)
             for (newick_node* nodel = node; nodel; nodel = nodel->parent ? nodel->parent->node : nullptr)
                 P.emplace_back(nodel->taxoni, noder->taxoni);
 
-        AddConstraint(Triplets, nr_rows + ncr, P);
-        ++ncr;
+        AddConstraint(nr_rows + ncr++, P);
     }
     return ncr;
 }

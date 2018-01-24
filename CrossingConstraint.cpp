@@ -1,7 +1,7 @@
 #include "CrossingConstraint.h"
 #include <queue>
 
-CrossingConstraint::CrossingConstraint(Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp) : Constraint(t1, t2, K, x, swp)
+CrossingConstraint::CrossingConstraint(vector<ET>& Triplets, Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp) : Constraint(Triplets, t1, t2, K, x, swp)
 {
     DP.resize(t1.GetNumNodes());
     PA.resize(t1.GetNumNodes());
@@ -9,7 +9,7 @@ CrossingConstraint::CrossingConstraint(Graph& t1, Graph& t2, vvi& K, Vector& x, 
         v.resize(t2.GetNumNodes());
 }
 
-int CrossingConstraint::AddTriplets(vector<ET>& Triplets, int nr_rows)
+int CrossingConstraint::AddTriplets(int nr_rows)
 {
     int ncr = 0;
     KahnLeft(t1.GetRoot());
@@ -23,7 +23,7 @@ int CrossingConstraint::AddTriplets(vector<ET>& Triplets, int nr_rows)
             sum += GetWeight(k.first, k.second);
 
         if (sum - EPS > 1)
-            AddConstraint(Triplets, nr_rows + ncr, P), ncr++;
+            AddConstraint(nr_rows + ncr++, P);
     }
     return ncr;
 }

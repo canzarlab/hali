@@ -1,6 +1,6 @@
 #include "Constraint.h"
 
-Constraint::Constraint(Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp) : t1(t1), t2(t2), K(K), x(x), swp(swp)
+Constraint::Constraint(vector<ET>& Triplets, Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp) : Triplets(Triplets), t1(t1), t2(t2), K(K), x(x), swp(swp)
 {
 }
 
@@ -25,7 +25,7 @@ double Constraint::GetWeight(int i, int j) const
     return in == -1 ? 0 : x(in);
 }
 
-void Constraint::AddConstraint(vector<ET>& Triplets, int row, vii& P)
+void Constraint::AddConstraint(int row, vii& P)
 {
     for (auto k : P)
     {

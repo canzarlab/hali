@@ -38,10 +38,10 @@ template<class T>
 int LP::Add()
 {
     int row_old = nr_rows;
-    T c12(t1, t2, K, x, false);
-    nr_rows += c12.AddTriplets(Triplets, nr_rows);
-    T c21(t2, t1, K, x, true);
-    nr_rows += c21.AddTriplets(Triplets, nr_rows);
+    T c12(Triplets, t1, t2, K, x, false);
+    nr_rows += c12.AddTriplets(nr_rows);
+    T c21(Triplets, t2, t1, K, x, true);
+    nr_rows += c21.AddTriplets(nr_rows);
     return nr_rows - row_old;
 }
 
