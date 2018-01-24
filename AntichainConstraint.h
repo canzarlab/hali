@@ -23,7 +23,7 @@ private:
     int ncr, nr_rows, S, T, Z, SZ;
     vector<ET>* Triplets;
     mutex cmutex, qmutex;
-    queue<vn> PQ;
+    int pi;
 };
 
 #endif

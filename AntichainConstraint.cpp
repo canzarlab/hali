@@ -2,7 +2,7 @@
 #include "AntichainConstraint.h"
 #include <thread>
 
-AntichainConstraint::AntichainConstraint(Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp) : Constraint(t1, t2, K, x, swp), G(((LDAG*)&t2)->G)
+AntichainConstraint::AntichainConstraint(Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp) : Constraint(t1, t2, K, x, swp), G(((LDAG*)&t2)->G), pi(0)
 {
     Z = t2.GetNumNodes();
     SZ = Z * 2 + 2;
@@ -15,8 +15,6 @@ int AntichainConstraint::AddTriplets(vector<ET>& Triplets, int nr_rows)
     ncr = 0;
     this->nr_rows = nr_rows;
     this->Triplets = &Triplets;
-    for (vn& v : ((LDAG*)&t1)->P)
-        PQ.push(v);
     RunParallel();
     return ncr;
 }
@@ -33,17 +31,17 @@ void AntichainConstraint::RunParallel()
 
 void AntichainConstraint::AntichainJob(int id)
 {
+    LDAG &g1 = (LDAG&)t1, &g2 = (LDAG&)t2;
     while (true)
     {
-        vn P;
+        int i;
         {
             lock_guard<mutex> g(qmutex);
-            if (PQ.empty())
+            if (pi == g1.P.size())
                 break;
-            P = move(PQ.front());
-            PQ.pop();
+            i = pi++;
         }
-        Antichain(P, ((LDAG&)t2).R[id]);
+        Antichain(g1.P[i], g2.R[id]);
     }
 }
 
