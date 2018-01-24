@@ -19,7 +19,7 @@ int AntichainConstraint::AddTriplets(vector<ET>& Triplets, int nr_rows)
     vb B(t1.GetNumNodes());
     for (int i = 0; i < C.size(); ++i)
     {
-        if (!all_of(g1.P[i].begin(), g1.P[i].end(), [&](newick_node* node){return B[node->taxoni];}))
+        if (!C[i].empty() && !all_of(g1.P[i].begin(), g1.P[i].end(), [&](newick_node* node){return B[node->taxoni];}))
         {
             AddConstraint(Triplets, nr_rows + ncr++, C[i]);
             for (newick_node* node : g1.P[i])
