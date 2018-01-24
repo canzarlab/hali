@@ -14,8 +14,19 @@ int AntichainConstraint::AddTriplets(vector<ET>& Triplets, int nr_rows)
 {
     ncr = 0;
     this->nr_rows = nr_rows;
-    this->Triplets = &Triplets;
+    LDAG& g1 = (LDAG&)t1;
+    C.resize(g1.P.size());
     RunParallel();
+    vb B(t1.GetNumNodes());
+    for (int i = 0; i < C.size(); ++i)
+    {
+        if (!all_of(g1.P[i].begin(), g1.P[i].end(), [&](newick_node* node){return B[node->taxoni];}))
+        {
+            AddConstraint(Triplets, nr_rows + ncr++, C[i]);
+            for (newick_node* node : g1.P[i])
+                B[node->taxoni] = true;
+        }
+    }
     return ncr;
 }
 
@@ -41,7 +52,7 @@ void AntichainConstraint::AntichainJob(int id)
                 break;
             i = pi++;
         }
-        Antichain(g1.P[i], g2.R[id]);
+        Antichain(i, g1.P[i], g2.R[id]);
     }
 }
 
@@ -99,7 +110,7 @@ double AntichainConstraint::Reset(vn& P, vvd& R)
     return sum;
 }
 
-void AntichainConstraint::Antichain(vn& P, vvd& R)
+void AntichainConstraint::Antichain(int ci, vn& P, vvd& R)
 {
     vi Q(SZ, -1);
     if (Reset(P, R) - MaxFlow(Q, R) <= 1 + EPS)
@@ -112,6 +123,5 @@ void AntichainConstraint::Antichain(vn& P, vvd& R)
                 PN.emplace_back(nodel->taxoni, i);
 
     lock_guard<mutex> g(cmutex);
-    AddConstraint(*Triplets, nr_rows + ncr, PN);
-    ++ncr;
+    C[ci] = move(PN);
 }

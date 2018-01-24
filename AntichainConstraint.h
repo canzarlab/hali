@@ -17,12 +17,12 @@ private:
     bool AugmentingPath(vi& Q, vvd& R);
     double MaxFlow(vi& Q, vvd& R);
     double Reset(vn& P, vvd& R);
-    void Antichain(vn& P, vvd& R);
+    void Antichain(int ci, vn& P, vvd& R);
 
     vvi& G;
     int ncr, nr_rows, S, T, Z, SZ;
-    vector<ET>* Triplets;
     mutex cmutex, qmutex;
+    vector<vii> C;
     int pi;
 };
 
