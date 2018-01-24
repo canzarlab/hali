@@ -116,4 +116,6 @@ void AntichainConstraint::Antichain(int ci, vn& P, vvd& R)
     lock_guard<mutex> g(qmutex);
     if (!all_of(P.begin(), P.end(), [&](newick_node* node){return B[node->taxoni];}))
         C.push_back(move(PN));
+    for (newick_node* node : P)
+        B[node->taxoni] = true;
 }
