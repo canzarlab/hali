@@ -12,8 +12,7 @@ AntichainConstraint::AntichainConstraint(Graph& t1, Graph& t2, vvi& K, Vector& x
 
 int AntichainConstraint::AddTriplets(vector<ET>& Triplets, int nr_rows)
 {
-    ncr = 0;
-    this->nr_rows = nr_rows;
+    int ncr = 0;
     LDAG& g1 = (LDAG&)t1;
     C.resize(g1.P.size());
     RunParallel();

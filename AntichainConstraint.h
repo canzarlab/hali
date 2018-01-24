@@ -20,7 +20,7 @@ private:
     void Antichain(int ci, vn& P, vvd& R);
 
     vvi& G;
-    int ncr, nr_rows, S, T, Z, SZ;
+    int S, T, Z, SZ;
     mutex cmutex, qmutex;
     vector<vii> C;
     int pi;
