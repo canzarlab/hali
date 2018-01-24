@@ -21,8 +21,9 @@ private:
 
     vvi& G;
     int S, T, Z, SZ;
-    mutex cmutex, qmutex;
+    mutex qmutex;
     vector<vii> C;
+    vb B;
     int pi;
 };
 
