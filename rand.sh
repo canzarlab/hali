@@ -30,7 +30,7 @@ function clean()
 
 function solve()
 {
-    ./solver "data$m/a$n" "data$m/a$a" align $c $mt $k 1 2>/dev/null > "dists"$m"k"$k"c"$c"d"$mt"r"$r &
+    ./hali "data$m/a$n" "data$m/a$a" align $c $mt $k 1 2>/dev/null > "dists"$m"k"$k"c"$c"d"$mt"r"$r &
 }
 
 if [ "$#" -ne 2 ]
