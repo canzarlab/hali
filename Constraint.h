@@ -16,12 +16,11 @@ public:
     Constraint(vector<ET>& Triplets, Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp);
 
     virtual int AddTriplets(int nr_rows) = 0;
-
 protected:
-    int GetCol(int i, int j) const;
-    int GetCol(newick_node* nodel, newick_node* noder) const;
-    double GetWeight(newick_node* nodel, newick_node* noder) const;
-    double GetWeight(int i, int j) const;
+    inline int GetCol(int i, int j) const;
+    inline int GetCol(newick_node* nodel, newick_node* noder) const;
+    inline double GetWeight(newick_node* nodel, newick_node* noder) const;
+    inline double GetWeight(int i, int j) const;
     void AddConstraint(int row, vii& P);
 
     vector<ET>& Triplets;
@@ -30,5 +29,26 @@ protected:
     Vector& x;
     bool swp;
 };
+
+inline int Constraint::GetCol(int i, int j) const
+{
+    return swp ? K[j][i] : K[i][j];
+}
+
+inline int Constraint::GetCol(newick_node* nodel, newick_node* noder) const
+{
+    return GetCol(nodel->taxoni, noder->taxoni);
+}
+
+inline double Constraint::GetWeight(newick_node* nodel, newick_node* noder) const
+{
+    return GetWeight(nodel->taxoni, noder->taxoni);
+}
+
+inline double Constraint::GetWeight(int i, int j) const
+{
+    int in = GetCol(i, j);
+    return in == -1 ? 0 : x(in);
+}
 
 #endif

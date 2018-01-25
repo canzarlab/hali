@@ -28,17 +28,17 @@ int CrossingConstraint::AddTriplets(int nr_rows)
     return ncr;
 }
 
-double& CrossingConstraint::GetDP(newick_node* nodel, newick_node* noder, bool s = false)
+inline double& CrossingConstraint::GetDP(newick_node* nodel, newick_node* noder, bool s = false)
 {
     return s ? DP[noder->taxoni][nodel->taxoni] : DP[nodel->taxoni][noder->taxoni];
 }
 
-pair<newick_node*, double> CrossingConstraint::GetMaxChild(newick_node* nodel, newick_node* noder)
+inline pair<newick_node*, double> CrossingConstraint::GetMaxChild(newick_node* nodel, newick_node* noder)
 {
     return GetMaxPC(nodel, noder, [](newick_node* n){return n->child;}, false);
 }
 
-pair<newick_node*, double> CrossingConstraint::GetMaxParent(newick_node* nodel, newick_node* noder)
+inline pair<newick_node*, double> CrossingConstraint::GetMaxParent(newick_node* nodel, newick_node* noder)
 {
     return GetMaxPC(nodel, noder, [](newick_node* n){return n->parent;}, true);
 }

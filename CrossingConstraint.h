@@ -12,14 +12,14 @@ public:
 private:
     template <class F>
     pair<newick_node*, double> GetMaxPC(newick_node* nodel, newick_node* noder, F f, bool s);
-    pair<newick_node*, double> GetMaxChild(newick_node* nodel, newick_node* noder);
-    pair<newick_node*, double> GetMaxParent(newick_node* nodel, newick_node* noder);
+    inline pair<newick_node*, double> GetMaxChild(newick_node* nodel, newick_node* noder);
+    inline pair<newick_node*, double> GetMaxParent(newick_node* nodel, newick_node* noder);
 
     void DFSLeft(newick_node* node, vb& C);
     void KahnLeft(newick_node* node);
     double DFSRight(newick_node* node, newick_node* nodel);
     void Reconstruct(vii& P, newick_node* nodel, newick_node* noder);
-    double& GetDP(newick_node* nodel, newick_node* noder, bool s);
+    inline double& GetDP(newick_node* nodel, newick_node* noder, bool s);
 
     vi PA;
     vvd DP;

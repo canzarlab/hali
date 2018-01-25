@@ -1,7 +1,7 @@
 #MKLROOT = /opt/intel/mkl
 
 CXX = g++
-CFLAGS = -O2 -std=c++11 -pthread -m64 #-DEIGEN_USE_MKL_ALL -I$(MKLROOT)/include
+CFLAGS = -O3 -std=c++11 -pthread -m64 #-DEIGEN_USE_MKL_ALL -I$(MKLROOT)/include
 INCL = -I.
 BINARIES = hali filter bgen conflicts convert
 GENO_OBJS = main.o geno/augmentedLagrangian.o geno/lbfgsb.o geno/lineSearch.o

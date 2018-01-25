@@ -4,27 +4,6 @@ Constraint::Constraint(vector<ET>& Triplets, Graph& t1, Graph& t2, vvi& K, Vecto
 {
 }
 
-int Constraint::GetCol(int i, int j) const
-{
-    return swp ? K[j][i] : K[i][j];
-}
-
-int Constraint::GetCol(newick_node* nodel, newick_node* noder) const
-{
-    return GetCol(nodel->taxoni, noder->taxoni);
-}
-
-double Constraint::GetWeight(newick_node* nodel, newick_node* noder) const
-{
-    return GetWeight(nodel->taxoni, noder->taxoni);
-}
-
-double Constraint::GetWeight(int i, int j) const
-{
-    int in = GetCol(i, j);
-    return in == -1 ? 0 : x(in);
-}
-
 void Constraint::AddConstraint(int row, vii& P)
 {
     for (auto k : P)
