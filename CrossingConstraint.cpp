@@ -1,5 +1,5 @@
 #include "CrossingConstraint.h"
-#include <queue>
+#include <thread>
 
 CrossingConstraint::CrossingConstraint(vector<ET>& Triplets, Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp) : Constraint(Triplets, t1, t2, K, x, swp)
 {
@@ -7,12 +7,16 @@ CrossingConstraint::CrossingConstraint(vector<ET>& Triplets, Graph& t1, Graph& t
     PA.resize(t1.GetNumNodes());
     for (auto& v : DP)
         v.resize(t2.GetNumNodes());
+
+    vb C(t1.GetNumNodes());
+    DFSLeft(t1.GetRoot(), C);
+    Q.push(t1.GetRoot());
+    RunParallel();
 }
 
 int CrossingConstraint::AddTriplets(int nr_rows)
 {
     int ncr = 0;
-    KahnLeft(t1.GetRoot());
     for (auto node : t1.L)
     {
         vii P;
@@ -28,6 +32,60 @@ int CrossingConstraint::AddTriplets(int nr_rows)
     return ncr;
 }
 
+void CrossingConstraint::RunParallel()
+{
+    ax = 1 << 4 - 1;
+    vector<thread> vt;
+    for (int i = 0; i < NR_THREADS; ++i)
+        vt.emplace_back(&CrossingConstraint::CrossingJob, this, i);
+
+    for (int i = 0; i < NR_THREADS; ++i)
+        vt[i].join();
+}
+
+void CrossingConstraint::CrossingJob(int i)
+{
+    while (ax)
+    {
+        newick_node* node = nullptr;
+        {
+            lock_guard<mutex> g(qmutex);
+            if (Q.empty())
+            {
+                ax &= ~(1 << i);
+                continue;
+            }
+            else
+                ax |= 1 << i;
+            node = Q.front();
+            Q.pop();
+        }
+        DFSRight(t2.GetRoot(), node);
+        {
+            lock_guard<mutex> g(qmutex);
+            for (newick_child* child = node->child; child; child = child->next)
+                if (--PA[child->node->taxoni] == 0)
+                    Q.push(child->node);
+        }
+    }
+}
+
+pair<newick_node*, double> CrossingConstraint::GetMaxPC(newick_node* nodel, newick_child* noder, bool s)
+{
+    double mx = 0;
+    newick_node* mc = nullptr;
+    for (newick_child* pc = noder; pc; pc = pc->next)
+    {
+        double cw = GetDP(nodel, pc->node, s);
+        if (cw >= mx)
+        {
+            mx = cw;
+            mc = pc->node;
+        }
+    }
+    return make_pair(mc, mx);
+}
+
 inline double& CrossingConstraint::GetDP(newick_node* nodel, newick_node* noder, bool s = false)
 {
     return s ? DP[noder->taxoni][nodel->taxoni] : DP[nodel->taxoni][noder->taxoni];
@@ -35,12 +93,12 @@ inline double& CrossingConstraint::GetDP(newick_node* nodel, newick_node* noder,
 
 inline pair<newick_node*, double> CrossingConstraint::GetMaxChild(newick_node* nodel, newick_node* noder)
 {
-    return GetMaxPC(nodel, noder, [](newick_node* n){return n->child;}, false);
+    return GetMaxPC(nodel, noder->child, false);
 }
 
 inline pair<newick_node*, double> CrossingConstraint::GetMaxParent(newick_node* nodel, newick_node* noder)
 {
-    return GetMaxPC(nodel, noder, [](newick_node* n){return n->parent;}, true);
+    return GetMaxPC(nodel, noder->parent, true);
 }
 
 void CrossingConstraint::DFSLeft(newick_node* node, vb& C)
@@ -51,22 +109,6 @@ void CrossingConstraint::DFSLeft(newick_node* node, vb& C)
         PA[child->node->taxoni]++;
         if (!C[child->node->taxoni])
             DFSLeft(child->node, C);
-    }
-}
-
-void CrossingConstraint::KahnLeft(newick_node* node)
-{
-    queue<newick_node*> Q;
-    Q.push(node);
-    vb C(t1.GetNumNodes());
-    DFSLeft(node, C);
-    while (!Q.empty())
-    {
-        node = Q.front(); Q.pop();
-        DFSRight(t2.GetRoot(), node);
-        for (newick_child* child = node->child; child; child = child->next)
-            if (--PA[child->node->taxoni] == 0)
-                Q.push(child->node);
     }
 }
 
