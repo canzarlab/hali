@@ -34,7 +34,8 @@ int CrossingConstraint::AddTriplets(int nr_rows)
 
 void CrossingConstraint::RunParallel()
 {
-    ax = 1 << 4 - 1;
+    const size_t NR_THREADS = min(::NR_THREADS, size_t(64));
+    ax = (NR_THREADS < 64 ? (uint64_t(1) << NR_THREADS) - 1 : ~0);
     vector<thread> vt;
     for (int i = 0; i < NR_THREADS; ++i)
         vt.emplace_back(&CrossingConstraint::CrossingJob, this, i);
@@ -61,12 +62,10 @@ void CrossingConstraint::CrossingJob(int i)
             Q.pop();
         }
         DFSRight(t2.GetRoot(), node);
-        {
-            lock_guard<mutex> g(qmutex);
-            for (newick_child* child = node->child; child; child = child->next)
-                if (--PA[child->node->taxoni] == 0)
-                    Q.push(child->node);
-        }
+        lock_guard<mutex> g(qmutex);
+        for (newick_child* child = node->child; child; child = child->next)
+            if (--PA[child->node->taxoni] == 0)
+                Q.push(child->node);
     }
 }
 

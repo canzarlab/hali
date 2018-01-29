@@ -13,7 +13,6 @@ typedef vector<double> vd;
 typedef vector<vd> vvd;
 typedef vector<vb> vvb;
 
-// Up to 64 threads supported
 const size_t NR_THREADS = 4;
 
 class Graph
