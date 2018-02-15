@@ -40,6 +40,10 @@ Graph* LDAG::Init()
     for (newick_node* leaf : L)
         GenPaths(leaf, T);
 
+    sort(P.begin(), P.end(), [](const vn& a, const vn& b)
+    {
+        return a.size() > b.size();
+    });
     vvb D(_n, vb(_n));
     vector<vn> Q;
     for (int k = 0; k < P.size(); ++k)
@@ -56,7 +60,7 @@ Graph* LDAG::Init()
             }
         });
     }
-    P = Q;
+    P = move(Q);
     return Graph::Init();
 }
 
