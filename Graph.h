@@ -73,7 +73,17 @@ public:
     vvd R[NR_THREADS];
     vector<vn> P;
 protected:
-    void GenPaths(newick_node* node, vn& P, vector<vn>& Q);
+    void GenPaths(newick_node* node, vn& P);
+    void TransitiveReduction(newick_node* node, vb& C);
+    void TransitiveReduction(newick_node* parent, newick_node* node, vb& C);
+    void Reduce(newick_child** childptr, newick_node* node);
+    template<class F>
+    void ForeachPair(vn& Q, F f)
+    {
+        for (int i = 0; i < Q.size(); ++i)
+            for (int j = 1; j < Q.size(); ++j)
+                f(Q, Q[i]->taxoni, Q[j]->taxoni);
+    }
     virtual void Relation(int d, int a) override;
 };
 

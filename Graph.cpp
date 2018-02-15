@@ -35,32 +35,79 @@ Graph* Graph::Init()
 Graph* LDAG::Init()
 {
     vn T;
-    vector<vn> Q;
+    vb C(_n);
+    TransitiveReduction(root, C);
     for (newick_node* leaf : L)
-        GenPaths(leaf, T, Q);
-    sort(Q.begin(), Q.end(), [](const vn& a, const vn& b)
+        GenPaths(leaf, T);
+
+    vvb D(_n, vb(_n));
+    vector<vn> Q;
+    for (int k = 0; k < P.size(); ++k)
     {
-        return a.size() > b.size();
-    });
-    for (vn& w : Q)
-        if (none_of(P.begin(), P.end(), [&](vn& v)
+        ForeachPair(P[k], [&](vn& p, int i, int j)
         {
-            return includes(v.begin(), v.end(), w.begin(), w.end());
-        }))
-            P.push_back(w);
+            if (!D[i][j])
+            {
+                Q.push_back(p);
+                ForeachPair(P[k], [&](vn& p, int i, int j)
+                {
+                    D[i][j] = D[j][j] = true;
+                });
+            }
+        });
+    }
+    P = Q;
     return Graph::Init();
 }
 
-void LDAG::GenPaths(newick_node* node, vn& T, vector<vn>& Q)
+void LDAG::TransitiveReduction(newick_node* node, vb& C)
+{
+    if (C[node->taxoni])
+        return;
+
+    C[node->taxoni] = true;
+    for (newick_child* child = node->child; child; child = child->next)
+    {
+        TransitiveReduction(child->node, C);
+        for (newick_child* cchild = child->node->child; cchild; cchild = cchild->next)
+        {
+            vb CC(_n);
+            TransitiveReduction(node, cchild->node, CC);
+        }
+    }
+}
+
+void LDAG::TransitiveReduction(newick_node* parent, newick_node* node, vb& C)
+{
+    if (C[node->taxoni])
+        return;
+
+    C[node->taxoni] = true;
+    // Doing this would change the traversal order which would break MatchingConstraints
+    // But we don't really have to do it since for GenPaths all we care about are parents
+    //Reduce(&parent->child, node);
+    Reduce(&node->parent, parent);
+    for (newick_child* child = node->child; child; child = child->next)
+        TransitiveReduction(parent, child->node, C);
+}
+
+void LDAG::Reduce(newick_child** childptr, newick_node* node)
+{
+    while (*childptr)
+    {
+        if ((*childptr)->node == node)
+            *childptr = (*childptr)->next;
+        else childptr = &(*childptr)->next;
+    }
+}
+
+void LDAG::GenPaths(newick_node* node, vn& T)
 {
     T.push_back(node);
     if (!node->parent)
-    {
-        Q.push_back(T);
-        sort(Q.back().begin(), Q.back().end());
-    }
+        P.push_back(T);
     for (newick_parent* parent = node->parent; parent; parent = parent->next)
-        GenPaths(parent->node, T, Q);
+        GenPaths(parent->node, T);
     T.pop_back();
 }
 
