@@ -77,6 +77,8 @@ protected:
     void TransitiveReduction(newick_node* node, vb& C);
     void TransitiveReduction(newick_node* parent, newick_node* node, vb& C);
     void Reduce(newick_child** childptr, newick_node* node);
+    void Wipe(newick_node* node);
+    void Renumerate(newick_node* node);
     template<class F>
     void ForeachPair(vn& Q, F f)
     {

@@ -37,6 +37,9 @@ Graph* LDAG::Init()
     vn T;
     vb C(_n);
     TransitiveReduction(root, C);
+    Wipe(root);
+    _n = 0;
+    Renumerate(root);
     for (newick_node* leaf : L)
         GenPaths(leaf, T);
 
@@ -64,6 +67,22 @@ Graph* LDAG::Init()
     return Graph::Init();
 }
 
+void LDAG::Wipe(newick_node* node)
+{
+    node->taxon = to_string(node->taxoni = -1);
+    for (newick_child* child = node->child; child; child = child->next)
+        if (child->node->taxoni != -1)
+            Wipe(child->node);
+}
+
+void LDAG::Renumerate(newick_node* node)
+{
+    node->taxon = to_string(node->taxoni = _n++);
+    for (newick_child* child = node->child; child; child = child->next)
+        if (child->node->taxoni == -1)
+            Renumerate(child->node);
+}
+
 void LDAG::TransitiveReduction(newick_node* node, vb& C)
 {
     if (C[node->taxoni])
@@ -87,9 +106,7 @@ void LDAG::TransitiveReduction(newick_node* parent, newick_node* node, vb& C)
         return;
 
     C[node->taxoni] = true;
-    // Doing this would change the traversal order which would break MatchingConstraints
-    // But we don't really have to do it since for GenPaths all we care about are parents
-    //Reduce(&parent->child, node);
+    Reduce(&parent->child, node);
     Reduce(&node->parent, parent);
     for (newick_child* child = node->child; child; child = child->next)
         TransitiveReduction(parent, child->node, C);
