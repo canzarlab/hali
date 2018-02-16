@@ -1,6 +1,5 @@
 #include "Graph.h"
-#include <fstream>
-#include <limits>
+#include "Geno.h"
 #include <algorithm>
 
 DAG::DAG(const char* f1, const char* f2)
@@ -220,7 +219,7 @@ void Tree::Child(newick_node* node, newick_node* child)
 void LDAG::Relation(int l, int i)
 {
     for (int j = 0; j < NR_THREADS; ++j)
-        R[j][l][i + _n] = numeric_limits<double>::infinity();
+        R[j][l][i + _n] = INF;
     G[l].push_back(i + _n);
     G[i + _n].push_back(l);
 }

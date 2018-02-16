@@ -41,41 +41,41 @@ void AntichainConstraint::AntichainJob(int id)
             if (all_of(g1.P[i].begin(), g1.P[i].end(), [&](newick_node* node){return B[node->taxoni];}))
                 continue;
         }
-        Antichain(i, g1.P[i], g2.R[id]);
+        Antichain(g1.P[i], g2.R[id]);
     }
 }
 
-bool AntichainConstraint::AugmentingPath(vi& Q, vvd& R)
+double AntichainConstraint::Push(int x, double flow, vvd& R, vi& D)
 {
-    queue<int> W;
-    W.push(S);
-    fill(Q.begin(), Q.end(), -1);
-    while (!W.empty())
-    {
-        int k = W.front(); W.pop();
-        if (k == T)
-            return true;
-
-        for (int x : G[k])
-            if (Q[x] == -1 && R[k][x] > 0)
-                Q[x] = k, W.push(x);
-    }
-    return false;
+    if (x == T)
+        return flow;
+    for (int y : G[x])
+        if (R[x][y] > 0 && D[y] == D[x] + 1)
+            if (double f = Push(y, min(flow, R[x][y]), R, D))
+                return R[x][y] -= f, R[y][x] += f, f;
+    return 0;
 }
 
-double AntichainConstraint::MaxFlow(vi& Q, vvd& R)
+double AntichainConstraint::MaxFlow(vi& D, vvd& R)
 {
     double flow = 0;
-    while (AugmentingPath(Q, R))
+    while (true)
     {
-        double aug = numeric_limits<double>::infinity();
-        for (int x = T; x != S; x = Q[x])
-            aug = min(aug, R[Q[x]][x]);
-
-        for (int x = T; x != S; x = Q[x])
-            R[Q[x]][x] -= aug, R[x][Q[x]] += aug;
-
-        flow += aug;
+        queue<int> W;
+        W.push(S);
+        D[S] = 0;
+        while (!W.empty())
+        {
+            int k = W.front(); W.pop();
+            for (int x : G[k])
+                if (D[x] == -1 && R[k][x] > 0)
+                    D[x] = D[k] + 1, W.push(x);
+        }
+        if (D[T] == -1)
+            break;
+        while (double f = Push(S, INF, R, D))
+            flow += f;
+        fill(D.begin(), D.end(), -1);
     }
     return flow;
 }
@@ -99,21 +99,25 @@ double AntichainConstraint::Reset(vn& P, vvd& R)
     return sum;
 }
 
-void AntichainConstraint::Antichain(int ci, vn& P, vvd& R)
+void AntichainConstraint::Antichain(vn& P, vvd& R)
 {
-    vi Q(SZ, -1);
-    if (Reset(P, R) - MaxFlow(Q, R) <= 1 + EPS)
+    vi D(SZ, -1);
+    double max = Reset(P, R);
+    double flow = MaxFlow(D, R);
+    if (max - flow <= 1 + EPS)
         return;
 
     vii PN;
     for (int i = 0; i < Z; ++i)
-        if (Q[i] != -1 && Q[i + Z] == -1)
+        if (D[i] != -1 && D[i + Z] == -1)
             for (newick_node* nodel : P)
                 PN.emplace_back(nodel->taxoni, i);
 
     lock_guard<mutex> g(qmutex);
     if (!all_of(P.begin(), P.end(), [&](newick_node* node){return B[node->taxoni];}))
+    {
         AddConstraint(nr_rows + ncr++, PN);
-    for (newick_node* node : P)
-        B[node->taxoni] = true;
+        for (newick_node* node : P)
+            B[node->taxoni] = true;
+    }
 }

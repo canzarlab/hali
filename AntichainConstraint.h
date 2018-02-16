@@ -14,10 +14,10 @@ public:
 private:
     void RunParallel();
     void AntichainJob(int id);
-    bool AugmentingPath(vi& Q, vvd& R);
-    double MaxFlow(vi& Q, vvd& R);
+    double MaxFlow(vi& D, vvd& R);
+    double Push(int x, double flow, vvd& R, vi& D);
     double Reset(vn& P, vvd& R);
-    void Antichain(int ci, vn& P, vvd& R);
+    void Antichain(vn& P, vvd& R);
 
     vvi& G;
     int ncr, nr_rows, S, T, Z, SZ;
