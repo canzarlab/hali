@@ -16,6 +16,7 @@ private:
     void AntichainJob(int id);
     double MaxFlow(vi& D, vvd& R);
     double Push(int x, double flow, vvd& R, vi& D);
+    bool LevelGraph(vi& D, vvd& R);
     double Reset(vn& P, vvd& R);
     void Antichain(vn& P, vvd& R);
 

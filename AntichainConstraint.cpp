@@ -53,26 +53,30 @@ double AntichainConstraint::Push(int x, double flow, vvd& R, vi& D)
         if (R[x][y] > 0 && D[y] == D[x] + 1)
             if (double f = Push(y, min(flow, R[x][y]), R, D))
                 return R[x][y] -= f, R[y][x] += f, f;
-    return 0;
+    return D[x] = -1, 0;
+}
+
+bool AntichainConstraint::LevelGraph(vi& D, vvd& R)
+{
+    queue<int> W;
+    W.push(S);
+    D[S] = 0;
+    while (!W.empty())
+    {
+        int k = W.front(); W.pop();
+        if (k == T) return true;
+        for (int x : G[k])
+            if (D[x] == -1 && R[k][x] > 0)
+                D[x] = D[k] + 1, W.push(x);
+    }
+    return false;
 }
 
 double AntichainConstraint::MaxFlow(vi& D, vvd& R)
 {
     double flow = 0;
-    while (true)
+    while (LevelGraph(D, R))
     {
-        queue<int> W;
-        W.push(S);
-        D[S] = 0;
-        while (!W.empty())
-        {
-            int k = W.front(); W.pop();
-            for (int x : G[k])
-                if (D[x] == -1 && R[k][x] > 0)
-                    D[x] = D[k] + 1, W.push(x);
-        }
-        if (D[T] == -1)
-            break;
         while (double f = Push(S, INF, R, D))
             flow += f;
         fill(D.begin(), D.end(), -1);

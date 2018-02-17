@@ -39,9 +39,7 @@ Graph* LDAG::Init()
     Wipe(root);
     _n = 0;
     Renumerate(root);
-    for (newick_node* leaf : L)
-        GenPaths(leaf, T);
-
+    GenPaths(root, T);
     sort(P.begin(), P.end(), [](const vn& a, const vn& b)
     {
         return a.size() > b.size();
@@ -52,14 +50,12 @@ Graph* LDAG::Init()
     {
         ForeachPair(P[k], [&](vn& p, int i, int j)
         {
-            if (!D[i][j])
+            if (D[i][j]) return;
+            Q.push_back(p);
+            ForeachPair(P[k], [&](vn& p, int i, int j)
             {
-                Q.push_back(p);
-                ForeachPair(P[k], [&](vn& p, int i, int j)
-                {
-                    D[i][j] = D[j][j] = true;
-                });
-            }
+                D[i][j] = D[j][j] = true;
+            });
         });
     }
     P = move(Q);
@@ -124,10 +120,10 @@ void LDAG::Reduce(newick_child** childptr, newick_node* node)
 void LDAG::GenPaths(newick_node* node, vn& T)
 {
     T.push_back(node);
-    if (!node->parent)
+    if (!node->child)
         P.push_back(T);
-    for (newick_parent* parent = node->parent; parent; parent = parent->next)
-        GenPaths(parent->node, T);
+    for (newick_child* child = node->child; child; child = child->next)
+        GenPaths(child->node, T);
     T.pop_back();
 }
 
