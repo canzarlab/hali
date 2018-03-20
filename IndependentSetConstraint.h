@@ -13,7 +13,6 @@ public:
 
     int AddTriplets(int nr_rows);
 private:
-    double PathSum(newick_node* nodel, newick_node* noder) const;
     void DFSRight(newick_node* noder);
     void DFSLeft(newick_node* nodel, newick_node* noder, double w);
     dLN DFSRight(newick_node* nodel, newick_node* noder);

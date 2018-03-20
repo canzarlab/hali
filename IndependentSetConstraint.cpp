@@ -24,11 +24,6 @@ int IndependentSetConstraint::AddTriplets(int nr_rows)
     return ncr;
 }
 
-double IndependentSetConstraint::PathSum(newick_node* nodel, newick_node* noder) const
-{
-    return nodel ? GetWeight(nodel, noder) + PathSum(nodel->parent ? nodel->parent->node : nullptr, noder) : 0;
-}
-
 void IndependentSetConstraint::DFSRight(newick_node* noder)
 {
     DFSLeft(t1.GetRoot(), noder, 0);
