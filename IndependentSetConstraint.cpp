@@ -1,11 +1,12 @@
 #include "IndependentSetConstraint.h"
 
-IndependentSetConstraint::IndependentSetConstraint(vector<ET>& Triplets, Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp) : Constraint(Triplets, t1, t2, K, x, swp)
+IndependentSetConstraint::IndependentSetConstraint(vector<ET>& Triplets, Graph& t1, Graph& t2, vvi& K, Vector& x, bool swp) : Constraint(Triplets, t1, t2, K, x, swp), D(t1.GetNumNodes(), vd(t2.GetNumNodes()))
 {
 }
 
 int IndependentSetConstraint::AddTriplets(int nr_rows)
 {
+    DFSRight(t2.GetRoot());
     int ncr = 0;
     for (newick_node* node : t1.L)
     {
@@ -28,9 +29,24 @@ double IndependentSetConstraint::PathSum(newick_node* nodel, newick_node* noder)
     return nodel ? GetWeight(nodel, noder) + PathSum(nodel->parent ? nodel->parent->node : nullptr, noder) : 0;
 }
 
+void IndependentSetConstraint::DFSRight(newick_node* noder)
+{
+    DFSLeft(t1.GetRoot(), noder, 0);
+    for (newick_child* child = noder->child; child; child = child->next)
+        DFSRight(child->node);
+}
+
+void IndependentSetConstraint::DFSLeft(newick_node* nodel, newick_node* noder, double w)
+{
+    if (!nodel->child)
+        D[nodel->taxoni][noder->taxoni] = w + GetWeight(nodel, noder);
+    for (newick_child* child = nodel->child; child; child = child->next)
+        DFSLeft(child->node, noder, w + GetWeight(nodel, noder));
+}
+
 dLN IndependentSetConstraint::DFSRight(newick_node* nodel, newick_node* noder)
 {
-    double w = PathSum(nodel, noder), sum = 0;
+    double w = D[nodel->taxoni][noder->taxoni], sum = 0;
     LN V;
 
     for (newick_child* child = noder->child; child; child = child->next)

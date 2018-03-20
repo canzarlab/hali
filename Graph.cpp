@@ -97,14 +97,12 @@ void LDAG::TransitiveReduction(newick_node* node, vb& C)
 
 void LDAG::TransitiveReduction(newick_node* parent, newick_node* node, vb& C)
 {
-    if (C[node->taxoni])
-        return;
-
     C[node->taxoni] = true;
     Reduce(&parent->child, node);
     Reduce(&node->parent, parent);
     for (newick_child* child = node->child; child; child = child->next)
-        TransitiveReduction(parent, child->node, C);
+        if (!C[child->node->taxoni])
+            TransitiveReduction(parent, child->node, C);
 }
 
 void LDAG::Reduce(newick_child** childptr, newick_node* node)
