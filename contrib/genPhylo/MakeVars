@@ -1,0 +1,11 @@
+LEMONDIR = /home/canzar/sw/lemon-1.3.1
+
+BINDIR = ~/lmu/genPhylo/bin
+INCLS = -I$(LEMONDIR)
+LIBDIRS = -L$(LEMONDIR)/build/lemon
+
+CC = g++
+LD = g++
+CPPFLAGS2 = -std=c++0x -m64 -fPIC -g -fexceptions  -DIL_STD $(INCLS) -Wall -Wextra -Wno-variadic-macros -pedantic
+CPPFLAGS = -std=c++0x -m64 -fPIC -g -fexceptions  -DIL_STD $(INCLS) 
+LDFLAGS = $(LIBDIRS) -lm -lpthread -lemon
