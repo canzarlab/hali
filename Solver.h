@@ -24,6 +24,7 @@ protected:
     template <class F>
     void DFSLeft(newick_node* node, vb& P, F f);
     void PrintScore(double weight);
+    bool IsNotInConflict(int i, int j, int x, int y) const;
 private:
     template <class F>
     void DFSRight(newick_node* nodel, newick_node* noder, vb& Q, F f);

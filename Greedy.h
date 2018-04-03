@@ -16,7 +16,7 @@ public:
     void WriteSolution(string fileName) override;
 	float GetSolution();
 private:
-    bool CC(const iid& a, const iid& b);
+    bool CC(const iid& a, const iid& b) const;
 
     vvd A;
     viid E, M;
