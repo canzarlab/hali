@@ -13,7 +13,7 @@ public:
 private:
     void Cleanup(size_t nr_t, size_t nr_r);
     bool SolveLP() override;
-    bool SolveRec(size_t pos, bool b);
+    bool SolveRec(unsigned int k, vector<size_t>& p);
 
 	Greedy       G;
     double       sys_lb;
@@ -23,9 +23,6 @@ private:
 	Vector		 sys_hi;
 	
 	double       con_eps;
-
-	//int    geno_calls;
-	//double geno_time;
 };
 
 #endif

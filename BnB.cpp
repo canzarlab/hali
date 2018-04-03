@@ -1,12 +1,18 @@
 #include "BnB.h"
 #include "Timer.h"
 #include <iostream>
+#include <algorithm>
 
 // ./solver inputs/C21.new.dag inputs/C21.new.map inputs/C28.new.dag inputs/C28.new.map align 1 s 1 0 0.001 2 2>/dev/null
 
-// ./solver inputs/a28 inputs/a10028 align 1 s 1 0 0.001 2 2>/dev/null
+// ./solver inputs/C21.new.dag inputs/C21.new.map inputs/C28.new.dag inputs/C28.new.map align 1 s 1 0 0.001 2 2>/dev/null
 
-#define DEBUG 0
+// ./hali inputs/a28 inputs/a10028 align 2 s 1 0 0.001 2 2>/dev/null
+
+// ./hali inputs/a28 inputs/a10028 align 1 s 1 0 0.001 2 2>"logs/log.txt" > "logs/out.txt"
+
+#define DEBUG 1
+const int VARNO = 2;
 
 BnB::BnB(Graph& t1, Graph& t2, string d, double k, bool dag, double c) : LP(t1, t2, d, k, dag), G(Greedy(t1, t2, d, k, dag)), con_eps(c)
 {
@@ -15,6 +21,9 @@ BnB::BnB(Graph& t1, Graph& t2, string d, double k, bool dag, double c) : LP(t1, 
 #if DEBUG == 1
 int    geno_calls = 0;
 double geno_time  = 0;
+int    gap_count  = 0;
+double gap_amount = 0;
+bool   gap_flag   = 0;
 #endif
 
 void BnB::Solve(string filename)
@@ -47,8 +56,13 @@ void BnB::Solve(string filename)
 	T.stop();
 	cout << endl;
 	cout << "total geno calls: " << geno_calls << endl;
-	cout << "total geno time: " << geno_time << endl;
+  cout << "total geno time: " << geno_time << endl;
 	cout << "total time: " << T.secs() << endl;	
+	double f = 0;
+	for (size_t i = 0; i < x.size(); ++i)
+			f += x(i) * c(i);
+	cout << "sol: " << f << endl;	
+	cout << gap_amount << ' ' << gap_count << endl;
 	#endif
 }
 
@@ -72,9 +86,9 @@ bool BnB::SolveLP()
 
 	while(1)
 	{
-	    SpMat A(nr_rows, nr_cols);
-	    A.setFromTriplets(Triplets.begin(), Triplets.end());
-		Vector b = Vector::Ones(nr_rows);   	
+	  SpMat A(nr_rows, nr_cols);
+	  A.setFromTriplets(Triplets.begin(), Triplets.end());
+	  Vector b = Vector::Ones(nr_rows);   	
 		y = Vector::Zero(nr_rows);
 		Vector d = -c;			
 
@@ -100,6 +114,9 @@ bool BnB::SolveLP()
 
 		if (status == INFEASIBLE) 
 		{				
+		  #if DEBUG == 1
+		  cout << "Infeasible." << endl;
+		  #endif
 			Cleanup(nr_t, nr_r);			
 			return 0; 
 		}
@@ -144,25 +161,37 @@ bool BnB::SolveLP()
 		break;
 	}
 	
-	size_t pos = x.size();
-	double val = 0; //1;
+	vector<size_t> p;
 
 	for (size_t i = 0; i < x.size(); ++i)
-		if (x(i) > 1e-3 && x(i) < 1 - 1e-3 && !sys_x[i])
-			if (c(i) > val) pos = i, val = c(i);				
-			//if (abs(0.5 - x(i)) < val) pos = i, val = abs(0.5 - x(i)); // TODO fix this bug ...				
+		if (x(i) > 1e-3 && x(i) < 1 - 1e-3 && !sys_x[i])				
+			p.push_back(i);				
 
-	if (pos < x.size())
+  sort(p.begin(), p.end(), [this](size_t i, size_t j){ return c(i) > c(j); });
+  
+  if (p.size() > VARNO) p.resize(VARNO);
+
+	if (p.size())
 		while(1)
-	    {	
-			bool b1 = (SolveRec(pos, 1));
-			bool b2 = (SolveRec(pos, 0));								
-			if (b1 || b2) break;			
+	  {
+	    bool b0 = 0;
+	    for (int i = pow(2, p.size()) - 1; i >= 0; --i)
+	      if (SolveRec(i, p)) b0 = 1; 
+	    if (b0) break;				
 			Cleanup(nr_t, nr_r);			
 			return 0;
 		}
 	else if (sys_lb > f)
 	{
+	  #if DEBUG == 1
+		if (gap_flag) 
+		{
+		  gap_amount += abs(sys_lb - f);  
+		  ++gap_count;
+		}
+		else 
+		  gap_flag = 1;
+		#endif
 		sys_s = x;
 		sys_lb = f; 
 	}
@@ -171,17 +200,24 @@ bool BnB::SolveLP()
 	return 1;
 }
 
-bool BnB::SolveRec(size_t pos, bool b)
-{
-	sys_lo(pos) = b;
-	sys_hi(pos) = b;
-
-	sys_x[pos] = 1;
-	bool f = SolveLP();		
-	sys_x[pos] = 0;
-
-	sys_lo(pos) = 0;
-	sys_hi(pos) = 1;
+bool BnB::SolveRec(unsigned int k, vector<size_t>& p)
+{ 
+  for (int i = p.size() - 1; i >= 0; --i)
+  {
+    sys_lo(p[i]) = ((k >> i) & 1);
+	  sys_hi(p[i]) = ((k >> i) & 1);
+	  sys_x[p[i]] = 1;
+  }
+  cout << endl;
+	
+	bool f = SolveLP();	
+	
+	for (int i = 0; i < p.size(); ++i)
+  {
+    sys_lo(p[i]) = 0;
+	  sys_hi(p[i]) = 1;
+	  sys_x[p[i]] = 0;
+  }
 
 	return f;
 }
