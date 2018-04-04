@@ -7,12 +7,15 @@
 
 // ./solver inputs/C21.new.dag inputs/C21.new.map inputs/C28.new.dag inputs/C28.new.map align 1 s 1 0 0.001 2 2>/dev/null
 
-// ./hali inputs/a28 inputs/a10028 align 2 s 1 0 0.001 2 2>/dev/null
+// ./hali inputs/a28 inputs/a10028 align 1 s 1 0 0.001 2 2>/dev/null
+
+// ./hali inputs/a915 inputs/a1915 align 1 s 1 0 0.001 2 2>/dev/null
 
 // ./hali inputs/a28 inputs/a10028 align 1 s 1 0 0.001 2 2>"logs/log.txt" > "logs/out.txt"
 
 #define DEBUG 1
-const int VARNO = 2;
+const int VARNO = 1;
+const int SKIP = 3;
 
 BnB::BnB(Graph& t1, Graph& t2, string d, double k, bool dag, double c) : LP(t1, t2, d, k, dag), G(Greedy(t1, t2, d, k, dag)), con_eps(c)
 {
@@ -33,7 +36,10 @@ void BnB::Solve(string filename)
 	T.start();
 	#endif
 
-	G.Solve("");
+	G.Solve(""); 
+	#if DEBUG == 1
+	cout << endl << endl;
+	#endif
 	sys_lb = -G.GetSolution();
 
 	x = Vector::Zero(nr_cols);
@@ -42,7 +48,7 @@ void BnB::Solve(string filename)
 	sys_x.resize(nr_cols);	
 	sys_x.assign(nr_cols, false);
 
-	if (SolveLP())	
+	if (SolveLP(x, 0))	
 	{
 		x = sys_s;
 		for (size_t i = 0; i < x.size(); ++i)
@@ -68,13 +74,13 @@ void BnB::Solve(string filename)
 
 void BnB::Cleanup(size_t nr_t, size_t nr_r)
 {
-    Triplets.resize(nr_t);	
+  Triplets.resize(nr_t);	
 	nr_rows = nr_r;
 }
 
-bool BnB::SolveLP()
+bool BnB::SolveLP(Vector xp, int depth)
 {
-    int nr_t = Triplets.size();
+  int nr_t = Triplets.size();
 	int nr_r = nr_rows;
 	double f;
 
@@ -86,25 +92,43 @@ bool BnB::SolveLP()
 
 	while(1)
 	{
+	  if (SKIP && depth && depth % SKIP)
+	  {
+	    #if DEBUG == 1
+	    cout << "skip at " << depth << endl;
+	    #endif
+      x = xp;
+	    f = sys_lb;
+	    break;
+	  }
+	
 	  SpMat A(nr_rows, nr_cols);
 	  A.setFromTriplets(Triplets.begin(), Triplets.end());
 	  Vector b = Vector::Ones(nr_rows);   	
 		y = Vector::Zero(nr_rows);
 		Vector d = -c;			
 
-	    BranchingJRF simpleJRF(A, b, d, x, y);
+	  BranchingJRF simpleJRF(A, b, d, x, y);
 		simpleJRF.lo = sys_lo;
 		simpleJRF.hi = sys_hi;
-	    AugmentedLagrangian solver(simpleJRF, 15);
-	    solver.setParameter("verbose", false);
-	    solver.setParameter("pgtol", 1e-1); 
-	    solver.setParameter("constraintsTol", 1e-4);
+	  AugmentedLagrangian solver(simpleJRF, 15);
+	  solver.setParameter("verbose", false);
+	  solver.setParameter("pgtol", 1e-1); 
+	  solver.setParameter("constraintsTol", 1e-4);
 
 		#if DEBUG == 1
 		T.start();
 		#endif
-	    SolverStatus status = solver.solve();	 
+	  SolverStatus status = solver.solve();	
 		#if DEBUG == 1		
+		if (status == SUBOPTIMAL)
+	    cout << "SUBOPTIMAL(" << status << ")" << endl; 
+		if (status == UNBOUNDED)
+	    cout << "UNBOUNDED(" << status << ")" << endl; 
+	  if (status == INFEASIBLE)
+	    cout << "INFEASIBLE(" << status << ")" << endl; 
+	  if (status == NUM_ERROR)
+	    cout << "NUM_ERROR(" << status << ")" << endl; 
 		T.stop();
 		qwe++;
 		qwer += T.secs();
@@ -114,18 +138,15 @@ bool BnB::SolveLP()
 
 		if (status == INFEASIBLE) 
 		{				
-		  #if DEBUG == 1
-		  cout << "Infeasible." << endl;
-		  #endif
 			Cleanup(nr_t, nr_r);			
 			return 0; 
 		}
 
 		x = Vector::ConstMapType(solver.x(), nr_cols); 
-
+		
 		if (LP::cf == 1 && Add<1>())
 			continue;
-        else if (LP::cf == 2 && (Add<1>() + Add<2>()))
+    else if (LP::cf == 2 && (Add<1>() + Add<2>()))
 			continue;
 
 		f = solver.f();	
@@ -161,22 +182,35 @@ bool BnB::SolveLP()
 		break;
 	}
 	
-	vector<size_t> p;
+	vector<pair<int, int>> pp;
+  vector<pair<int, int>> p;
 
-	for (size_t i = 0; i < x.size(); ++i)
-		if (x(i) > 1e-3 && x(i) < 1 - 1e-3 && !sys_x[i])				
-			p.push_back(i);				
+	for (size_t i = 0; i < t1.GetNumNodes(); ++i)
+	  for (size_t j = 0; j < t2.GetNumNodes(); ++j)
+		  if (K[i][j] != -1 && x(K[i][j]) > 1e-3 && x(K[i][j]) < 1 - 1e-3 && !sys_x[K[i][j]])				
+			  pp.emplace_back(i, j);				
 
-  sort(p.begin(), p.end(), [this](size_t i, size_t j){ return c(i) > c(j); });
-  
-  if (p.size() > VARNO) p.resize(VARNO);
+  sort(pp.begin(), pp.end(), [this](pair<int, int>& p, pair<int, int>& q)
+  { 
+    int i = K[p.first][p.second];
+    int j = K[q.first][q.second];
+    return c(i) > c(j); 
+  });
+   
+  for (int i = 0; p.size() < VARNO && i < pp.size(); ++i)
+  {
+    bool flag = 1;
+    for (int j = 0; flag && j < p.size(); ++j)
+      flag = IsNotInConflict(pp[i].first, p[j].first, pp[i].second, p[j].second);
+    if (flag) p.push_back(pp[i]);
+  }
 
 	if (p.size())
 		while(1)
 	  {
 	    bool b0 = 0;
 	    for (int i = pow(2, p.size()) - 1; i >= 0; --i)
-	      if (SolveRec(i, p)) b0 = 1; 
+	      if (SolveRec(i, p, x, depth)) b0 = 1; 
 	    if (b0) break;				
 			Cleanup(nr_t, nr_r);			
 			return 0;
@@ -200,24 +234,51 @@ bool BnB::SolveLP()
 	return 1;
 }
 
-bool BnB::SolveRec(unsigned int k, vector<size_t>& p)
+bool BnB::SolveRec(unsigned int k, vector<pair<int, int>>& p, Vector xp, int depth)
 { 
   for (int i = p.size() - 1; i >= 0; --i)
   {
-    sys_lo(p[i]) = ((k >> i) & 1);
-	  sys_hi(p[i]) = ((k >> i) & 1);
-	  sys_x[p[i]] = 1;
+    sys_lo(K[p[i].first][p[i].second]) = ((k >> i) & 1);
+	  sys_hi(K[p[i].first][p[i].second]) = ((k >> i) & 1);
+	  sys_x[K[p[i].first][p[i].second]] = 1;
   }
-  cout << endl;
 	
-	bool f = SolveLP();	
+	bool f = SolveLP(xp, depth + 1);	
 	
 	for (int i = 0; i < p.size(); ++i)
   {
-    sys_lo(p[i]) = 0;
-	  sys_hi(p[i]) = 1;
-	  sys_x[p[i]] = 0;
+    sys_lo(K[p[i].first][p[i].second]) = 0;
+	  sys_hi(K[p[i].first][p[i].second]) = 1;
+	  sys_x[K[p[i].first][p[i].second]] = 0;
   }
 
 	return f;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
