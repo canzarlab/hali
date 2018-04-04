@@ -15,7 +15,7 @@
 
 #define DEBUG 1
 const int VARNO = 1;
-const int SKIP = 3;
+const int SKIP = 8;
 
 BnB::BnB(Graph& t1, Graph& t2, string d, double k, bool dag, double c) : LP(t1, t2, d, k, dag), G(Greedy(t1, t2, d, k, dag)), con_eps(c)
 {
@@ -94,9 +94,6 @@ bool BnB::SolveLP(Vector xp, int depth)
 	{
 	  if (SKIP && depth && depth % SKIP)
 	  {
-	    #if DEBUG == 1
-	    cout << "skip at " << depth << endl;
-	    #endif
       x = xp;
 	    f = sys_lb;
 	    break;
@@ -200,8 +197,12 @@ bool BnB::SolveLP(Vector xp, int depth)
   for (int i = 0; p.size() < VARNO && i < pp.size(); ++i)
   {
     bool flag = 1;
-    for (int j = 0; flag && j < p.size(); ++j)
+    for (size_t j = 0; flag && j < p.size(); ++j)
       flag = IsNotInConflict(pp[i].first, p[j].first, pp[i].second, p[j].second);
+		for (size_t k = 0; flag && k < t1.GetNumNodes(); ++k)	  	
+			for (size_t j = 0; flag && j < t2.GetNumNodes(); ++j)
+				if (K[k][j] != -1 && sys_x[K[k][j]])						  	
+					flag = IsNotInConflict(pp[i].first, k, pp[i].second, j);					
     if (flag) p.push_back(pp[i]);
   }
 
@@ -218,16 +219,16 @@ bool BnB::SolveLP(Vector xp, int depth)
 	else if (sys_lb > f)
 	{
 	  #if DEBUG == 1
-		if (gap_flag) 
-		{
-		  gap_amount += abs(sys_lb - f);  
-		  ++gap_count;
-		}
-		else 
-		  gap_flag = 1;
-		#endif
-		sys_s = x;
-		sys_lb = f; 
+	if (gap_flag) 
+	{
+	  gap_amount += abs(sys_lb - f);  
+	  ++gap_count;
+	}
+	else 
+	  gap_flag = 1;
+	#endif
+	sys_s = x;
+	sys_lb = f; 
 	}
 
 	Cleanup(nr_t, nr_r);
