@@ -13,6 +13,7 @@
 #include <fstream>
 #include <functional>
 #include <algorithm>
+#include <numeric>
 using namespace std::placeholders;
 
 Greedy::Greedy(Graph& t1, Graph& t2, string d, double k, bool dag) : Solver(t1, t2, d, k, dag), A(t1.GetNumNodes(), vd(t2.GetNumNodes()))
@@ -43,12 +44,9 @@ void Greedy::WriteSolution(string fileName)
     PrintScore(weight);
 }
 
-float Greedy::GetSolution()
+double Greedy::GetSolution()
 {
-	double weight = 0.0;
-    for (const iid& e : M)
-        weight += get<2>(e);
-	return weight;
+    return accumulate(M.begin(), M.end(), 0., [](double a, iid& e) { return a + get<2>(e); });
 }
 
 bool Greedy::CC(const iid& a, const iid& b) const

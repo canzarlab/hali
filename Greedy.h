@@ -24,7 +24,7 @@ public:
 
     virtual void Solve(string filename) override;
     void WriteSolution(string fileName) override;
-	float GetSolution();
+	double GetSolution();
 private:
     bool CC(const iid& a, const iid& b) const;
 
