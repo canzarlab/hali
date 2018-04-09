@@ -217,7 +217,7 @@ void Tree::Leaf(newick_node* node)
 void Tree::Child(newick_node* node, newick_node* child)
 {
     ls &cl = clade[node], &cr = clade[child];
-    cl.insert(cl.end(), cr.begin(), cr.end());
+    //cl.insert(cl.end(), cr.begin(), cr.end());
 }
 
 void LDAG::Relation(int l, int i)

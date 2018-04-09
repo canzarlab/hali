@@ -33,7 +33,7 @@ Solver* MakeSolver(Graph& t1, Graph& t2, int argc, char** argv)
     var_eps = (argc == 9) ? 0 : stod(argv[7 + 2 * (argc == 12)]);
 
     assert(LP::cf >= 0 && LP::cf <= 2);
-    assert(d == "j" || d == "s");
+    assert(d == "j" || d == "s" || d == "e");
     assert(s >= 0 && s <= 6);
 
     if (s == 0)

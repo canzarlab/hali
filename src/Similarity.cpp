@@ -33,3 +33,11 @@ double SymdifSim(const ls& L1, const ls& L2)
     double j = I.size();
     return j < var_eps ? 0 : 2 * j;
 }
+
+double EditDistance(const string & L1, const string & L2)
+{
+    double deletionCost = 1.0;
+    double insertionCost = 1.0;
+    double substitutionCost = 1.0;
+    return L1==L2 ? (deletionCost+insertionCost):(deletionCost+insertionCost-substitutionCost);
+}

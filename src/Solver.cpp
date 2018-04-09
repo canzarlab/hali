@@ -20,7 +20,7 @@ void Solver::PrintScore(double weight)
     if (dag)
         cout << weight << " ";
     else
-        cout << ((d == "j") ? JaccardDist(weight) : SymdifDist(weight)) << " ";
+        cout << ((d == "j") ? JaccardDist(weight) : SymdifDist(weight)) << " toi yeu ";
 }
 
 int Solver::GetMax(newick_node* node, int& hmax) const

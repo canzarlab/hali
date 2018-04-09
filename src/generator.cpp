@@ -88,7 +88,7 @@ int main(int argc, char** argv)
         for (int j = 0; j < 2; ++j)
         {
             newick_node* root = F[j](n_leaves);
-            ofstream file(string("data") + to_string(j) + string("/a") + to_string(i));
+            ofstream file(string("data") + to_string(j) + string("--") + to_string(i));
             assert(file);
             print_tree(root, file);
             file << '\n';
