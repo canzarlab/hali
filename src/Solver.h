@@ -13,6 +13,7 @@
 
 #include "Graph.h"
 #include "Similarity.h"
+#include <iostream>
 
 class Solver
 {

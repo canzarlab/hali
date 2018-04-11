@@ -23,9 +23,9 @@
 
 // ./hali inputs/a28 inputs/a10028 align 1 s 1 0 0.001 2 2>"logs/log.txt" > "logs/out.txt"
 
-#define DEBUG 1
-const int VARNO = 1;
-const int SKIP = 8;
+#define DEBUG 0
+const int VARNO = 0;
+const int SKIP = 1;
 
 BnB::BnB(Graph& t1, Graph& t2, string d, double k, bool dag, double c) : LP(t1, t2, d, k, dag), G(Greedy(t1, t2, d, k, dag)), con_eps(c)
 {

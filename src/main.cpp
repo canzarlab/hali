@@ -78,13 +78,14 @@ int main(int argc, char** argv)
     }
 
     Timer T;
-    T.start();
+
     Graph *t1, *t2;
     tie(t1, t2) = MakeGraphs(argc, argv);
     Solver* solver = MakeSolver(*t1, *t2, argc, argv);
+    T.start();
     solver->Solve(argv[3 + (argc == 9) + 2 * (argc == 12)]);
     T.stop();
-    clog << "TOTAL TIME : \t\t" << T.secs() << " secs" << endl;
+    clog << "TOTAL TIME : \t\t" << T.secs() * 1000.0 << " ms" << endl;
     delete t1;
     delete t2;
     delete solver;

@@ -30,7 +30,7 @@ void LP::MatchingConstraints()
     int n = t1.GetNumNodes(), m = t2.GetNumNodes();
     DFSLeft(t1.GetRoot(), P, [&](newick_node* nodel, newick_node* noder, double w)
     {
-        if (w != 0 && (dag || nodel->parent) && (dag || nodel->child) && (dag || noder->parent) && (dag || noder->child))
+        if (w != 0) //  && (dag || nodel->parent) && (dag || nodel->child) && (dag || noder->parent) && (dag || noder->child)
         {
             int i = nodel->taxoni, j = noder->taxoni;
             int col = i * m + j - cnt;
@@ -60,7 +60,7 @@ void LP::Solve(string filename)
         LP::SolveLP();
         WriteSolution(filename);
         T_lp.stop();
-        clog << ">>> Time for solve: \t\t" << T_lp.secs() << " secs" << endl;
+        clog << ">>> Time for solve: \t\t" << T_lp.secs() * 1000.0 << " ms" << endl;
         if (cf == 0)
             break;
 

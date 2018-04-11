@@ -17,10 +17,14 @@ Solver::Solver(Graph& t1, Graph& t2, string d, double k, bool dag) : t1(t1), t2(
 
 void Solver::PrintScore(double weight)
 {
-    if (dag)
+    if (d == "e")
+    {
+    	clog << ">>>>>>>>>>>>>>>>>>>>>> Optimal value:" << t1.GetNumNodes() + t2.GetNumNodes() - weight << "." << endl;
+    }
+    else if (dag)
         cout << weight << " ";
     else
-        cout << ((d == "j") ? JaccardDist(weight) : SymdifDist(weight)) << " toi yeu ";
+        cout << ((d == "j") ? JaccardDist(weight) : SymdifDist(weight)) << " ";
 }
 
 int Solver::GetMax(newick_node* node, int& hmax) const
