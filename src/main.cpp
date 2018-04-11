@@ -59,12 +59,12 @@ Graph* MakeDAG(const char* f1, const char* f2, int s)
 pair<Graph*, Graph*> MakeGraphs(int argc, char** argv)
 {
     if (argc == 10)
-        return make_pair(new Tree(argv[1]), new Tree(argv[2]));
+        return {new Tree(argv[1]), new Tree(argv[2])};
     else if (argc == 12)
-        return make_pair(new Tree(argv[1], argv[2]), new Tree(argv[3], argv[4]));
+        return {new Tree(argv[1], argv[2]), new Tree(argv[3], argv[4])};
 
     int s = stoi(argv[argc - 1]);
-    return make_pair(MakeDAG(argv[1], argv[2], s), MakeDAG(argv[3], nullptr, s));
+    return {MakeDAG(argv[1], argv[2], s), MakeDAG(argv[3], nullptr, s)};
 }
 
 int main(int argc, char** argv)

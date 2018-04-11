@@ -22,7 +22,7 @@ public:
 
     virtual void Solve(string filename) override;
 private:
-    bool CC(const ii& a, const ii& b);
+    bool CC(const ii& a, const ii& b) const;
     void AddConstraint(const ii& a, const ii& b);
     virtual bool SolveLP() override;
 };

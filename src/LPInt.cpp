@@ -45,16 +45,11 @@ void LPInt::Solve(string filename)
     }
 }
 
-bool LPInt::CC(const ii& a, const ii& b)
+bool LPInt::CC(const ii& a, const ii& b) const
 {
     int i = get<0>(a), j = get<0>(b);
     int x = get<1>(a), y = get<1>(b);
-    if (i == j || x == y) return false;
-    if (cf == 0) return true;
-    bool c2 = (t1.D[j][i] || t1.D[i][j]) == (t2.D[x][y] || t2.D[y][x]);
-    bool c1 = (t1.D[i][j] == t2.D[x][y]); // assuming c2 is satisfied
-    if (cf == 1) return !c2 || c1;
-    return c2 && c1;
+    return IsNotInConflict(i, j, x, y);
 }
 
 void LPInt::AddConstraint(const ii& a, const ii& b)
