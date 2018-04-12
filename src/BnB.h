@@ -22,8 +22,8 @@ public:
 
 private:
     void Cleanup(size_t nr_t, size_t nr_r);
-    bool SolveLP(Vector xp, int depth); // override je bilo
-    bool SolveRec(unsigned int k, vector<pair<int, int>>& p, Vector xp, int depth);
+    bool SolveLP() override; // override je bilo   
+    bool SolveRec(size_t p, bool b);
 
 	Greedy       G;
     double       sys_lb;
