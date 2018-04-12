@@ -104,7 +104,7 @@ bool BnB::SolveLP()
 		simpleJRF.hi = sys_hi;
 	  AugmentedLagrangian solver(simpleJRF, 15);
 	  solver.setParameter("verbose", false);
-	  solver.setParameter("pgtol", 0.275); 
+	  solver.setParameter("pgtol", 0.1); 
 	  solver.setParameter("constraintsTol", 1e-4);
 
 		#if DEBUG == 1
