@@ -68,7 +68,7 @@ void BnB::Solve(string filename)
 	double f = 0;
 	for (size_t i = 0; i < x.size(); ++i)
 			f += x(i) * c(i);
-	cout << "sol: " << f << endl;	
+	cout << "sol: " << t1.GetNumNodes() + t2.GetNumNodes() - f << endl;	
 	cout << gap_amount << ' ' << gap_count << endl;
 	#endif
 }
