@@ -46,6 +46,7 @@ Graph* LDAG::Init()
     vn T;
     vb C(_n);
     TransitiveReduction(root, C);
+    // Restore dfs ordering of indices
     Wipe(root);
     _n = 0;
     Renumerate(root);
@@ -74,7 +75,7 @@ Graph* LDAG::Init()
 
 void LDAG::Wipe(newick_node* node)
 {
-    node->taxon = to_string(node->taxoni = -1);
+    node->taxoni = -1;
     for (newick_child* child = node->child; child; child = child->next)
         if (child->node->taxoni != -1)
             Wipe(child->node);
@@ -82,7 +83,7 @@ void LDAG::Wipe(newick_node* node)
 
 void LDAG::Renumerate(newick_node* node)
 {
-    node->taxon = to_string(node->taxoni = _n++);
+    node->taxoni = _n++;
     for (newick_child* child = node->child; child; child = child->next)
         if (child->node->taxoni == -1)
             Renumerate(child->node);
@@ -180,7 +181,7 @@ void Graph::Init(newick_node* node)
         Leaf(node);
     }
 
-    node->taxon = to_string(node->taxoni = _n++);
+    node->taxoni = _n++;
     for (newick_child* child = node->child; child; child = child->next)
     {
         newick_node* cnode = child->node;
