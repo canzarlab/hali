@@ -39,8 +39,9 @@ void Greedy::WriteSolution(string fileName)
 {
     ofstream sol_file(fileName);
     double weight = 0.0;
+    vn n1 = t1.GetNodes(), n2 = t2.GetNodes();
     for (const iid& e : M)
-        sol_file << get<0>(e) << " " << get<1>(e) << " 1\n", weight += get<2>(e);
+        sol_file << n1[get<0>(e)]->taxon << " " << n2[get<1>(e)]->taxon << " 1\n", weight += get<2>(e);
     PrintScore(weight);
 }
 

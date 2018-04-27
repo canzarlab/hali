@@ -115,6 +115,7 @@ void LP::WriteSolution(string fileName)
 {
     ofstream sol_file(fileName);
     double weight = 0;
+    vn n1 = t1.GetNodes(), n2 = t2.GetNodes();
     for (size_t i = 0; i < K.size(); i++)
     {
         for (size_t j = 0; j < K[i].size(); j++)
@@ -122,7 +123,7 @@ void LP::WriteSolution(string fileName)
             if (K[i][j] != -1 && x(K[i][j]) > 0)
             {
                 weight += x(K[i][j]) * c(K[i][j]);
-                sol_file << i << " " << j << " " << x(K[i][j]) << "\n";
+                sol_file << n1[i]->taxon << " " << n2[j]->taxon << " " << x(K[i][j]) << "\n";
             }
         }
     }

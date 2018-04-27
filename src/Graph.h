@@ -35,6 +35,11 @@ public:
     newick_node* GetRoot() const { return root; }
     virtual Graph* Init();
 
+    vn GetNodes()
+    {
+        return get_nodes(root, _n);
+    }
+
     vn L;
     mnls clade;
     vvb D;

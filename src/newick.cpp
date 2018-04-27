@@ -34,20 +34,24 @@ newick_node::~newick_node()
     delete child;
 }
 
-static void get_nodes(newick_node* node, vn& N, vb& C)
+static void get_nodes(newick_node* node, vn& N)
 {
-    C[node->taxoni] = true;
-    N.push_back(node);
+    N[node->taxoni] = node;
     for (newick_child* child = node->child; child; child = child->next)
-        if (!C[child->node->taxoni])
-            get_nodes(child->node, N, C);
+        if (!N[child->node->taxoni])
+            get_nodes(child->node, N);
+}
+
+vn get_nodes(newick_node* node, int n)
+{
+    vn N(n);
+    get_nodes(node, N);
+    return move(N);
 }
 
 void dealloc_dag(newick_node* node, int n)
 {
-    vb C(n);
-    vn N;
-    get_nodes(node, N, C);
+    vn N = get_nodes(node, n);
     for (newick_node* node : N)
         delete node;
 }
@@ -121,7 +125,7 @@ static newick_node* load_dag_internal(const string& r, msn& M, msvs& C)
         *childptr = new newick_child(load_dag_internal(i, M, C));
         childptr = &(*childptr)->next;
     }
-    return M[r] = new newick_node("", 0, child);
+    return M[r] = new newick_node(r, 0, child);
 }
 
 newick_node* load_dag(const char* f1, const char* f2, mnls& clade, msn& M)

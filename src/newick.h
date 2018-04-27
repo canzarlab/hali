@@ -52,6 +52,7 @@ newick_node* load_tree(const char* filename);
 newick_node* load_dag(const char* f1, const char* f2, mnls& clade, msn& M);
 void dealloc_dag(newick_node* node, int n);
 void print_tree(newick_node* root, ostream& file);
+vn get_nodes(newick_node* node, int n);
 
 #endif
 
