@@ -137,7 +137,7 @@ class TestBnBSolver : public GenericBnBSolver
 	BnBNode* MakeNode(BnBNode* init, size_t p, bool b);
 
 	// Fractionallity of variable i.
-	double VarScore(int i) { return 0.5 - abs(0.5 - x(i)); } //{ return c(i); } // 
+	double VarScore(int i) { return c(i); } // { return 0.5 - abs(0.5 - x(i)); }
 
 	stack<BnBNode*> Open; // Open set defined as a stack.
 };
