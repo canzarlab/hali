@@ -150,6 +150,10 @@ bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 	#if DEBUG == 1	
 	cout << nr_rows << " x " << nr_cols << endl;
 	cout << "sol: " << -node->obj << endl;
+	int qwert = 0;
+	for (size_t i = 0; i < x.size(); ++i)
+		qwert += IsVarFrac(node->sol(i)) && !node->IsVarFixed(i);
+	cout << "fracs: " << qwert << endl;
 	cout << endl;
 	#endif
 
@@ -281,13 +285,14 @@ BnBNode* DFBnBSolver::EvalOpen()
 	if (Open.size() > 1)
 	{
 		BnBNode* lt = Open.back(); Open.pop_back();
-		BnBNode* rt = Open.back(); Open.pop_back();
+		BnBNode* rt = Open.back(); 
 		if (lt->obj == 1 && !SolveNode(lt, PGTOL, 0.001)) lt->obj = 2;
-		if (lt->warm == rt->warm)
+		if (lt->warm == rt->warm) // TODO this is horrible.
 		{
+			Open.pop_back();
 			if (rt->obj == 1 && !SolveNode(rt, PGTOL, 0.001)) rt->obj = 2;
 			if (lt->obj > rt->obj) swap(lt, rt);
-			if (rt->obj < 1) Open.push_back(rt); 		
+			if (rt->obj >= 1) Open.push_back(rt); 		
 		}		
 		return (lt->obj < 1) ? lt : nullptr;
 	}
@@ -314,17 +319,18 @@ bool HybridBnBSolver::OpenEmpty()
 	return !Open.size();
 }
 
-BnBNode* HybridBnBSolver::EvalOpen()
+BnBNode* HybridBnBSolver::EvalOpen() // TODO this is horrible.
 {
 	if (!GetObjective())
 	{
 		if (Open.size() > 1)
 		{
 			BnBNode* lt = Open.back(); Open.pop_back();
-			BnBNode* rt = Open.back(); Open.pop_back();
+			BnBNode* rt = Open.back(); 			
 			if (lt->obj == 1 && !SolveNode(lt, PGTOL, 0.001)) lt->obj = 2;
 			if (lt->warm == rt->warm)
 			{
+				Open.pop_back();
 				if (rt->obj == 1 && !SolveNode(rt, PGTOL, 0.001)) rt->obj = 2;
 				if (lt->obj > rt->obj) swap(lt, rt);
 				if (rt->obj < 1) Open.push_back(rt); 		
