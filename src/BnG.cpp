@@ -282,16 +282,19 @@ BnBNode* DFBnBSolver::EvalOpen()
 	{
 		BnBNode* lt = Open.back(); Open.pop_back();
 		BnBNode* rt = Open.back(); Open.pop_back();
-		if (lt->obj == 1 && !SolveNode(lt, PGTOL, 0.001)) lt->obj = 2; 	
-		if (rt->obj == 1 && !SolveNode(rt, PGTOL, 0.001)) rt->obj = 2;
-		if (lt->obj > rt->obj) swap(lt, rt);
-		if (rt->obj < 1) Open.push_back(rt); 
+		if (lt->obj == 1 && !SolveNode(lt, PGTOL, 0.001)) lt->obj = 2;
+		if (lt->warm == rt->warm)
+		{
+			if (rt->obj == 1 && !SolveNode(rt, PGTOL, 0.001)) rt->obj = 2;
+			if (lt->obj > rt->obj) swap(lt, rt);
+			if (rt->obj < 1) Open.push_back(rt); 		
+		}		
 		return (lt->obj < 1) ? lt : nullptr;
 	}
 	else
 	{
 		BnBNode* node = Open.back(); Open.pop_back();
-		return SolveNode(node, PGTOL, 0.001) ? node : nullptr;
+		return (node->obj < 1 || SolveNode(node, PGTOL, 0.001)) ? node : nullptr;
 	}
 }
 
@@ -319,16 +322,19 @@ BnBNode* HybridBnBSolver::EvalOpen()
 		{
 			BnBNode* lt = Open.back(); Open.pop_back();
 			BnBNode* rt = Open.back(); Open.pop_back();
-			if (lt->obj == 1 && !SolveNode(lt, PGTOL, 0.001)) lt->obj = 2; 	
-			if (rt->obj == 1 && !SolveNode(rt, PGTOL, 0.001)) rt->obj = 2;
-			if (lt->obj > rt->obj) swap(lt, rt);
-			if (rt->obj < 1) Open.push_back(rt); 
+			if (lt->obj == 1 && !SolveNode(lt, PGTOL, 0.001)) lt->obj = 2;
+			if (lt->warm == rt->warm)
+			{
+				if (rt->obj == 1 && !SolveNode(rt, PGTOL, 0.001)) rt->obj = 2;
+				if (lt->obj > rt->obj) swap(lt, rt);
+				if (rt->obj < 1) Open.push_back(rt); 		
+			}		
 			return (lt->obj < 1) ? lt : nullptr;
 		}
 		else
 		{
 			BnBNode* node = Open.back(); Open.pop_back();
-			return SolveNode(node, PGTOL, 0.001) ? node : nullptr;
+			return (node->obj < 1 || SolveNode(node, PGTOL, 0.001)) ? node : nullptr;
 		}
 	}
 	else
