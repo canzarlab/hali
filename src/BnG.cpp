@@ -44,7 +44,7 @@ void BnBNode::FixVar(size_t index, double val)
 	var_lb(index) = var_ub(index) = val;
 }
 
-GenericBnBSolver::GenericBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag) : LP(t1, t2, dist, k, dag), sys_ub(0)
+GenericBnBSolver::GenericBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag) : LP(t1, t2, dist, k, dag), sys_ub(0), min_c(0)
 {	
 }
 
@@ -53,6 +53,9 @@ void GenericBnBSolver::Solve(string filename)
 	#if DEBUG == 1	
 	Timer T; T.start();
 	#endif
+
+	for (size_t i = 0; i < c.size(); ++i)
+		min_c = min(min_c, c(i));
 
 	PushNode(InitNodeFrom(nullptr));
 
@@ -131,7 +134,7 @@ bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 		#endif
 
 		if (status == INFEASIBLE) return false;
-		if (solver.f() >= sys_ub * (1.0 + numtol)) return false;
+		if (solver.f() >= sys_ub * (1.0 + numtol) - min_c) return false;
 
 		x = Vector::ConstMapType(solver.x(), nr_cols); 
 		
@@ -282,9 +285,9 @@ bool DFBnBSolver::OpenEmpty()
 
 BnBNode* DFBnBSolver::EvalOpen()
 {
+	BnBNode* lt = Open.back(); Open.pop_back();
 	if (Open.size() > 1)
 	{
-		BnBNode* lt = Open.back(); Open.pop_back();
 		BnBNode* rt = Open.back(); 
 		if (lt->obj == 1 && !SolveNode(lt, PGTOL, 0.001)) lt->obj = 2;
 		if (lt->warm == rt->warm) // TODO this is horrible.
@@ -294,13 +297,8 @@ BnBNode* DFBnBSolver::EvalOpen()
 			if (lt->obj > rt->obj) swap(lt, rt);
 			if (rt->obj >= 1) Open.push_back(rt); 		
 		}		
-		return (lt->obj < 1) ? lt : nullptr;
 	}
-	else
-	{
-		BnBNode* node = Open.back(); Open.pop_back();
-		return (node->obj < 1 || SolveNode(node, PGTOL, 0.001)) ? node : nullptr;
-	}
+	return (lt->obj < 1 || SolveNode(lt, PGTOL, 0.001)) ? lt : nullptr;
 }
 
 // ================= Hybrid BNB SOLVER ==================== //
@@ -323,25 +321,20 @@ BnBNode* HybridBnBSolver::EvalOpen() // TODO this is horrible.
 {
 	if (!GetObjective())
 	{
+		BnBNode* lt = Open.back(); Open.pop_back();
 		if (Open.size() > 1)
 		{
-			BnBNode* lt = Open.back(); Open.pop_back();
-			BnBNode* rt = Open.back(); 			
+			BnBNode* rt = Open.back(); 
 			if (lt->obj == 1 && !SolveNode(lt, PGTOL, 0.001)) lt->obj = 2;
 			if (lt->warm == rt->warm)
 			{
 				Open.pop_back();
 				if (rt->obj == 1 && !SolveNode(rt, PGTOL, 0.001)) rt->obj = 2;
 				if (lt->obj > rt->obj) swap(lt, rt);
-				if (rt->obj < 1) Open.push_back(rt); 		
+				if (rt->obj >= 1) Open.push_back(rt); 		
 			}		
-			return (lt->obj < 1) ? lt : nullptr;
 		}
-		else
-		{
-			BnBNode* node = Open.back(); Open.pop_back();
-			return (node->obj < 1 || SolveNode(node, PGTOL, 0.001)) ? node : nullptr;
-		}
+		return (lt->obj < 1 || SolveNode(lt, PGTOL, 0.001)) ? lt : nullptr;
 	}
 	else
 	{

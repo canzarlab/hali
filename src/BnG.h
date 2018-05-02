@@ -120,6 +120,8 @@ class GenericBnBSolver : public LP
 
 	double sys_ub;  // Stores the best current upper bound.
 	Vector sys_sol; // Stores the best current solution.
+
+	double min_c;   // Minimal weight in the similarity.
 };
 
 /*
