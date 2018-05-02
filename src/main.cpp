@@ -34,7 +34,7 @@ Solver* MakeSolver(Graph& t1, Graph& t2, int argc, char** argv)
 
     assert(LP::cf >= 0 && LP::cf <= 2);
     assert(d == "j" || d == "s");
-    assert(s >= 0 && s <= 6);
+    assert(s >= 0 && s <= 9);
 
     if (s == 0)
         return new Greedy(t1, t2, d, k, argc == 9);
@@ -48,7 +48,14 @@ Solver* MakeSolver(Graph& t1, Graph& t2, int argc, char** argv)
         return new TestBnBSolver(t1, t2, d, k, argc == 9);
     else if (s == 5)
         return new LPInt(t1, t2, d, k, argc == 9);
-    return new LPFInt(t1, t2, d, k, argc == 9);
+		else if (s == 6) 
+    	return new LPFInt(t1, t2, d, k, argc == 9);
+		else if (s == 7)
+			return new BFBnBSolver(t1, t2, d, k, argc == 9);
+		else if (s == 8)
+			return new DFBnBSolver(t1, t2, d, k, argc == 9);
+		else // if (s == 9)
+			return new HybridBnBSolver(t1, t2, d, k, argc == 9);
 }
 
 Graph* MakeDAG(const char* f1, const char* f2, int s)

@@ -14,14 +14,15 @@
 #include <iostream>
 
 #define DEBUG 1
+#define PGTOL 0.2
 
-BnBNode::BnBNode(vector<ET>& Triplets, size_t rows, size_t cols) : Triplets(Triplets), rows(rows), cols(cols), warm(nullptr)
+BnBNode::BnBNode(vector<ET>& Triplets, size_t rows, size_t cols) : Triplets(Triplets), rows(rows), cols(cols), warm(nullptr), obj(1)
 {
 	var_lb.conservativeResizeLike(Vector::Zero(cols));
 	var_ub.conservativeResizeLike(Vector::Ones(cols));
 }
 
-BnBNode::BnBNode(vector<ET>& Triplets, size_t rows, size_t cols, BnBNode* node) : Triplets(Triplets), rows(rows), cols(cols)
+BnBNode::BnBNode(BnBNode* node) : Triplets(node->Triplets), rows(node->rows), cols(node->cols), obj(1)
 {
 	warm = new Vector(node->sol);
 	var_lb = node->var_lb;
@@ -52,7 +53,7 @@ void GenericBnBSolver::Solve(string filename)
 	#if DEBUG == 1	
 	Timer T; T.start();
 	#endif
-	
+
 	PushNode(InitNodeFrom(nullptr));
 
 	while (!OpenEmpty())
@@ -65,7 +66,7 @@ void GenericBnBSolver::Solve(string filename)
 			if (V != nullptr)
 				PushAll(V);
 			else if (sys_ub > open->obj)
-					sys_sol = open->sol, sys_ub = open->obj; 			
+				sys_sol = open->sol, sys_ub = open->obj; 			
 				
 			delete open;
 		}
@@ -86,13 +87,12 @@ void GenericBnBSolver::Solve(string filename)
 	#endif
 }
 
-
 BnBNode* GenericBnBSolver::InitNodeFrom(BnBNode* node)
 {
 	if (node == nullptr)
 		return new BnBNode(Triplets, nr_rows, nr_cols);
 	else
-		return new BnBNode(Triplets, nr_rows, nr_cols, node);
+		return new BnBNode(node);
 }
 
 bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
@@ -138,8 +138,11 @@ bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 		if ((LP::cf == 1 && Add<1>()) || (LP::cf == 2 && (Add<1>() + Add<2>())))
 			continue;
 
-		node->obj = solver.f();		
-		node->sol = x;
+		node->Triplets = Triplets;
+		node->rows     = nr_rows;
+		node->cols     = nr_cols;
+		node->obj      = solver.f();		
+		node->sol      = x;
 
     break;
 	}
@@ -153,43 +156,7 @@ bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 	return true;
 }
 
-void GenericBnBSolver::PushAll(vector<BnBNode*>* Nodes)
-{ 
-	for (auto& it : *Nodes) PushNode(it);
-	delete Nodes;
-}
-
-// ================= TMP\TEST BNB SOLVER ==================== // 
-
-TestBnBSolver::TestBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag) : GenericBnBSolver(t1, t2, dist, k, dag)
-{	
-}
-
-void TestBnBSolver::PushNode(BnBNode* node)
-{
-	Open.push(node);
-}
-
-bool TestBnBSolver::OpenEmpty()
-{
-	return Open.empty();
-}
-
-BnBNode* TestBnBSolver::EvalOpen()
-{
-	BnBNode* node = Open.top();
-	Open.pop();
-	return SolveNode(node, 0.01, 0.001) ? node : nullptr;
-}
-
-BnBNode* TestBnBSolver::MakeNode(BnBNode* init, size_t p, bool b)
-{
-	BnBNode* node = InitNodeFrom(init);
-	node->FixVar(p, b);
-	return node;
-}
-
-vector<BnBNode*>* TestBnBSolver::EvalBranch(BnBNode* node)
+vector<BnBNode*>* GenericBnBSolver::EvalBranch(BnBNode* node)
 {
 	vector<pair<size_t, size_t>> vp;
 	size_t p = 0;
@@ -226,3 +193,157 @@ vector<BnBNode*>* TestBnBSolver::EvalBranch(BnBNode* node)
 
 	return nullptr;
 }
+
+BnBNode* GenericBnBSolver::MakeNode(BnBNode* parent, size_t index, double val)
+{
+	BnBNode* node = InitNodeFrom(parent);
+	node->FixVar(index, val);
+	return node;
+}
+
+void GenericBnBSolver::PushAll(vector<BnBNode*>* Nodes)
+{ 
+	for (auto& it : *Nodes) PushNode(it);
+	delete Nodes;
+}
+
+// ================= TMP\TEST BNB SOLVER ==================== // 
+
+TestBnBSolver::TestBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag) : GenericBnBSolver(t1, t2, dist, k, dag)
+{	
+}
+
+void TestBnBSolver::PushNode(BnBNode* node)
+{
+	Open.push(node);
+}
+
+bool TestBnBSolver::OpenEmpty()
+{
+	return Open.empty();
+}
+
+BnBNode* TestBnBSolver::EvalOpen()
+{
+	BnBNode* node = Open.top(); Open.pop();
+	return SolveNode(node, PGTOL, 0.001) ? node : nullptr;
+}
+
+// ================= BF BNB SOLVER ==================== // 
+
+BFBnBSolver::BFBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag) : GenericBnBSolver(t1, t2, dist, k, dag)
+{	
+}
+
+void BFBnBSolver::PushNode(BnBNode* node)
+{
+	Open.push_back(node);
+}
+
+bool BFBnBSolver::OpenEmpty()
+{
+	return !Open.size();
+}
+
+BnBNode* BFBnBSolver::EvalOpen()
+{
+	for (auto& it : Open)
+		if (it->obj == 1 && !SolveNode(it, PGTOL, 0.001))
+			it->obj = 2;
+
+	sort(Open.begin(), Open.end(), [](BnBNode*& l, BnBNode*& r)
+	{ 
+		return l->obj > r->obj; 
+	});
+
+	BnBNode* node = Open.back(); Open.pop_back();		
+	return (node->obj < 1) ? node : nullptr;
+}
+
+// ================= DF BNB SOLVER ==================== //
+
+DFBnBSolver::DFBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag) : GenericBnBSolver(t1, t2, dist, k, dag)
+{	
+}
+
+void DFBnBSolver::PushNode(BnBNode* node)
+{
+	Open.push_back(node);
+}
+
+bool DFBnBSolver::OpenEmpty()
+{
+	return !Open.size();
+}
+
+BnBNode* DFBnBSolver::EvalOpen()
+{
+	if (Open.size() > 1)
+	{
+		BnBNode* lt = Open.back(); Open.pop_back();
+		BnBNode* rt = Open.back(); Open.pop_back();
+		if (lt->obj == 1 && !SolveNode(lt, PGTOL, 0.001)) lt->obj = 2; 	
+		if (rt->obj == 1 && !SolveNode(rt, PGTOL, 0.001)) rt->obj = 2;
+		if (lt->obj > rt->obj) swap(lt, rt);
+		if (rt->obj < 1) Open.push_back(rt); 
+		return (lt->obj < 1) ? lt : nullptr;
+	}
+	else
+	{
+		BnBNode* node = Open.back(); Open.pop_back();
+		return SolveNode(node, PGTOL, 0.001) ? node : nullptr;
+	}
+}
+
+// ================= Hybrid BNB SOLVER ==================== //
+
+HybridBnBSolver::HybridBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag) : GenericBnBSolver(t1, t2, dist, k, dag)
+{	
+}
+
+void HybridBnBSolver::PushNode(BnBNode* node)
+{
+	Open.push_back(node);
+}
+
+bool HybridBnBSolver::OpenEmpty()
+{
+	return !Open.size();
+}
+
+BnBNode* HybridBnBSolver::EvalOpen()
+{
+	if (!GetObjective())
+	{
+		if (Open.size() > 1)
+		{
+			BnBNode* lt = Open.back(); Open.pop_back();
+			BnBNode* rt = Open.back(); Open.pop_back();
+			if (lt->obj == 1 && !SolveNode(lt, PGTOL, 0.001)) lt->obj = 2; 	
+			if (rt->obj == 1 && !SolveNode(rt, PGTOL, 0.001)) rt->obj = 2;
+			if (lt->obj > rt->obj) swap(lt, rt);
+			if (rt->obj < 1) Open.push_back(rt); 
+			return (lt->obj < 1) ? lt : nullptr;
+		}
+		else
+		{
+			BnBNode* node = Open.back(); Open.pop_back();
+			return SolveNode(node, PGTOL, 0.001) ? node : nullptr;
+		}
+	}
+	else
+	{
+		for (auto& it : Open)
+			if (it->obj == 1 && !SolveNode(it, PGTOL, 0.001))
+				it->obj = 2;
+
+		sort(Open.begin(), Open.end(), [](BnBNode*& l, BnBNode*& r)
+		{ 
+			return l->obj > r->obj; 
+		});
+
+		BnBNode* node = Open.back(); Open.pop_back();		
+		return (node->obj < 1) ? node : nullptr;
+	}
+}
+

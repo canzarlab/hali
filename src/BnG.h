@@ -29,7 +29,7 @@ class BnBNode
 	BnBNode(vector<ET>& Triplets, size_t rows, size_t cols); 
 
 	// This constructor creates a node with a parent (last argument) and warm starts from it.
-	BnBNode(vector<ET>& Triplets, size_t rows, size_t cols, BnBNode* node);
+	BnBNode(BnBNode* node);
 
 	~BnBNode();
 
@@ -101,7 +101,14 @@ class GenericBnBSolver : public LP
 
 	// Branch the node and return a vector of children nodes.
 	// Return nullptr when there is nothing to branch into.
-	virtual vector<BnBNode*>* EvalBranch (BnBNode* node) { }
+	virtual vector<BnBNode*>* EvalBranch (BnBNode* node);
+	
+	// Fractionallity of the variable. For the 'most fractional' approach,
+	// please replace 'c(i)' with '0.5 - abs(0.5 - x(i))'.
+	virtual double            VarScore   (int i)         { return c(i); }
+
+	// Initialize a node from a parent node and fix variable at index to val.
+	virtual BnBNode*          MakeNode   (BnBNode* parent, size_t index, double val); 
 
 	// Auxilliary function which decides whether a variable is to be considered fractional.
 	virtual bool              IsVarFrac  (double val)    { return val > 0.001 && val < 0.999; }         
@@ -132,14 +139,70 @@ class TestBnBSolver : public GenericBnBSolver
 	void              PushNode   (BnBNode* node) override;
 	bool              OpenEmpty  ()              override;
 	BnBNode*          EvalOpen   ()              override;
-	vector<BnBNode*>* EvalBranch (BnBNode* node) override;
-	
-	BnBNode* MakeNode(BnBNode* init, size_t p, bool b);
-
-	// Fractionallity of variable i.
-	double VarScore(int i) { return c(i); } // { return 0.5 - abs(0.5 - x(i)); }
 
 	stack<BnBNode*> Open; // Open set defined as a stack.
+};
+
+/*
+	class BFBnBSolver
+	
+	Best first BnB solver.
+*/
+class BFBnBSolver : public GenericBnBSolver
+{
+	public:
+
+	BFBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag);
+
+	private:
+
+	void              PushNode   (BnBNode* node) override;
+	bool              OpenEmpty  ()              override;
+	BnBNode*          EvalOpen   ()              override;
+
+	vector<BnBNode*> Open; 
+};
+
+/*
+	class DFBnBSolver
+	
+	Depth first BnB solver.
+*/
+class DFBnBSolver : public GenericBnBSolver
+{
+	public:
+
+	DFBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag);
+
+	private:
+
+	void              PushNode   (BnBNode* node) override;
+	bool              OpenEmpty  ()              override;
+	BnBNode*          EvalOpen   ()              override;
+
+	vector<BnBNode*> Open; 
+};
+
+/*
+	class HybridBnBSolver
+	
+	Hybrid BnB solver combines the DF and BF approach. It runs DF until the first
+	integral solution is hit. After that, BF takes over.
+*/
+
+class HybridBnBSolver : public GenericBnBSolver
+{
+	public:
+
+	HybridBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag);
+
+	private:
+
+	void              PushNode   (BnBNode* node) override;
+	bool              OpenEmpty  ()              override;
+	BnBNode*          EvalOpen   ()              override;
+
+	vector<BnBNode*> Open; 
 };
 
 #endif
