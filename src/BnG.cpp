@@ -7,6 +7,8 @@
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
+
+		./hali inputs/a0 inputs/a999 align 2 s 1 0 0.001 2
 */
 
 #include "BnG.h"
@@ -54,7 +56,8 @@ void GenericBnBSolver::Solve(string filename)
 	Timer T; T.start();
 	#endif
 
-	for (size_t i = 0; i < c.size(); ++i)
+	min_c = c(0);
+	for (size_t i = 1; i < c.size(); ++i)
 		min_c = min(min_c, c(i));
 
 	PushNode(InitNodeFrom(nullptr));
