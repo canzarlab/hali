@@ -137,7 +137,7 @@ bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 		#endif
 
 		if (status == INFEASIBLE) return false;
-		if (solver.f() >= sys_ub * (1.0 + numtol) - min_c) return false;
+		if (solver.f() >= sys_ub * (1.0 + numtol)) return false;
 
 		x = Vector::ConstMapType(solver.x(), nr_cols); 
 		
@@ -298,7 +298,7 @@ BnBNode* DFBnBSolver::EvalOpen()
 			Open.pop_back();
 			if (rt->obj == 1 && !SolveNode(rt, PGTOL, 0.001)) rt->obj = 2;
 			if (lt->obj > rt->obj) swap(lt, rt);
-			if (rt->obj >= 1) Open.push_back(rt); 		
+			if (rt->obj < 1) Open.push_back(rt); 		
 		}		
 	}
 	return (lt->obj < 1 || SolveNode(lt, PGTOL, 0.001)) ? lt : nullptr;
@@ -334,7 +334,7 @@ BnBNode* HybridBnBSolver::EvalOpen() // TODO this is horrible.
 				Open.pop_back();
 				if (rt->obj == 1 && !SolveNode(rt, PGTOL, 0.001)) rt->obj = 2;
 				if (lt->obj > rt->obj) swap(lt, rt);
-				if (rt->obj >= 1) Open.push_back(rt); 		
+				if (rt->obj < 1) Open.push_back(rt); 		
 			}		
 		}
 		return (lt->obj < 1 || SolveNode(lt, PGTOL, 0.001)) ? lt : nullptr;
