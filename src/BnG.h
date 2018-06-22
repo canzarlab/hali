@@ -93,49 +93,50 @@ class GenericBnBSolver : public LP
 
 	// Creates a BnBNode using current solver data and a designated parent node. 
 	// If no parent node is needed, pass a nullptr.
-	BnBNode*                  InitNodeFrom(BnBNode* node);
+	BnBNode*                  InitNodeFrom   (BnBNode* node);
 
 	// Solves the LP in a node using specified pgtol and numtol.
 	//	pgtol  - geno solver parameter
 	//	numtol - numerical offset used when cutting branches (cut if obj >= best_obj * (1 + numtol)) 
-	virtual bool              SolveNode  (BnBNode* node, double pgtol, double numtol);	
+	virtual bool              SolveNode      (BnBNode* node, double pgtol, double numtol);	
 
 	// Push a node into the Open set.
-	virtual void              PushNode   (BnBNode* node) { }
+	virtual void              PushNode       (BnBNode* node)             { }
 
 	// Is the Open set empty? If it is, Solver will terminate.	
-	virtual bool              OpenEmpty  ()              { return true; }	
+	virtual bool              OpenEmpty      ()                          { return true; }	
 
 	// Evaluate the Open set and decide which node to branch.	
-	virtual BnBNode*          EvalOpen   ()              { return nullptr; }
+	virtual BnBNode*          EvalOpen       ()                          { return nullptr; }
 
 	// Branch the node and return a vector of children nodes.
 	// Return nullptr when there is nothing to branch into.
-	virtual vector<BnBNode*>* EvalBranch (BnBNode* node);
+	virtual vector<BnBNode*>* EvalBranch     (BnBNode* node);
 	
 	// Fractionallity of the variable. For the 'most fractional' approach,
 	// please replace 'c(i)' with '0.5 - abs(0.5 - x(i))'.
-	virtual double            VarScore   (int i)         { return c(i); }
+	virtual double            VarScore       (int i)                     { return c(i); }
 
 	// Initialize a node from a parent node and fix variable at index to val.
-	virtual BnBNode*          MakeNode   (BnBNode* parent, size_t index, double val); 
+	virtual BnBNode*          MakeNode       (BnBNode* parent, size_t index, double val); 
 
 	// Auxilliary function which decides whether a variable is to be considered fractional.
-	virtual bool              IsVarFrac  (double val)    { return val > 0.001 && val < 0.999; }    
+	virtual bool              IsVarFrac      (double val)                { return val > 0.001 && val < 0.999; }    
 
 	// Checks whether the pruning is in order.
-	virtual bool							CheckUB  (double val, double numtol)   { return val >= sys_ub * (1.0 + numtol); }    
+	virtual bool							CheckUB        (double val, double numtol) { return val >= sys_ub * (1.0 + numtol); }    
 
 	// Event callbacks
-	virtual void              OnUpdateUB (Vector& var, double val)   { }
+	virtual void              OnUpdateUB     (Vector& var, double val)   { }
+	virtual void							OnSolverFinish ()											     { }
  
+	double sys_ub;  // Stores the best current upper bound.
+	Vector sys_sol; // Stores the best current solution.
+
 	private:
 
 	// Pushes all nodes to the Open set.
 	void PushAll(vector<BnBNode*>* Nodes);
-
-	double sys_ub;  // Stores the best current upper bound.
-	Vector sys_sol; // Stores the best current solution.
 
 	double min_c;   // Minimal weight in the similarity.
 

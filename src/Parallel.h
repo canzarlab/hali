@@ -72,6 +72,8 @@ class BnBBFMF : public BFBnBSolver // Best first, most fractional
 
 	void OnUpdateUB(Vector& var, double val) { par.UpdateUB(var, val); }
 
+	void OnSolverFinish();
+
 	protected:
 	
 	virtual double VarScore(int i) { return 0.5 - abs(0.5 - x(i)); }
@@ -91,6 +93,8 @@ class BnBBFLF : public BFBnBSolver // Best first, least fractional
 	}
 
 	void OnUpdateUB(Vector& var, double val) { par.UpdateUB(var, val); }
+
+	void OnSolverFinish();
 
 	protected:
 	
@@ -112,6 +116,8 @@ class BnBBFWF : public BFBnBSolver // Best first, weight times fractional
 
 	void OnUpdateUB(Vector& var, double val) { par.UpdateUB(var, val); }
 
+	void OnSolverFinish();
+
 	protected:
 	
 	virtual double VarScore(int i) { return x(i) * c(i); }
@@ -131,6 +137,8 @@ class BnBDFMF : public DFBnBSolver // Depth first, most fractional
 	}
 
 	void OnUpdateUB(Vector& var, double val) { par.UpdateUB(var, val); }
+
+	void OnSolverFinish();
 
 	protected:
 	
@@ -152,6 +160,8 @@ class BnBDFLF : public DFBnBSolver // Depth first, least fractional
 
 	void OnUpdateUB(Vector& var, double val) { par.UpdateUB(var, val); }
 
+	void OnSolverFinish();
+
 	protected:
 	
 	virtual double VarScore(int i) { return abs(0.5 - x(i)); }
@@ -171,6 +181,8 @@ class BnBDFWF : public DFBnBSolver // Depth first, weight times fractional
 	}
 
 	void OnUpdateUB(Vector& var, double val) { par.UpdateUB(var, val); }
+
+	void OnSolverFinish();
 
 	protected:
 	
@@ -192,6 +204,8 @@ class BnBHMF : public HybridBnBSolver // Hybrid, most fractional
 
 	void OnUpdateUB(Vector& var, double val) { par.UpdateUB(var, val); }
 
+	void OnSolverFinish();
+
 	protected:
 	
 	virtual double VarScore(int i) { return 0.5 - abs(0.5 - x(i)); }
@@ -212,6 +226,8 @@ class BnBHLF : public HybridBnBSolver // Hybrid, least fractional
 
 	void OnUpdateUB(Vector& var, double val) { par.UpdateUB(var, val); }
 
+	void OnSolverFinish();
+
 	protected:
 	
 	virtual double VarScore(int i) { return abs(0.5 - x(i)); }
@@ -231,6 +247,8 @@ class BnBHWF : public HybridBnBSolver // Hybrid, weight times fractional
 	}
 
 	void OnUpdateUB(Vector& var, double val) { par.UpdateUB(var, val); }
+
+	void OnSolverFinish();
 
 	protected:
 	

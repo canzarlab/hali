@@ -102,6 +102,8 @@ void GenericBnBSolver::Solve(string filename)
 	T.stop();
 	#endif
 
+	OnSolverFinish();
+
 	x = sys_sol;
 	for (size_t i = 0; i < x.size(); ++i)
 		x(i) = round(x(i));	

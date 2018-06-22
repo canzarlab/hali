@@ -92,7 +92,6 @@ int main(int argc, char** argv)
     tie(t1, t2) = MakeGraphs(argc, argv);
 		if (stoi(argv[argc - 1]) > 9)
 		{
-			cout << "a" << endl;
 			int s = stoi(argv[argc - 1]);
 		  Solver::cf = stoi(argv[4 + (argc == 9) + 2 * (argc == 12)]);
 		  Solver::tt = argc == 12;
@@ -111,9 +110,9 @@ int main(int argc, char** argv)
     	Solver* solver = MakeSolver(*t1, *t2, argc, argv);
     	solver->Solve(argv[3 + (argc == 9) + 2 * (argc == 12)]);
 			delete solver;
+			delete t1;
+    	delete t2;
 		}    
 		T.stop();
     clog << "TOTAL TIME : \t\t" << T.secs() << " secs" << endl;
-    delete t1;
-    delete t2;
 }

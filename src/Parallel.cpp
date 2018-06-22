@@ -60,20 +60,20 @@ void ParallelSolver::Solve(string filename)
 	for (int i = 0; i < thr_num; ++i)
 	{
 		S[i] = MakeSolver(t1, t2, d, k, dag, i, *this);
-		thread{&ParallelSolver::Callback, this, filename, S[i]}.detach();
+		if (S[i]) thread{&ParallelSolver::Callback, this, filename, S[i]}.detach();
 	}
 
 	unique_lock<mutex> lock{m};
 	thr_cond.wait(lock, [&] { return thr_val != thread::id{}; });
 
 	for (int i = 0; i < thr_num; ++i)
-		delete S[i];
+		if (S[i]) delete S[i];
 }
 
 void ParallelSolver::UpdateUB(Vector& var, double val)
 {
 	thr_lock.lock();
-	if (val < sys_ub)
+	if (val > sys_ub)
 	{
 		sys_ub  = val;
 		sys_sol = var;
@@ -82,6 +82,26 @@ void ParallelSolver::UpdateUB(Vector& var, double val)
 }
 
 // Solver implementation
+
+#define PAR_SOL(X)  					 \
+void X::OnSolverFinish() 			 \
+{ 														 \
+	if (par.GetUBVal() < sys_ub) \
+	{ 													 \
+		sys_ub  = par.GetUBVal();  \
+		sys_sol = par.GetUBVar();  \
+	} 													 \
+}
+    
+PAR_SOL(BnBBFMF)
+PAR_SOL(BnBBFLF)
+PAR_SOL(BnBBFWF)
+PAR_SOL(BnBDFMF)
+PAR_SOL(BnBDFLF)
+PAR_SOL(BnBDFWF)
+PAR_SOL(BnBHMF)
+PAR_SOL(BnBHLF)
+PAR_SOL(BnBHWF)
 
 
 
