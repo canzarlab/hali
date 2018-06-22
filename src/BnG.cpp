@@ -13,15 +13,16 @@
 
 #include "BnG.h"
 #include "Timer.h"
-#include <iostream>
 
-#define DEBUG 1
-#define PGTOL 0.2
+#define PGTOL 0.1 
 
 BnBNode::BnBNode(vector<ET>& Triplets, size_t rows, size_t cols) : Triplets(Triplets), rows(rows), cols(cols), warm(nullptr), obj(1)
 {
 	var_lb.conservativeResizeLike(Vector::Zero(cols));
 	var_ub.conservativeResizeLike(Vector::Ones(cols));
+	#if DEBUG == 1	
+	debug_depth = 0;
+	#endif
 }
 
 BnBNode::BnBNode(BnBNode* node) : Triplets(node->Triplets), rows(node->rows), cols(node->cols), obj(1)
@@ -29,6 +30,9 @@ BnBNode::BnBNode(BnBNode* node) : Triplets(node->Triplets), rows(node->rows), co
 	warm = new Vector(node->sol);
 	var_lb = node->var_lb;
 	var_ub = node->var_ub;
+	#if DEBUG == 1	
+	debug_depth = 1 + node->debug_depth;
+	#endif
 }
 
 BnBNode::~BnBNode()
@@ -53,6 +57,16 @@ GenericBnBSolver::GenericBnBSolver(Graph& t1, Graph& t2, string dist, double k, 
 void GenericBnBSolver::Solve(string filename)
 {	
 	#if DEBUG == 1	
+	// cout << "BnB debug mode on." << endl;
+	debug_log = ofstream(filename + ".log");
+	debug_nodecnt  = 0;
+	debug_genocnt  = 0;
+	debug_genotime = 0;
+	debug_genomin  = 1e20;
+	debug_genomax  = 0;
+	#endif
+
+	#if DEBUG == 1	
 	Timer T; T.start();
 	#endif
 
@@ -68,12 +82,19 @@ void GenericBnBSolver::Solve(string filename)
 		if (open != nullptr) 
 		{
 			vector<BnBNode*>* V = EvalBranch(open);
-			
+
 			if (V != nullptr)
-				PushAll(V);
+				PushAll(V);	
 			else if (sys_ub > open->obj)
-				sys_sol = open->sol, sys_ub = open->obj; 			
-				
+			{
+				sys_sol = open->sol; 
+				sys_ub  = open->obj; 
+				#if DEBUG == 1	
+				debug_log << "BOUND " << sys_ub << " (" << open->debug_nodeid << ")" << endl << endl;
+				#endif			
+				OnUpdateUB(sys_sol, sys_ub);
+			}	
+
 			delete open;
 		}
 	}
@@ -89,16 +110,26 @@ void GenericBnBSolver::Solve(string filename)
 		WriteSolution(filename); 
 
 	#if DEBUG == 1	
-	cout << "OPT: " << -sys_ub << " in " << T.secs() << endl;
+	debug_log << "total time: " << T.secs() << endl;
+	debug_log << "total nodes: " << debug_nodecnt << endl;
+	debug_log << "total geno calls: " << debug_genocnt << endl;
+	debug_log << "total geno time: " << debug_genotime << " (" << debug_genomin << ", " << debug_genotime / debug_genocnt << "," << debug_genomax << ")" << endl;
+	debug_log << "best: " << -sys_ub << endl;
 	#endif
 }
 
 BnBNode* GenericBnBSolver::InitNodeFrom(BnBNode* node)
 {
+	BnBNode* newnode;
 	if (node == nullptr)
-		return new BnBNode(Triplets, nr_rows, nr_cols);
+		newnode = new BnBNode(Triplets, nr_rows, nr_cols);
 	else
-		return new BnBNode(node);
+		newnode = new BnBNode(node);
+	#if DEBUG == 1
+	newnode->debug_nodeid = debug_nodecnt++;
+	newnode->debug_parent = (node == nullptr) ? 0 : node->debug_nodeid;	
+	#endif
+	return newnode;
 }
 
 bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
@@ -107,6 +138,15 @@ bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 	nr_rows  = node->rows;
 	nr_cols  = node->cols;
 	x        = (node->warm) ? *(node->warm) : Vector::Zero(nr_cols);
+
+	#if DEBUG == 1	
+	size_t debug_node_genocnt  = 0;
+	double debug_node_genotime = 0;
+	debug_log << "id: " << node->debug_nodeid << endl;
+	debug_log << "parent: " << node->debug_parent << endl;	
+	debug_log << "depth: " << node->debug_depth << endl;
+	debug_log << "best: " << -sys_ub << endl;
+	#endif
 
 	while(1)
 	{
@@ -124,20 +164,37 @@ bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 	  solver.setParameter("pgtol", pgtol); 
 	  solver.setParameter("constraintsTol", 1e-4);
 
+		#if DEBUG == 1	
+		Timer debug_T; debug_T.start();		
+		#endif
 	  SolverStatus status = solver.solve();	
-		#if DEBUG == 1		
+		#if DEBUG == 1	
+		debug_T.stop();
+		debug_genocnt++;	
+		debug_node_genocnt++;
+		debug_node_genotime += debug_T.secs();
+		debug_genotime += debug_T.secs();
+		debug_genomin = min(debug_genomin, (double)debug_T.secs());
+		debug_genomax = max(debug_genomax, (double)debug_T.secs());
 		if (status == SUBOPTIMAL)
-	    cout << "SUBOPTIMAL(" << status << ")" << endl; 
+	    debug_log << "SUBOPTIMAL(" << status << ")" << endl; 
 		if (status == UNBOUNDED)
-	    cout << "UNBOUNDED(" << status << ")" << endl; 
+	    debug_log << "UNBOUNDED(" << status << ")" << endl; 
 	  if (status == INFEASIBLE)
-	    cout << "INFEASIBLE(" << status << ")" << endl; 
+	    debug_log << "INFEASIBLE(" << status << ")" << endl; 
 	  if (status == NUM_ERROR)
-	    cout << "NUM_ERROR(" << status << ")" << endl; 
+	    debug_log << "NUM_ERROR(" << status << ")" << endl; 
 		#endif
 
-		if (status == INFEASIBLE) return false;
-		if (solver.f() >= sys_ub * (1.0 + numtol)) return false;
+		if (status == INFEASIBLE || OnCheckUB(solver.f(), numtol))
+		{
+			#if DEBUG == 1	
+			debug_log << "geno calls: " << debug_node_genocnt << endl;
+			debug_log << "geno time: " << debug_node_genotime << endl;
+			debug_log << "CUT" << endl << endl;
+			#endif
+			return false;
+		} 
 
 		x = Vector::ConstMapType(solver.x(), nr_cols); 
 		
@@ -154,13 +211,14 @@ bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 	}
 
 	#if DEBUG == 1	
-	cout << nr_rows << " x " << nr_cols << endl;
-	cout << "sol: " << -node->obj << endl;
-	int qwert = 0;
+	debug_log << "geno calls: " << debug_node_genocnt << endl;
+	debug_log << "geno time: " << debug_node_genotime << endl;
+	debug_log << node->rows << " x " << node->cols << endl;
+	debug_log << "lp: " << -node->obj << endl;
+	size_t debug_fracs = 0;
 	for (size_t i = 0; i < x.size(); ++i)
-		qwert += IsVarFrac(node->sol(i)) && !node->IsVarFixed(i);
-	cout << "fracs: " << qwert << endl;
-	cout << endl;
+		debug_fracs += IsVarFrac(node->sol(i)) && !node->IsVarFixed(i);
+	debug_log << "fracs: " << debug_fracs << endl << endl;
 	#endif
 
 	return true;

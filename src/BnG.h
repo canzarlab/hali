@@ -12,9 +12,13 @@
 #ifndef BNG_H
 #define BNG_H
 
+#define DEBUG 0
+
 #include "LP.h"
 #include <vector>
 #include <stack>
+#include <iostream>
+#include <fstream>
 
 /*
 	Class BnBNode
@@ -49,6 +53,12 @@ class BnBNode
 	Vector*    warm;     // Stores the warm start vector x.
 	Vector     sol;      // Stores the solution vector x after the node has been evaluated.
 	double     obj;      // Stores the objective value after the node has been evaluated.
+
+	#if DEBUG == 1	
+	size_t     debug_depth;
+	size_t     debug_nodeid;
+	size_t     debug_parent;	
+	#endif
 };
 
 /*
@@ -111,7 +121,11 @@ class GenericBnBSolver : public LP
 	virtual BnBNode*          MakeNode   (BnBNode* parent, size_t index, double val); 
 
 	// Auxilliary function which decides whether a variable is to be considered fractional.
-	virtual bool              IsVarFrac  (double val)    { return val > 0.001 && val < 0.999; }         
+	virtual bool              IsVarFrac  (double val)    { return val > 0.001 && val < 0.999; }    
+
+	// Event callbacks
+	virtual void              OnUpdateUB (Vector& var, double val)   { } 
+	virtual bool							OnCheckUB  (double val, double numtol) { return val >= sys_ub * (1.0 + numtol); }    
 
 	private:
 
@@ -122,6 +136,15 @@ class GenericBnBSolver : public LP
 	Vector sys_sol; // Stores the best current solution.
 
 	double min_c;   // Minimal weight in the similarity.
+
+	#if DEBUG == 1
+	ofstream debug_log;
+	size_t   debug_nodecnt;
+	size_t   debug_genocnt;
+	double   debug_genotime;
+	double   debug_genomin;
+	double   debug_genomax;
+	#endif
 };
 
 /*
@@ -135,7 +158,7 @@ class TestBnBSolver : public GenericBnBSolver
 
 	TestBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag);
 
-	private:
+	protected:
 
 	// Override when neccessary.
 	void              PushNode   (BnBNode* node) override;
@@ -156,7 +179,7 @@ class BFBnBSolver : public GenericBnBSolver
 
 	BFBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag);
 
-	private:
+	protected:
 
 	void              PushNode   (BnBNode* node) override;
 	bool              OpenEmpty  ()              override;
@@ -176,7 +199,7 @@ class DFBnBSolver : public GenericBnBSolver
 
 	DFBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag);
 
-	private:
+	protected:
 
 	void              PushNode   (BnBNode* node) override;
 	bool              OpenEmpty  ()              override;
@@ -191,14 +214,13 @@ class DFBnBSolver : public GenericBnBSolver
 	Hybrid BnB solver combines the DF and BF approach. It runs DF until the first
 	integral solution is hit. After that, BF takes over.
 */
-
 class HybridBnBSolver : public GenericBnBSolver
 {
 	public:
 
 	HybridBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag);
 
-	private:
+	protected:
 
 	void              PushNode   (BnBNode* node) override;
 	bool              OpenEmpty  ()              override;

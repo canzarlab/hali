@@ -17,6 +17,8 @@
 #include "LPCP.h"
 #include "LPFInt.h"
 #include "Similarity.h"
+#include "Parallel.h"
+
 #include <iostream>
 
 int Solver::cf;
@@ -88,11 +90,30 @@ int main(int argc, char** argv)
     T.start();
     Graph *t1, *t2;
     tie(t1, t2) = MakeGraphs(argc, argv);
-    Solver* solver = MakeSolver(*t1, *t2, argc, argv);
-    solver->Solve(argv[3 + (argc == 9) + 2 * (argc == 12)]);
-    T.stop();
+		if (stoi(argv[argc - 1]) > 9)
+		{
+			cout << "a" << endl;
+			int s = stoi(argv[argc - 1]);
+		  Solver::cf = stoi(argv[4 + (argc == 9) + 2 * (argc == 12)]);
+		  Solver::tt = argc == 12;
+		  string d = argv[5 + (argc == 9) + 2 * (argc == 12)];
+		  double k = stod(argv[6 + (argc == 9) + 2 * (argc == 12)]);
+		  double c = (s != 2) ? 0 : stod(argv[8 + 2 * (argc == 12)]);
+		  var_eps = (argc == 9) ? 0 : stod(argv[7 + 2 * (argc == 12)]);
+
+		  assert(LP::cf >= 0 && LP::cf <= 2);
+		  assert(d == "j" || d == "s");
+
+			ParallelSolver(*t1, *t2, d, k, argc == 9, s - 9).Solve(argv[3 + (argc == 9) + 2 * (argc == 12)]);
+		}		
+		else
+		{
+    	Solver* solver = MakeSolver(*t1, *t2, argc, argv);
+    	solver->Solve(argv[3 + (argc == 9) + 2 * (argc == 12)]);
+			delete solver;
+		}    
+		T.stop();
     clog << "TOTAL TIME : \t\t" << T.secs() << " secs" << endl;
     delete t1;
     delete t2;
-    delete solver;
 }
