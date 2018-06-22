@@ -8,6 +8,7 @@
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version. 
 */
+
 #ifndef Parallel_H
 #define Parallel_H
 
@@ -19,6 +20,8 @@
 
 #include "BnG.h"
 
+#define MAX_THREADS 9
+
 class ParallelSolver
 {
 
@@ -26,21 +29,37 @@ class ParallelSolver
   
 	ParallelSolver(Graph& t1, Graph& t2, string d, double k, bool dag, int nthreads);
   
+	// Solves the model and writes it down to "filename".
   void Solve(string filename);
 
+	// Updates the best upper bound and solution with regards to locking.
 	void UpdateUB(Vector& var, double val);
-	double  GetUBVal();
-	Vector& GetUBVar();
+
+	double  GetUBVal() { return sys_ub;  }
+	Vector& GetUBVar() { return sys_sol; }
 
 	private:
 
-	void Callback(string filename);
+	void Callback(string filename, GenericBnBSolver* solver);
 	
+	// threading locks and return values
+	mutex							 thr_lock; // Locks the best upper bound.
+	condition_variable thr_cond; // Finished all threads once one solver finds an optimal solution.
+	atomic<thread::id> thr_val;  // Value of the finished thread.
+	int                thr_num;  // Number of running threads.
+
+	// Best upper bound and solution.
 	Vector sys_sol;
 	double sys_ub;
 
-	int N;
+	// Solver related data.
+	Graph& t1, t2;
+	string d;
+	double k;
+	bool dag;
 };
+
+// Different BnB solvers
 
 class BnBBFMF : public BFBnBSolver // Best first, most fractional
 {
@@ -51,14 +70,13 @@ class BnBBFMF : public BFBnBSolver // Best first, most fractional
 	{
 	}
 
-	void OnUpdateUB(Vector& var, double val)
-	{
-		par.UpdateUB(var, val);
-	}
+	void OnUpdateUB(Vector& var, double val) { par.UpdateUB(var, val); }
 
 	protected:
 	
 	virtual double VarScore(int i) { return 0.5 - abs(0.5 - x(i)); }
+
+	virtual bool   CheckUB(double val, double numtol) { return val >= par.GetUBVal() * (1.0 + numtol); }
 
 	ParallelSolver& par;
 };
@@ -72,9 +90,13 @@ class BnBBFLF : public BFBnBSolver // Best first, least fractional
 	{
 	}
 
+	void OnUpdateUB(Vector& var, double val) { par.UpdateUB(var, val); }
+
 	protected:
 	
 	virtual double VarScore(int i) { return abs(0.5 - x(i)); }
+
+	virtual bool   CheckUB(double val, double numtol) { return val >= par.GetUBVal() * (1.0 + numtol); }
 
 	ParallelSolver& par;
 };
@@ -88,9 +110,13 @@ class BnBBFWF : public BFBnBSolver // Best first, weight times fractional
 	{
 	}
 
+	void OnUpdateUB(Vector& var, double val) { par.UpdateUB(var, val); }
+
 	protected:
 	
 	virtual double VarScore(int i) { return x(i) * c(i); }
+
+	virtual bool   CheckUB(double val, double numtol) { return val >= par.GetUBVal() * (1.0 + numtol); }
 
 	ParallelSolver& par;
 };
@@ -104,9 +130,13 @@ class BnBDFMF : public DFBnBSolver // Depth first, most fractional
 	{
 	}
 
+	void OnUpdateUB(Vector& var, double val) { par.UpdateUB(var, val); }
+
 	protected:
 	
 	virtual double VarScore(int i) { return 0.5 - abs(0.5 - x(i)); }
+
+	virtual bool   CheckUB(double val, double numtol) { return val >= par.GetUBVal() * (1.0 + numtol); }
 
 	ParallelSolver& par;
 };
@@ -120,9 +150,13 @@ class BnBDFLF : public DFBnBSolver // Depth first, least fractional
 	{
 	}
 
+	void OnUpdateUB(Vector& var, double val) { par.UpdateUB(var, val); }
+
 	protected:
 	
 	virtual double VarScore(int i) { return abs(0.5 - x(i)); }
+
+	virtual bool   CheckUB(double val, double numtol) { return val >= par.GetUBVal() * (1.0 + numtol); }
 
 	ParallelSolver& par;
 };
@@ -136,9 +170,13 @@ class BnBDFWF : public DFBnBSolver // Depth first, weight times fractional
 	{
 	}
 
+	void OnUpdateUB(Vector& var, double val) { par.UpdateUB(var, val); }
+
 	protected:
 	
 	virtual double VarScore(int i) { return x(i) * c(i); }
+
+	virtual bool   CheckUB(double val, double numtol) { return val >= par.GetUBVal() * (1.0 + numtol); }
 
 	ParallelSolver& par;
 };
@@ -152,9 +190,13 @@ class BnBHMF : public HybridBnBSolver // Hybrid, most fractional
 	{
 	}
 
+	void OnUpdateUB(Vector& var, double val) { par.UpdateUB(var, val); }
+
 	protected:
 	
 	virtual double VarScore(int i) { return 0.5 - abs(0.5 - x(i)); }
+
+	virtual bool   CheckUB(double val, double numtol) { return val >= par.GetUBVal() * (1.0 + numtol); }
 
 	ParallelSolver& par;
 };
@@ -168,9 +210,13 @@ class BnBHLF : public HybridBnBSolver // Hybrid, least fractional
 	{
 	}
 
+	void OnUpdateUB(Vector& var, double val) { par.UpdateUB(var, val); }
+
 	protected:
 	
 	virtual double VarScore(int i) { return abs(0.5 - x(i)); }
+
+	virtual bool   CheckUB(double val, double numtol) { return val >= par.GetUBVal() * (1.0 + numtol); }
 
 	ParallelSolver& par;
 };
@@ -184,9 +230,13 @@ class BnBHWF : public HybridBnBSolver // Hybrid, weight times fractional
 	{
 	}
 
+	void OnUpdateUB(Vector& var, double val) { par.UpdateUB(var, val); }
+
 	protected:
 	
 	virtual double VarScore(int i) { return x(i) * c(i); }
+
+	virtual bool   CheckUB(double val, double numtol) { return val >= par.GetUBVal() * (1.0 + numtol); }
 
 	ParallelSolver& par;
 };

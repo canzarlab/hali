@@ -123,10 +123,12 @@ class GenericBnBSolver : public LP
 	// Auxilliary function which decides whether a variable is to be considered fractional.
 	virtual bool              IsVarFrac  (double val)    { return val > 0.001 && val < 0.999; }    
 
-	// Event callbacks
-	virtual void              OnUpdateUB (Vector& var, double val)   { } 
-	virtual bool							OnCheckUB  (double val, double numtol) { return val >= sys_ub * (1.0 + numtol); }    
+	// Checks whether the pruning is in order.
+	virtual bool							CheckUB  (double val, double numtol)   { return val >= sys_ub * (1.0 + numtol); }    
 
+	// Event callbacks
+	virtual void              OnUpdateUB (Vector& var, double val)   { }
+ 
 	private:
 
 	// Pushes all nodes to the Open set.

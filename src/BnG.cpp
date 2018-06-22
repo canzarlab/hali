@@ -186,7 +186,7 @@ bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 	    debug_log << "NUM_ERROR(" << status << ")" << endl; 
 		#endif
 
-		if (status == INFEASIBLE || OnCheckUB(solver.f(), numtol))
+		if (status == INFEASIBLE || CheckUB(solver.f(), numtol))
 		{
 			#if DEBUG == 1	
 			debug_log << "geno calls: " << debug_node_genocnt << endl;
