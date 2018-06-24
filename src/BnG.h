@@ -127,11 +127,14 @@ class GenericBnBSolver : public LP
 	virtual bool							CheckUB        (double val, double numtol) { return val >= sys_ub * (1.0 + numtol); }    
 
 	// Event callbacks
-	virtual void              OnUpdateUB     (Vector& var, double val)   { }
+	virtual void              OnUpdateUB     ()                          { }
 	virtual void							OnSolverFinish ()											     { }
+	virtual void              OnNodeStart    ()													 { }
  
 	double sys_ub;  // Stores the best current upper bound.
 	Vector sys_sol; // Stores the best current solution.
+
+	bool   finished;
 
 	private:
 

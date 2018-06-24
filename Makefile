@@ -1,6 +1,7 @@
 #MKLROOT = /opt/intel/mkl
 
 CXX = g++
+#CFLAGS = -g -std=c++11 -pthread -m64 # for Valgrind
 CFLAGS = -O3 -std=c++11 -pthread -m64 #-DEIGEN_USE_MKL_ALL -I$(MKLROOT)/include
 INCL = -I.
 VPATH = src

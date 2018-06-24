@@ -50,14 +50,14 @@ void BnBNode::FixVar(size_t index, double val)
 	var_lb(index) = var_ub(index) = val;
 }
 
-GenericBnBSolver::GenericBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag) : LP(t1, t2, dist, k, dag), sys_ub(0), min_c(0)
+GenericBnBSolver::GenericBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag) : LP(t1, t2, dist, k, dag), sys_ub(0), min_c(0), finished(0)
 {	
 }
 
 void GenericBnBSolver::Solve(string filename)
 {	
 	#if DEBUG == 1	
-	// cout << "BnB debug mode on." << endl;
+	cout << "BnB debug mode on." << endl;
 	debug_log = ofstream(filename + ".log");
 	debug_nodecnt  = 0;
 	debug_genocnt  = 0;
@@ -70,19 +70,15 @@ void GenericBnBSolver::Solve(string filename)
 	Timer T; T.start();
 	#endif
 
-	min_c = c(0);
-	for (size_t i = 1; i < c.size(); ++i)
-		min_c = min(min_c, c(i));
-
 	PushNode(InitNodeFrom(nullptr));
 
-	while (!OpenEmpty())
+	while (!OpenEmpty() && !finished)
 	{
 		BnBNode* open = EvalOpen();
 		if (open != nullptr) 
 		{
 			vector<BnBNode*>* V = EvalBranch(open);
-
+	
 			if (V != nullptr)
 				PushAll(V);	
 			else if (sys_ub > open->obj)
@@ -92,7 +88,7 @@ void GenericBnBSolver::Solve(string filename)
 				#if DEBUG == 1	
 				debug_log << "BOUND " << sys_ub << " (" << open->debug_nodeid << ")" << endl << endl;
 				#endif			
-				OnUpdateUB(sys_sol, sys_ub);
+				OnUpdateUB();
 			}	
 
 			delete open;
@@ -102,14 +98,17 @@ void GenericBnBSolver::Solve(string filename)
 	T.stop();
 	#endif
 
-	OnSolverFinish();
+	if (!finished)
+	{
+		OnSolverFinish();
 
-	x = sys_sol;
-	for (size_t i = 0; i < x.size(); ++i)
-		x(i) = round(x(i));	
+		x = sys_sol;
+		for (size_t i = 0; i < x.size(); ++i)
+			x(i) = round(x(i));	
 
-	if (filename != "") 
-		WriteSolution(filename); 
+		if (filename != "") 
+			WriteSolution(filename);	 
+	}
 
 	#if DEBUG == 1	
 	debug_log << "total time: " << T.secs() << endl;
@@ -169,6 +168,8 @@ bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 		#if DEBUG == 1	
 		Timer debug_T; debug_T.start();		
 		#endif
+		OnNodeStart();
+		if (finished) return false;
 	  SolverStatus status = solver.solve();	
 		#if DEBUG == 1	
 		debug_T.stop();
@@ -187,7 +188,7 @@ bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 	  if (status == NUM_ERROR)
 	    debug_log << "NUM_ERROR(" << status << ")" << endl; 
 		#endif
-
+		
 		if (status == INFEASIBLE || CheckUB(solver.f(), numtol))
 		{
 			#if DEBUG == 1	
@@ -195,6 +196,7 @@ bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 			debug_log << "geno time: " << debug_node_genotime << endl;
 			debug_log << "CUT" << endl << endl;
 			#endif
+			cout << "Cut: " << solver.f() << ' ' << sys_ub << endl;
 			return false;
 		} 
 
