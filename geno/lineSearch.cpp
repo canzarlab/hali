@@ -154,16 +154,16 @@ void dcsrch(double & f,
             double const xtol,
             double const stpmin,
             double const stpmax,
-            TaskType & task) {
+            TaskType & task, TMPContainer& TCON) {
   double const zero = 0.0,
                p5   = 0.5,
                p66  = 0.66,
                xtrapl = 1.1,
                xtrapu = 4.0;
-  static bool brackt;
-  static int stage;
-  static double finit, fx, fy, ginit,gtest, gx, gy,
-                stx,sty,stmin,stmax,width,width1;
+  //static bool brackt;
+  //static int stage;
+  //static double finit, fx, fy, ginit,gtest, gx, gy,
+  //              stx,sty,stmin,stmax,width,width1;
   double ftest,fm,fxm,fym, gm,gxm,gym;
 
       if (task == TaskType::START) {
@@ -211,13 +211,13 @@ void dcsrch(double & f,
 
 //        Initialize local variables.
 
-         brackt = false;
-         stage = 1;
-         finit = f;
-         ginit = g;
-         gtest = ftol*ginit;
-         width = stpmax - stpmin;
-         width1 = width/p5;
+         TCON.brackt = false;
+         TCON.stage = 1;
+         TCON.finit = f;
+         TCON.ginit = g;
+         TCON.gtest = ftol*TCON.fy;
+         TCON.width = stpmax - stpmin;
+         TCON.width1 = TCON.width/p5;
 
 //        The variables stx, fx, gx contain the values of the step, 
 //        function, and derivative at the best step. 
@@ -226,14 +226,14 @@ void dcsrch(double & f,
 //        The variables stp, f, g contain the values of the step, 
 //        function, and derivative at stp.
 
-         stx = zero;
-         fx = finit;
-         gx = ginit;
-         sty = zero;
-         fy = finit;
-         gy = ginit;
-         stmin = zero;
-         stmax = stp + xtrapu*stp;
+         TCON.stx = zero;
+         TCON.fx = TCON.finit;
+         TCON.gx = TCON.ginit;
+         TCON.sty = zero;
+         TCON.fy = TCON.finit;
+         TCON.gy = TCON.ginit;
+         TCON.stmin = zero;
+         TCON.stmax = stp + xtrapu*stp;
          task = TaskType::FG;
 
          return;
@@ -243,25 +243,25 @@ void dcsrch(double & f,
 //     If psi(stp) <= 0 and f'(stp) >= 0 for some step, then the
 //     algorithm enters the second stage.
 
-      ftest = finit + stp*gtest;
-      if (stage == 1 && f <= ftest && g >= zero) 
-        stage = 2;
+      ftest = TCON.finit + stp*TCON.gtest;
+      if (TCON.stage == 1 && f <= ftest && g >= zero) 
+        TCON.stage = 2;
 
 //     Test for warnings.
 
-      if (brackt && (stp <= stmin || stp >= stmax)) {
+      if (TCON.brackt && (stp <= TCON.stmin || stp >= TCON.stmax)) {
         task = TaskType::WARNING;
 //        std::cerr << "ROUNDING ERRORS PREVENT PROGRESS\n";
       }
-      if (brackt && stmax - stmin <= xtol*stmax) {
+      if (TCON.brackt && TCON.stmax - TCON.stmin <= xtol*TCON.stmax) {
         task = TaskType::WARNING;
 //        std::cerr << "XTOL TEST SATISFIED\n";
       }
-      if (stp == stpmax && f <= ftest && g <= gtest) {
+      if (stp == stpmax && f <= ftest && g <= TCON.gtest) {
         task = TaskType::WARNING;
 //        std::cerr << "STP = STPMAX\n";
       }
-      if (stp == stpmin && (f > ftest || g >= gtest)) {
+      if (stp == stpmin && (f > ftest || g >= TCON.gtest)) {
         task = TaskType::WARNING;
 //        std::cerr << "STP = STPMIN\n";
       }
@@ -275,9 +275,9 @@ void dcsrch(double & f,
       std::cout << "fabs(g) " << std::fabs(g) << std::endl;
       std::cout << "gtol*ginit " << gtol * (-ginit) << std::endl;
 */
-//      if (f <= ftest && std::fabs(g) <= gtol * (-ginit))
+//      if (f <= ftest && std::fabs(g) <= gtol * (-TCON.ginit))
       double eps = 1E-6;
-      if (f <= ftest + eps*(std::fabs(ftest) + 1) && std::fabs(g) <= gtol * (-ginit)) 
+      if (f <= ftest + eps*(std::fabs(ftest) + 1) && std::fabs(g) <= gtol * (-TCON.ginit)) 
         task = TaskType::CONVERGENCE;
 
 //     Test for termination.
@@ -286,30 +286,30 @@ void dcsrch(double & f,
         return;
 
 //     A modified function is used to predict the step during the
-//     first stage if a lower function value has been obtained but 
+//     first TCON.stage if a lower function value has been obtained but 
 //     the decrease is not sufficient.
 
-      if (stage == 1 && f <= fx && f > ftest) {
+      if (TCON.stage == 1 && f <= TCON.fx && f > ftest) {
 //        Define the modified function and derivative values.
-         fm = f - stp*gtest;
-         fxm = fx - stx*gtest;
-         fym = fy - sty*gtest;
-         gm = g - gtest;
-         gxm = gx - gtest;
-         gym = gy - gtest;
+         fm = f - stp*TCON.gtest;
+         fxm = TCON.fx - TCON.stx*TCON.gtest;
+         fym = TCON.fy - TCON.sty*TCON.gtest;
+         gm = g - TCON.gtest;
+         gxm = TCON.gx - TCON.gtest;
+         gym = TCON.gy - TCON.gtest;
 //        Call dcstep to update stx, sty, and to compute the new step.
 //	 std::cout << "called dcstep 1" << std::endl;
-         dcstep(stx,fxm,gxm,sty,fym,gym,stp,fm,gm,brackt,stmin,stmax);
+         dcstep(TCON.stx,fxm,gxm,TCON.sty,fym,gym,stp,fm,gm,TCON.brackt,TCON.stmin,TCON.stmax);
 //        Reset the function and derivative values for f.
-         fx = fxm + stx*gtest;
-         fy = fym + sty*gtest;
-         gx = gxm + gtest;
-         gy = gym + gtest;
+         TCON.fx = fxm + TCON.stx*TCON.gtest;
+         TCON.fy = fym + TCON.sty*TCON.gtest;
+         TCON.gx = gxm + TCON.gtest;
+         TCON.gy = gym + TCON.gtest;
       } else {
 
 //       Call dcstep to update stx, sty, and to compute the new step.
 //	std::cout << "called dcstep 2" << std::endl;
-        dcstep(stx,fx,gx,sty,fy,gy,stp,f,g,brackt,stmin,stmax);
+        dcstep(TCON.stx,TCON.fx,TCON.gx,TCON.sty,TCON.fy,TCON.gy,stp,f,g,TCON.brackt,TCON.stmin,TCON.stmax);
 	//	std::cout << "stx = " << stx << std::endl;
 	//	std::cout << "fx  = " << fx << std::endl;
 	//	std::cout << "gx  = " << gx << std::endl;
@@ -324,21 +324,21 @@ void dcsrch(double & f,
       }
 //     Decide if a bisection step is needed.
 
-      if (brackt) {
+      if (TCON.brackt) {
 	//	std::cout << "brackt true" << std::endl;
-         if (std::fabs(sty-stx) >= p66*width1) stp = stx + p5*(sty - stx);
-         width1 = width;
-         width = std::fabs(sty-stx);
+         if (std::fabs(TCON.sty-TCON.stx) >= p66*TCON.width1) stp = TCON.stx + p5*(TCON.sty - TCON.stx);
+         TCON.width1 = TCON.width;
+         TCON.width = std::fabs(TCON.sty-TCON.stx);
       }
 
 //     Set the minimum and maximum steps allowed for stp.
 
-      if (brackt) {
-         stmin = std::min(stx,sty);
-         stmax = std::max(stx,sty);
+      if (TCON.brackt) {
+         TCON.stmin = std::min(TCON.stx,TCON.sty);
+         TCON.stmax = std::max(TCON.stx,TCON.sty);
       } else {
-         stmin = stp + xtrapl*(stp - stx);
-         stmax = stp + xtrapu*(stp - stx);
+         TCON.stmin = stp + xtrapl*(stp - TCON.stx);
+         TCON.stmax = stp + xtrapu*(stp - TCON.stx);
       }
 // 
 //     Force the step to be within the bounds stpmax and stpmin.
@@ -349,10 +349,10 @@ void dcsrch(double & f,
 //     If further progress is not possible, let stp be the best
 //     point obtained during the search.
 
-      if ((brackt && (stp <= stmin || stp >= stmax))
-          || (brackt && stmax-stmin <= xtol*stmax)) {
+      if ((TCON.brackt && (stp <= TCON.stmin || stp >= TCON.stmax))
+          || (TCON.brackt && TCON.stmax-TCON.stmin <= xtol*TCON.stmax)) {
 	//	std::cout << "no further progress" << std::endl;
-	stp = stx;
+	stp = TCON.stx;
       }
 
 //     Obtain another function and derivative.

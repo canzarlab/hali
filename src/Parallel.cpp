@@ -8,7 +8,7 @@
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-		./hali data0/a0 data0/a0 align 2 s 1 0 0 10
+		./hali data0/a1 data0/a1 align 2 s 1 0 0 10
 */
 
 #include "Parallel.h"
@@ -63,19 +63,14 @@ bool ParallelSolver::Finished()
 void ParallelSolver::Callback(string filename, GenericBnBSolver* solver)
 {
 	solver->Solve("");	
-	
 	if (!sol && filename != "") 
 	{
 		thr_slock.lock(); 
 		sol = 1; thr_val = this_thread::get_id();
-		
 		cout << typeid(*solver).name() << ' ' << solver->GetObjective() << endl;
-
  		thr_slock.unlock();
-
 		solver->WriteSolution(filename);	
 	}
-
 	thr_cond.notify_all();
 }
 

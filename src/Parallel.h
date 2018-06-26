@@ -14,7 +14,6 @@
 
 #include <vector>
 #include <thread>
-#include <chrono>
 #include <mutex>
 #include <condition_variable>
 
@@ -67,24 +66,24 @@ class ParallelSolver
 
 // Different BnB solvers
 
-#define PAR_CLASS(X, P, VS)                                                                                     \
-class X : public P																																											        \
-{																																																				        \
-	public:																																																        \
-                                                                                                                \
-	X(Graph& t1, Graph& t2, string dist, double k, bool dag, ParallelSolver& par) :                               \
-		P(t1, t2, dist, k, dag), par(par)                                                                           \
-	{                                                                                                             \
-	}                                                                                                             \
-                                                                                                                \
-	protected:                                                                                                    \
-                                                                                                                \
-	double VarScore       (int i)                     { return VS; }                                              \
-	void   OnNodeStart    ()                          { finished = par.Finished(); par.PullUB(sys_sol, sys_ub); } \
-	void   OnUpdateUB     ()                          { par.PushUB(sys_sol, sys_ub); }                            \
-	void   OnSolverFinish ()                          { par.PullUB(sys_sol, sys_ub); }                            \
-                                                                                                                \
-	ParallelSolver& par;                                                                                          \
+#define PAR_CLASS(X, P, VS)                                                                 \
+class X : public P																																					\
+{																																														\
+	public:																																										\
+                                                                                            \
+	X(Graph& t1, Graph& t2, string dist, double k, bool dag, ParallelSolver& par) :           \
+		P(t1, t2, dist, k, dag), par(par)                                                       \
+	{                                                                                         \
+	}                                                                                         \
+                                                                                            \
+	protected:                                                                                \
+                                                                                            \
+	double VarScore       (int i) { return VS; }                                              \
+	void   OnNodeStart    ()      { finished = par.Finished(); par.PullUB(sys_sol, sys_ub); } \
+	void   OnUpdateUB     ()      { par.PushUB(sys_sol, sys_ub); }                            \
+	void   OnSolverFinish ()      { par.PullUB(sys_sol, sys_ub); }                            \
+                                                                                            \
+	ParallelSolver& par;                                                                      \
 };
 
 PAR_CLASS(BnBBFMF, BFBnBSolver, 0.5 - abs(0.5 - x(i)))

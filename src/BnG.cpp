@@ -11,13 +11,14 @@
 		./hali inputs/a0 inputs/a999 align 2 s 1 0 0.001 2
 
 		lineSearch.cpp ima static varijable...
+		
+		7BnBBFLF:    -364
+    TOTAL TIME:  2294.79 secs
+    SOLUTION:     453
 */
 
 #include "BnG.h"
 #include "Timer.h"
-
-// TMP 
-#include <mutex>
 
 #define PGTOL 0.1 
 
@@ -138,8 +139,6 @@ BnBNode* GenericBnBSolver::InitNodeFrom(BnBNode* node)
 	return newnode;
 }
 
-mutex m;
-
 bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 {
 	Triplets = node->Triplets;
@@ -178,9 +177,9 @@ bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 		#if DEBUG == 1	
 		Timer debug_T; debug_T.start();		
 		#endif
-		m.lock();
+		OnNodeStart();
+		if (finished) return false;
 	  SolverStatus status = solver.solve();	
-		m.unlock();
 		#if DEBUG == 1	
 		debug_T.stop();
 		debug_genocnt++;	
@@ -206,7 +205,6 @@ bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 			debug_log << "geno time: " << debug_node_genotime << endl;
 			debug_log << "CUT" << endl << endl;
 			#endif
-			cout << "Cut: " << solver.f() << ' ' << sys_ub << endl;
 			return false;
 		} 
 

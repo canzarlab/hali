@@ -18,7 +18,6 @@
 #include <mex.h>
 #endif
 
-
 void LBFGSB::boundInit() {
   _genoNLP.getBounds(_lb.data(), _ub.data());
   Scalar const INF = std::numeric_limits<Scalar>::infinity();
@@ -359,8 +358,9 @@ Scalar LBFGSB::lineSearchMT(const Vector& deltaX, size_t iter) {
     //    std::exit(EXIT_FAILURE);
   }
   int funIter = 0;
+  TMPContainer TCON;
   do {
-    dcsrch(_fNew, gd, stp, ftol, gtol, xtol, 0.0, stpmx, csave);
+    dcsrch(_fNew, gd, stp, ftol, gtol, xtol, 0.0, stpmx, csave, TCON);
     if (TaskType::ERROR == csave)
       std::exit(EXIT_FAILURE);
     if (csave == TaskType::CONVERGENCE || csave == TaskType::WARNING)
