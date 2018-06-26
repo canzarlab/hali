@@ -9,10 +9,15 @@
     (at your option) any later version.
 
 		./hali inputs/a0 inputs/a999 align 2 s 1 0 0.001 2
+
+		lineSearch.cpp ima static varijable...
 */
 
 #include "BnG.h"
 #include "Timer.h"
+
+// TMP 
+#include <mutex>
 
 #define PGTOL 0.1 
 
@@ -50,7 +55,7 @@ void BnBNode::FixVar(size_t index, double val)
 	var_lb(index) = var_ub(index) = val;
 }
 
-GenericBnBSolver::GenericBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag) : LP(t1, t2, dist, k, dag), sys_ub(0), min_c(0), finished(0)
+GenericBnBSolver::GenericBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag) : LP(t1, t2, dist, k, dag), sys_ub(666), min_c(0), finished(0)
 {	
 }
 
@@ -133,6 +138,8 @@ BnBNode* GenericBnBSolver::InitNodeFrom(BnBNode* node)
 	return newnode;
 }
 
+mutex m;
+
 bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 {
 	Triplets = node->Triplets;
@@ -151,6 +158,9 @@ bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 
 	while(1)
 	{
+		OnNodeStart();
+		if (finished) return false;
+
 	  SpMat A(nr_rows, nr_cols);
 	  A.setFromTriplets(Triplets.begin(), Triplets.end());
 	  Vector b = Vector::Ones(nr_rows);   	
@@ -168,9 +178,9 @@ bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 		#if DEBUG == 1	
 		Timer debug_T; debug_T.start();		
 		#endif
-		OnNodeStart();
-		if (finished) return false;
+		m.lock();
 	  SolverStatus status = solver.solve();	
+		m.unlock();
 		#if DEBUG == 1	
 		debug_T.stop();
 		debug_genocnt++;	
