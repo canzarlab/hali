@@ -12,7 +12,7 @@
 #ifndef BNG_H
 #define BNG_H
 
-#define DEBUG 0
+#define DEBUG 1
 
 #include "LP.h"
 #include <vector>
@@ -144,7 +144,10 @@ class GenericBnBSolver : public LP
 	double min_c;   // Minimal weight in the similarity.
 
 	#if DEBUG == 1
+	public: 
+	
 	ofstream debug_log;
+	string   debug_file;
 	size_t   debug_nodecnt;
 	size_t   debug_genocnt;
 	double   debug_genotime;

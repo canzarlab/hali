@@ -32,8 +32,8 @@ class ParallelSolver
   void Solve(string filename);
 
 	// Updates the best upper bound and solution with regards to locking.
-	void PushUB(Vector& var, double  val);
-	void PullUB(Vector& var, double& val);
+	void PushUB(Vector& var, double  val, GenericBnBSolver& solver);
+	void PullUB(Vector& var, double& val, GenericBnBSolver& solver);
 
 	double  GetUBVal(); 
 	Vector& GetUBVar(); 
@@ -55,35 +55,35 @@ class ParallelSolver
 	Vector sys_sol;
 	double sys_ub;
 
-	// Solver related data.
+	// Solver related data. Passing this to the constructors of each solver.
 	Graph& t1, t2;
 	string d;
 	double k;
 	bool dag;
 
-	bool sol;
+	bool sol; // 
 };
 
 // Different BnB solvers
 
-#define PAR_CLASS(X, P, VS)                                                                 \
-class X : public P																																					\
-{																																														\
-	public:																																										\
-                                                                                            \
-	X(Graph& t1, Graph& t2, string dist, double k, bool dag, ParallelSolver& par) :           \
-		P(t1, t2, dist, k, dag), par(par)                                                       \
-	{                                                                                         \
-	}                                                                                         \
-                                                                                            \
-	protected:                                                                                \
-                                                                                            \
-	double VarScore       (int i) { return VS; }                                              \
-	void   OnNodeStart    ()      { finished = par.Finished(); par.PullUB(sys_sol, sys_ub); } \
-	void   OnUpdateUB     ()      { par.PushUB(sys_sol, sys_ub); }                            \
-	void   OnSolverFinish ()      { par.PullUB(sys_sol, sys_ub); }                            \
-                                                                                            \
-	ParallelSolver& par;                                                                      \
+#define PAR_CLASS(X, P, VS)                                                                        \
+class X : public P																																					       \
+{																																														       \
+	public:																																										       \
+                                                                                                   \
+	X(Graph& t1, Graph& t2, string dist, double k, bool dag, ParallelSolver& par) :                  \
+		P(t1, t2, dist, k, dag), par(par)                                                              \
+	{                                                                                                \
+	}                                                                                                \
+                                                                                                   \
+	protected:                                                                                       \
+                                                                                                   \
+	double VarScore       (int i) { return VS; }                                                     \
+	void   OnNodeStart    ()      { finished = par.Finished(); par.PullUB(sys_sol, sys_ub, *this); } \
+	void   OnUpdateUB     ()      { par.PushUB(sys_sol, sys_ub, *this); }                            \
+	void   OnSolverFinish ()      { par.PullUB(sys_sol, sys_ub, *this); }                            \
+                                                                                                   \
+	ParallelSolver& par;                                                                             \
 };
 
 PAR_CLASS(BnBBFMF, BFBnBSolver, 0.5 - abs(0.5 - x(i)))

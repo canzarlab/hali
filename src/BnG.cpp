@@ -63,8 +63,10 @@ GenericBnBSolver::GenericBnBSolver(Graph& t1, Graph& t2, string dist, double k, 
 void GenericBnBSolver::Solve(string filename)
 {	
 	#if DEBUG == 1	
-	cout << "BnB debug mode on." << endl;
-	debug_log = ofstream(filename + ".log");
+	if (debug_file == "")
+	  debug_log = ofstream(filename + ".log");
+	else
+	  debug_log = ofstream(debug_file + ".log");
 	debug_nodecnt  = 0;
 	debug_genocnt  = 0;
 	debug_genotime = 0;

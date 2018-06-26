@@ -111,8 +111,8 @@ int main(int argc, char** argv)
     	solver->Solve(argv[3 + (argc == 9) + 2 * (argc == 12)]);
 			delete solver;
 			delete t1;
-    	delete t2;
-		}    
+      delete t2;
+		} 
 		T.stop();
-    clog << "TOTAL TIME : \t\t" << T.secs() << " secs" << endl;
+    cout << "TIME: " << T.secs() << " secs" << endl;
 }
