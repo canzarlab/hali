@@ -248,9 +248,9 @@ vector<BnBNode*>* GenericBnBSolver::EvalBranch(BnBNode* node)
 			if (K[i][j] != -1 && IsVarFrac(node->sol(K[i][j])) && !node->IsVarFixed(K[i][j]))				
 			  vp.emplace_back(i, j);				
 
-  sort(vp.begin(), vp.end(), [this](pair<size_t, size_t>& p, pair<size_t, size_t>& q)
+  sort(vp.begin(), vp.end(), [this, node](pair<size_t, size_t>& p, pair<size_t, size_t>& q)
   {
-    return VarScore(K[p.first][p.second]) > VarScore(K[q.first][q.second]);  
+    return VarScore(K[p.first][p.second], node) > VarScore(K[q.first][q.second], node);  
   });
 
   for (int i = 0; !p && i < vp.size(); ++i)
@@ -335,7 +335,7 @@ BnBNode* BFBnBSolver::EvalOpen()
 
 	sort(Open.begin(), Open.end(), [](BnBNode*& l, BnBNode*& r)
 	{ 
-		return l->obj > r->obj; 
+		return l->obj < r->obj; //return l->obj > r->obj; 
 	});
 
 	BnBNode* node = Open.back(); Open.pop_back();		

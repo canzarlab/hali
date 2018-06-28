@@ -8,15 +8,17 @@
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-		./hali data0/a1 data0/a1 tmp_outs/test 2 s 1 0 0 10
+		./hali data0/a1 data0/a1 tmp_outs/test 2 s 1 0 0 20
 		
 		7BnBBFLF -364
     TOTAL TIME : 		546.771 secs
     453 
 
     7BnBBFMF -364.002
-    TOTAL TIME : 		1080.77 secs
+    TOTAL TIME : 		1080.77 secs 
     453
+    
+    64 5064
 */
 
 #include "Parallel.h"
@@ -43,6 +45,12 @@ GenericBnBSolver* MakeSolver(Graph& t1, Graph& t2, string d, double k, bool dag,
 		return new BnBHLF (t1, t2, d, k, dag, s);
 	else if (threadid == 8)
 		return new BnBHWF (t1, t2, d, k, dag, s);
+	else if (threadid == 9)
+		return new BnBHA  (t1, t2, d, k, dag, s);
+	else if (threadid == 10)
+		return new BnBBFA (t1, t2, d, k, dag, s);
+	else if (threadid == 11)
+		return new BnBDFA (t1, t2, d, k, dag, s);
 }
 
 ParallelSolver::ParallelSolver(Graph& t1, Graph& t2, string d, double k, bool dag, int nthreads) :
@@ -85,7 +93,7 @@ void ParallelSolver::Callback(string filename, GenericBnBSolver* solver)
 	thr_cond.notify_all();
 }
 
-void ParallelSolver::Solve(string filename)
+/*void ParallelSolver::Solve(string filename)
 {
 	GenericBnBSolver* S[thr_num];
 	thread T[thr_num];
@@ -105,9 +113,9 @@ void ParallelSolver::Solve(string filename)
 		T[i].join();
 		delete S[i];
 	}
-}
+}*/
 
-/*void ParallelSolver::Solve(string filename)
+void ParallelSolver::Solve(string filename)
 {
 	GenericBnBSolver* S; thread T; mutex m; 	
 	S = MakeSolver(t1, t2, d, k, dag, 1, *this);
@@ -115,7 +123,7 @@ void ParallelSolver::Solve(string filename)
 	unique_lock<mutex> lock{m};
 	thr_cond.wait(lock, [&] { return thr_val != thread::id{}; });
 	T.join(); delete S;
-}*/
+}
 
 void ParallelSolver::PushUB(Vector& var, double val, GenericBnBSolver& solver)
 {
@@ -145,6 +153,20 @@ void ParallelSolver::PullUB(Vector& var, double& val, GenericBnBSolver& solver)
 	thr_block.unlock();
 }
 
+#define AGRESSIVE_VAR(X) \
+double X::VarScore(int i, BnBNode* node) \
+{ \
+  int m, n, c = 0; \
+  for (int j = 0; j < t1.GetNumNodes(); ++j) \
+    for (int k = 0; k < t2.GetNumNodes(); ++k) \
+      if (K[j][k] == i) m = j, n = k; \
+  for (int j = 0; j < t1.GetNumNodes(); ++j) \
+    for (int k = 0; k < t2.GetNumNodes(); ++k) \
+      if (K[j][k] != -1 && !(node->IsVarFixed(K[j][k])) && !IsNotInConflict(m, j, n, k)) \
+        ++c; \
+  return c; \
+}
 
-
-
+AGRESSIVE_VAR(BnBHA)
+AGRESSIVE_VAR(BnBBFA)
+AGRESSIVE_VAR(BnBDFA)

@@ -19,7 +19,7 @@
 
 #include "BnG.h"
 
-#define MAX_THREADS 9
+#define MAX_THREADS 12
 
 class ParallelSolver
 {
@@ -78,7 +78,7 @@ class X : public P																																					       \
                                                                                                    \
 	protected:                                                                                       \
                                                                                                    \
-	double VarScore       (int i) { return VS; }                                                     \
+	double VarScore       (int i, BnBNode* node) { return VS; }                                      \
 	void   OnNodeStart    ()      { finished = par.Finished(); par.PullUB(sys_sol, sys_ub, *this); } \
 	void   OnUpdateUB     ()      { par.PushUB(sys_sol, sys_ub, *this); }                            \
 	void   OnSolverFinish ()      { par.PullUB(sys_sol, sys_ub, *this); }                            \
@@ -97,5 +97,29 @@ PAR_CLASS(BnBDFWF, DFBnBSolver, c(i) * x(i))
 PAR_CLASS(BnBHMF, HybridBnBSolver, 0.5 - abs(0.5 - x(i)))
 PAR_CLASS(BnBHLF, HybridBnBSolver, abs(0.5 - x(i)))
 PAR_CLASS(BnBHWF, HybridBnBSolver, c(i) * x(i))
+                                                                                                   
+#define PAR_CLASS_AGGRESSIVE(X, P)                                                                 \
+class X : public P																																					       \
+{																																														       \
+	public:																																										       \
+                                                                                                   \
+	X(Graph& t1, Graph& t2, string dist, double k, bool dag, ParallelSolver& par) :                  \
+		P(t1, t2, dist, k, dag), par(par)                                                              \
+	{                                                                                                \
+	}                                                                                                \
+                                                                                                   \
+	protected:                                                                                       \
+                                                                                                   \
+	double VarScore       (int i, BnBNode* node);                                                    \
+	void   OnNodeStart    ()      { finished = par.Finished(); par.PullUB(sys_sol, sys_ub, *this); } \
+	void   OnUpdateUB     ()      { par.PushUB(sys_sol, sys_ub, *this); }                            \
+	void   OnSolverFinish ()      { par.PullUB(sys_sol, sys_ub, *this); }                            \
+                                                                                                   \
+	ParallelSolver& par;                                                                             \
+};
+
+PAR_CLASS_AGGRESSIVE(BnBHA,  HybridBnBSolver)
+PAR_CLASS_AGGRESSIVE(BnBDFA, DFBnBSolver)
+PAR_CLASS_AGGRESSIVE(BnBBFA, BFBnBSolver)
 
 #endif

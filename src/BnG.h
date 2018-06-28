@@ -19,6 +19,7 @@
 #include <stack>
 #include <iostream>
 #include <fstream>
+#include <cmath>
 
 /*
 	Class BnBNode
@@ -115,7 +116,7 @@ class GenericBnBSolver : public LP
 	
 	// Fractionallity of the variable. For the 'most fractional' approach,
 	// please replace 'c(i)' with '0.5 - abs(0.5 - x(i))'.
-	virtual double            VarScore       (int i)                     { return c(i); }
+	virtual double            VarScore       (int i, BnBNode* node)      { return c(i); }
 
 	// Initialize a node from a parent node and fix variable at index to val.
 	virtual BnBNode*          MakeNode       (BnBNode* parent, size_t index, double val); 
@@ -124,7 +125,7 @@ class GenericBnBSolver : public LP
 	virtual bool              IsVarFrac      (double val)                { return val > 0.001 && val < 0.999; }    
 
 	// Checks whether the pruning is in order.
-	virtual bool							CheckUB        (double val, double numtol) { return val >= sys_ub * (1.0 + numtol); }    
+	virtual bool							CheckUB        (double val, double numtol) { return ceil(val) >= sys_ub * (1.0 + numtol); }    
 
 	// Event callbacks
 	virtual void              OnUpdateUB     ()                          { }
