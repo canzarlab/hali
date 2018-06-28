@@ -89,14 +89,17 @@ class X : public P																																					  \
 PAR_CLASS(BnBBFMF, BFBnBSolver, 0.5 - abs(0.5 - x(i)))
 PAR_CLASS(BnBBFLF, BFBnBSolver, abs(0.5 - x(i)))
 PAR_CLASS(BnBBFWF, BFBnBSolver, c(i) * x(i))
+PAR_CLASS(BnBBFF,  BFBnBSolver, x(i))
 
 PAR_CLASS(BnBDFMF, DFBnBSolver, 0.5 - abs(0.5 - x(i)))
 PAR_CLASS(BnBDFLF, DFBnBSolver, abs(0.5 - x(i)))
 PAR_CLASS(BnBDFWF, DFBnBSolver, c(i) * x(i))
+PAR_CLASS(BnBDFF,  DFBnBSolver, x(i))
 
 PAR_CLASS(BnBHMF, HybridBnBSolver, 0.5 - abs(0.5 - x(i)))
 PAR_CLASS(BnBHLF, HybridBnBSolver, abs(0.5 - x(i)))
 PAR_CLASS(BnBHWF, HybridBnBSolver, c(i) * x(i))
+PAR_CLASS(BnBHF,  HybridBnBSolver, x(i))
                                                                                                    
 #define PAR_CLASS_AGGRESSIVE(X, P)                                                                 \
 class X : public P																																					       \
@@ -111,6 +114,7 @@ class X : public P																																					       \
 	protected:                                                                                       \
                                                                                                    \
 	double VarScore       (int i, BnBNode* node);                                                    \
+	                                                                                                 \
 	void   OnNodeStart    ()      { finished = par.Finished(); par.PullUB(sys_sol, sys_ub, *this); } \
 	void   OnUpdateUB     ()      { par.PushUB(sys_sol, sys_ub, *this); }                            \
 	void   OnSolverFinish ()      { par.PullUB(sys_sol, sys_ub, *this); }                            \

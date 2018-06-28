@@ -8,17 +8,16 @@
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-		./hali data0/a1 data0/a1 tmp_outs/test 2 s 1 0 0 20
+		./hali data0/a1 data0/a1 tmp_outs/test 2 s 1 0 0 10
 		
-		7BnBBFLF -364
-    TOTAL TIME : 		546.771 secs
-    453 
-
-    7BnBBFMF -364.002
-    TOTAL TIME : 		1080.77 secs 
-    453
+		102_5102 7BnBBFLF ~6000 1
+		./hali random_trees_data/tree_50_leaves_instances/uniform_tree_50_leaves_102.tree random_trees_data/tree_50_leaves_instances/uniform_tree_50_leaves_5102.tree T1 2 s 1 0 0 10
     
-    64 5064
+    65_5065 7BnBBFWF ~4000 2
+    ./hali random_trees_data/tree_50_leaves_instances/uniform_tree_50_leaves_65.tree random_trees_data/tree_50_leaves_instances/uniform_tree_50_leaves_5065.tree T2 2 s 1 0 0 10
+    
+    78_5078 6BnBHLF  ~4000 7
+    ./hali random_trees_data/tree_50_leaves_instances/uniform_tree_50_leaves_78.tree random_trees_data/tree_50_leaves_instances/uniform_tree_50_leaves_5078.tree T3 2 s 1 0 0 10  
 */
 
 #include "Parallel.h"
@@ -51,6 +50,12 @@ GenericBnBSolver* MakeSolver(Graph& t1, Graph& t2, string d, double k, bool dag,
 		return new BnBBFA (t1, t2, d, k, dag, s);
 	else if (threadid == 11)
 		return new BnBDFA (t1, t2, d, k, dag, s);
+	/*else if (threadid == 12)
+		return new BnBBFF (t1, t2, d, k, dag, s);
+	else if (threadid == 13)
+		return new BnBDFF (t1, t2, d, k, dag, s);
+	else if (threadid == 14)
+		return new BnBHF  (t1, t2, d, k, dag, s);*/
 }
 
 ParallelSolver::ParallelSolver(Graph& t1, Graph& t2, string d, double k, bool dag, int nthreads) :
@@ -115,10 +120,11 @@ void ParallelSolver::Solve(string filename)
 	}
 }
 
-/*void ParallelSolver::Solve(string filename)
+/*
+void ParallelSolver::Solve(string filename)
 {
 	GenericBnBSolver* S; thread T; mutex m; 	
-	S = MakeSolver(t1, t2, d, k, dag, 1, *this);
+	S = MakeSolver(t1, t2, d, k, dag, 7, *this);
 	T = thread{&ParallelSolver::Callback, this, filename, S};
 	unique_lock<mutex> lock{m};
 	thr_cond.wait(lock, [&] { return thr_val != thread::id{}; });

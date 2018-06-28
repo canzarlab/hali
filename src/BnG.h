@@ -61,6 +61,8 @@ class BnBNode
 	size_t     debug_depth;
 	size_t     debug_nodeid;
 	size_t     debug_parent;	
+	size_t     debug_varid;
+	double     debug_varval;
 	#endif
 };
 
