@@ -15,6 +15,8 @@
 #define DEBUG 1
 
 #include "LP.h"
+#include "Greedy.h"
+
 #include <vector>
 #include <stack>
 #include <iostream>
@@ -155,6 +157,9 @@ class GenericBnBSolver : public LP
 	double   debug_genomin;
 	double   debug_genomax;
 	#endif
+	
+	// TODO This is not generic.
+	Greedy G;
 };
 
 /*

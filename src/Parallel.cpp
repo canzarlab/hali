@@ -93,7 +93,7 @@ void ParallelSolver::Callback(string filename, GenericBnBSolver* solver)
 	thr_cond.notify_all();
 }
 
-/*void ParallelSolver::Solve(string filename)
+void ParallelSolver::Solve(string filename)
 {
 	GenericBnBSolver* S[thr_num];
 	thread T[thr_num];
@@ -113,9 +113,9 @@ void ParallelSolver::Callback(string filename, GenericBnBSolver* solver)
 		T[i].join();
 		delete S[i];
 	}
-}*/
+}
 
-void ParallelSolver::Solve(string filename)
+/*void ParallelSolver::Solve(string filename)
 {
 	GenericBnBSolver* S; thread T; mutex m; 	
 	S = MakeSolver(t1, t2, d, k, dag, 1, *this);
@@ -123,7 +123,7 @@ void ParallelSolver::Solve(string filename)
 	unique_lock<mutex> lock{m};
 	thr_cond.wait(lock, [&] { return thr_val != thread::id{}; });
 	T.join(); delete S;
-}
+}*/
 
 void ParallelSolver::PushUB(Vector& var, double val, GenericBnBSolver& solver)
 {
@@ -153,20 +153,20 @@ void ParallelSolver::PullUB(Vector& var, double& val, GenericBnBSolver& solver)
 	thr_block.unlock();
 }
 
-#define AGRESSIVE_VAR(X) \
-double X::VarScore(int i, BnBNode* node) \
-{ \
-  int m, n, c = 0; \
-  for (int j = 0; j < t1.GetNumNodes(); ++j) \
-    for (int k = 0; k < t2.GetNumNodes(); ++k) \
-      if (K[j][k] == i) m = j, n = k; \
-  for (int j = 0; j < t1.GetNumNodes(); ++j) \
-    for (int k = 0; k < t2.GetNumNodes(); ++k) \
+#define AGGRESSIVE_VAR(X)                                                                \
+double X::VarScore(int i, BnBNode* node)                                                 \
+{                                                                                        \
+  int m, n, c = 0;                                                                       \
+  for (int j = 0; j < t1.GetNumNodes(); ++j)                                             \
+    for (int k = 0; k < t2.GetNumNodes(); ++k)                                           \
+      if (K[j][k] == i) m = j, n = k;                                                    \
+  for (int j = 0; j < t1.GetNumNodes(); ++j)                                             \
+    for (int k = 0; k < t2.GetNumNodes(); ++k)                                           \
       if (K[j][k] != -1 && !(node->IsVarFixed(K[j][k])) && !IsNotInConflict(m, j, n, k)) \
-        ++c; \
-  return c; \
+        ++c;                                                                             \
+  return c;                                                                              \
 }
 
-AGRESSIVE_VAR(BnBHA)
-AGRESSIVE_VAR(BnBBFA)
-AGRESSIVE_VAR(BnBDFA)
+AGGRESSIVE_VAR(BnBHA)
+AGGRESSIVE_VAR(BnBBFA)
+AGGRESSIVE_VAR(BnBDFA)

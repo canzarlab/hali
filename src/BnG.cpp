@@ -56,7 +56,8 @@ void BnBNode::FixVar(size_t index, double val)
 	var_lb(index) = var_ub(index) = val;
 }
 
-GenericBnBSolver::GenericBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag) : LP(t1, t2, dist, k, dag), sys_ub(666), min_c(0), finished(0)
+GenericBnBSolver::GenericBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag) : 
+  LP(t1, t2, dist, k, dag), sys_ub(666), min_c(0), finished(0), G(Greedy(t1, t2, dist, k, dag)) // TODO This is not very generic.
 {	
 }
 
@@ -77,6 +78,10 @@ void GenericBnBSolver::Solve(string filename)
 	#if DEBUG == 1	
 	Timer T; T.start();
 	#endif
+
+  // TODO This is not very generic. Crashes if greedy finds optimal solution.
+  // G.Solve(""); 
+  // sys_ub  = -G.GetSolution();
 
 	PushNode(InitNodeFrom(nullptr));
 
@@ -419,7 +424,7 @@ BnBNode* HybridBnBSolver::EvalOpen() // TODO this is horrible.
 
 		sort(Open.begin(), Open.end(), [](BnBNode*& l, BnBNode*& r)
 		{ 
-			return l->obj > r->obj; 
+			return l->obj < r->obj; //return l->obj > r->obj; 
 		});
 
 		BnBNode* node = Open.back(); Open.pop_back();		
