@@ -10,18 +10,15 @@
 
 		./hali data0/a1 data0/a1 tmp_outs/test 2 s 1 0 0 10
 		
-		102_5102 7BnBBFLF ~6000 1
-		./hali random_trees_data/tree_50_leaves_instances/uniform_tree_50_leaves_102.tree random_trees_data/tree_50_leaves_instances/uniform_tree_50_leaves_5102.tree T1 2 s 1 0 0 10
+    ./hali random_trees_data/tree_50_leaves_instances/uniform_tree_50_leaves_0.tree random_trees_data/tree_50_leaves_instances/uniform_tree_50_leaves_5000.tree outs/TEST 2 s 1 0 0 25 2>/dev/null 
+		60s, 308
     
-    65_5065 7BnBBFWF ~4000 2
-    ./hali random_trees_data/tree_50_leaves_instances/uniform_tree_50_leaves_65.tree random_trees_data/tree_50_leaves_instances/uniform_tree_50_leaves_5065.tree T2 2 s 1 0 0 10
-    
-    78_5078 6BnBHLF  ~4000 7
-    ./hali random_trees_data/tree_50_leaves_instances/uniform_tree_50_leaves_78.tree random_trees_data/tree_50_leaves_instances/uniform_tree_50_leaves_5078.tree T3 2 s 1 0 0 10  
+		treba 316-318 
 */
 
 #include "Parallel.h"
 
+// Priority: bf + df, h, a
 GenericBnBSolver* MakeSolver(Graph& t1, Graph& t2, string d, double k, bool dag, int threadid, ParallelSolver& s)
 {
 	if (threadid < 0 || threadid >= MAX_THREADS)
@@ -50,12 +47,12 @@ GenericBnBSolver* MakeSolver(Graph& t1, Graph& t2, string d, double k, bool dag,
 		return new BnBBFA (t1, t2, d, k, dag, s);
 	else if (threadid == 11)
 		return new BnBDFA (t1, t2, d, k, dag, s);
-	/*else if (threadid == 12)
+	else if (threadid == 12)
 		return new BnBBFF (t1, t2, d, k, dag, s);
 	else if (threadid == 13)
 		return new BnBDFF (t1, t2, d, k, dag, s);
 	else if (threadid == 14)
-		return new BnBHF  (t1, t2, d, k, dag, s);*/
+		return new BnBHF  (t1, t2, d, k, dag, s);
 }
 
 ParallelSolver::ParallelSolver(Graph& t1, Graph& t2, string d, double k, bool dag, int nthreads) :
@@ -90,7 +87,8 @@ void ParallelSolver::Callback(string filename, GenericBnBSolver* solver)
 	if (!sol && filename != "") 
 	{
 		thr_slock.lock(); 
-		sol = 1; thr_val = this_thread::get_id();
+		sol = 1; 
+		thr_val = this_thread::get_id();
 		cout << typeid(*solver).name() << endl;
  		thr_slock.unlock();
 		solver->WriteSolution(filename);	
@@ -131,8 +129,9 @@ void ParallelSolver::Solve(string filename)
 	T.join(); delete S;
 }*/
 
-void ParallelSolver::PushUB(Vector& var, double val, GenericBnBSolver& solver)
+bool ParallelSolver::PushUB(Vector& var, double val, GenericBnBSolver& solver)
 {
+	bool f = false;
 	thr_block.lock();
 	if (val < sys_ub)
 	{
@@ -141,12 +140,15 @@ void ParallelSolver::PushUB(Vector& var, double val, GenericBnBSolver& solver)
 		#endif
 		sys_ub  = val;
 		sys_sol = var;
+		f = true;
 	}
 	thr_block.unlock();
+	return f;
 }
 
-void ParallelSolver::PullUB(Vector& var, double& val, GenericBnBSolver& solver)
+bool ParallelSolver::PullUB(Vector& var, double& val, GenericBnBSolver& solver)
 {
+	bool f = false;
 	thr_block.lock();
 	if (val > sys_ub)
 	{
@@ -155,8 +157,10 @@ void ParallelSolver::PullUB(Vector& var, double& val, GenericBnBSolver& solver)
 		#endif
 		val = sys_ub;
 		var = sys_sol;
+		f = true;
 	}
 	thr_block.unlock();
+	return f;
 }
 
 #define AGGRESSIVE_VAR(X)                                                                \

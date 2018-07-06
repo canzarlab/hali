@@ -27,12 +27,32 @@ Greedy::Greedy(Graph& t1, Graph& t2, string d, double k, bool dag) : Solver(t1, 
     sort(E.begin(), E.end(), [](const iid& a, const iid& b){return get<2>(a) > get<2>(b);});
 }
 
+Greedy::Greedy(Graph& t1, Graph& t2, string d, double k, vvi& K, map<size_t, bool>& M) : Solver(t1, t2, d, k, false), A(t1.GetNumNodes(), vd(t2.GetNumNodes()))
+{
+    vb P(t1.GetNumNodes());
+    DFSLeft(t1.GetRoot(), P, [&](newick_node* nodel, newick_node* noder, double w)
+    {
+        if (w != 0.0 && nodel->parent && nodel->child && noder->parent && noder->child)
+				{
+						auto e = M.find(K[nodel->taxoni][noder->taxoni]);
+						if (e == M.end())
+            	E.emplace_back(nodel->taxoni, noder->taxoni, w);
+						else if (e->second)
+						{
+							this->M.emplace_back(nodel->taxoni, noder->taxoni, 1);
+							A[nodel->taxoni][noder->taxoni] = w;		
+						}
+				}
+    });
+    sort(E.begin(), E.end(), [](const iid& a, const iid& b){return get<2>(a) > get<2>(b);});
+}
+
 void Greedy::Solve(string filename)
 {
     for (const iid& e : E)
         if (all_of(M.begin(), M.end(), bind(&Greedy::CC, this, _1, cref(e))))
             M.push_back(e), A[get<0>(e)][get<1>(e)] = get<2>(e);
-    WriteSolution(filename);
+		if (filename != "") WriteSolution(filename);
 }
 
 void Greedy::WriteSolution(string fileName)
@@ -55,4 +75,14 @@ bool Greedy::CC(const iid& a, const iid& b) const
     int i = get<0>(a), j = get<0>(b);
     int x = get<1>(a), y = get<1>(b);
     return IsNotInConflict(i, j, x, y);
+}
+
+void Greedy::GetSolution(vvi& K, Vector& v, double& d)
+{
+	double weight = 0.0;
+	v = Vector::Zero(v.size());
+	for (const iid& e : M) 
+		if (K[get<0>(e)][get<1>(e)] != -1)
+			weight += get<2>(e), v(K[get<0>(e)][get<1>(e)]) = 1; 
+	d = -weight;
 }

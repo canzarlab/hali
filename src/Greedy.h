@@ -12,6 +12,7 @@
 #define GREEDY_H
 
 #include "Solver.h"
+#include "Geno.h"
 #include <tuple>
 
 typedef tuple<int, int, double> iid;
@@ -20,11 +21,14 @@ typedef vector<iid> viid;
 class Greedy : public Solver
 {
 public:
-    Greedy(Graph& t1, Graph& t2, string d, double k, bool dag);
+    Greedy(Graph& t1, Graph& t2, string d, double k, bool dag);	
+		Greedy(Graph& t1, Graph& t2, string d, double k, vvi& K, map<size_t, bool>& M);
 
     virtual void Solve(string filename) override;
     void WriteSolution(string fileName) override;
-	double GetSolution();
+	  double GetSolution();
+		void GetSolution(vvi& K, Vector& v, double& d);
+
 private:
     bool CC(const iid& a, const iid& b) const;
 

@@ -106,13 +106,13 @@ class GenericBnBSolver : public LP
 	virtual bool              SolveNode      (BnBNode* node, double pgtol, double numtol);	
 
 	// Push a node into the Open set.
-	virtual void              PushNode       (BnBNode* node)             { }
+	virtual void              PushNode       (BnBNode* node)              { }
 
 	// Is the Open set empty? If it is, Solver will terminate.	
-	virtual bool              OpenEmpty      ()                          { return true; }	
+	virtual bool              OpenEmpty      ()                           { return true; }	
 
 	// Evaluate the Open set and decide which node to branch.	
-	virtual BnBNode*          EvalOpen       ()                          { return nullptr; }
+	virtual BnBNode*          EvalOpen       ()                           { return nullptr; }
 
 	// Branch the node and return a vector of children nodes.
 	// Return nullptr when there is nothing to branch into.
@@ -120,33 +120,42 @@ class GenericBnBSolver : public LP
 	
 	// Fractionallity of the variable. For the 'most fractional' approach,
 	// please replace 'c(i)' with '0.5 - abs(0.5 - x(i))'.
-	virtual double            VarScore       (int i, BnBNode* node)      { return c(i); }
+	virtual double            VarScore       (int i, BnBNode* node)       { return c(i); }
 
 	// Initialize a node from a parent node and fix variable at index to val.
 	virtual BnBNode*          MakeNode       (BnBNode* parent, size_t index, double val); 
 
 	// Auxilliary function which decides whether a variable is to be considered fractional.
-	virtual bool              IsVarFrac      (double val)                { return val > 0.001 && val < 0.999; }    
+	virtual bool              IsVarFrac      (double val)                 { return val > 0.001 && val < 0.999; }    
 
 	// Checks whether the pruning is in order.
-	virtual bool							CheckUB        (double val, double numtol) { return ceil(val) >= sys_ub * (1.0 + numtol); }    
+	virtual bool							CheckUB        (double val, double numtol)  { return val >= sys_ub * (1.0 + numtol); }    
+
+	// Decides whether the variable should be preferred to be fixed into 1 or 0.
+	virtual bool              CheckFix       (double val)                 { return val >= 0.5; }
+
+	// Checks whether a feasible solution has been obtained.
+	virtual bool              CheckSol       ()                           { return sys_sol.size() == nr_rows; }
 
 	// Event callbacks
-	virtual void              OnUpdateUB     ()                          { }
-	virtual void							OnSolverFinish ()											     { }
-	virtual void              OnNodeStart    ()													 { }
- 
-	double sys_ub;  // Stores the best current upper bound.
-	Vector sys_sol; // Stores the best current solution.
+	virtual void              OnSolverInit   ()                                     { }
+	virtual void              OnSolverUpdate ()                                     { }
+	virtual bool							OnSolverFinish ()											                { return true; }
+	virtual void              OnNodeInit     (BnBNode* node, int index, double val) { }
+	virtual bool              OnNodeStart    (BnBNode* node)    				            { return true; }
+	virtual bool							OnNodeLP       (BnBNode* node)                        { return true; }
+	virtual bool							OnNodeFinish   (BnBNode* node, bool solved)           { return true; }           
 
-	bool   finished;
+	double sys_ub;   // Stores the best current upper bound.
+	Vector sys_sol;  // Stores the best current solution.
+	string filename; // Solution file name.
 
 	private:
 
 	// Pushes all nodes to the Open set.
 	void PushAll(vector<BnBNode*>* Nodes);
 
-	double min_c;   // Minimal weight in the similarity.
+	bool finished;
 
 	#if DEBUG == 1
 	public: 
@@ -159,9 +168,6 @@ class GenericBnBSolver : public LP
 	double   debug_genomin;
 	double   debug_genomax;
 	#endif
-	
-	// TODO This is not generic.
-	Greedy G;
 };
 
 /*

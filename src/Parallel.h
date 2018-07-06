@@ -19,7 +19,8 @@
 
 #include "BnG.h"
 
-#define MAX_THREADS 12
+#define MAX_THREADS 15
+#define GREEDYTOL 0.075
 
 class ParallelSolver
 {
@@ -32,8 +33,8 @@ class ParallelSolver
   void Solve(string filename);
 
 	// Updates the best upper bound and solution with regards to locking.
-	void PushUB(Vector& var, double  val, GenericBnBSolver& solver);
-	void PullUB(Vector& var, double& val, GenericBnBSolver& solver);
+	bool PushUB(Vector& var, double  val, GenericBnBSolver& solver);
+	bool PullUB(Vector& var, double& val, GenericBnBSolver& solver);
 
 	double  GetUBVal(); 
 	Vector& GetUBVar(); 
@@ -65,65 +66,102 @@ class ParallelSolver
 };
 
 // Different BnB solvers
-
-#define PAR_CLASS(X, P, VS)                                                                   \
-class X : public P																																					  \
-{																																														  \
-	public:																																										  \
-                                                                                              \
-	X(Graph& t1, Graph& t2, string dist, double k, bool dag, ParallelSolver& par) :             \
-		P(t1, t2, dist, k, dag), par(par)                                                         \
-	{                                                                                           \
-	}                                                                                           \
-                                                                                              \
-	protected:                                                                                  \
-                                                                                              \
-	double VarScore       (int i, BnBNode* node) { return VS; }                                 \
-	void   OnNodeStart    () { finished = par.Finished(); par.PullUB(sys_sol, sys_ub, *this); } \
-	void   OnUpdateUB     () { par.PushUB(sys_sol, sys_ub, *this); }                            \
-	void   OnSolverFinish () { par.PullUB(sys_sol, sys_ub, *this); }                            \
-                                                                                              \
-	ParallelSolver& par;                                                                        \
+#define PAR_CLASS(X, P, VS)                                                                                                          \
+class X : public P																																					                                         \
+{																																														                                         \
+	public:																																										                                         \
+                                                                                                                                     \
+	X(Graph& t1, Graph& t2, string dist, double k, bool dag, ParallelSolver& par) :                                                    \
+		P(t1, t2, dist, k, dag), par(par)                                                                                                \
+	{                                                                                                                                  \
+	}                                                                                                                                  \
+                                                                                                                                     \
+	protected:                                                                                                                         \
+                                                                                                                                     \
+	virtual double VarScore(int i, BnBNode* node) VS                                                                                   \
+	                                                                                                                                   \
+	bool OnNodeLP(BnBNode* node)                                                                                                       \
+	{                                                                                                                                  \
+		if (par.PullUB(sys_sol, sys_ub, *this)) pulled = 1;                                                                              \
+		return !par.Finished();                                                                                                          \
+	}                          																																																		     \
+	                                                                                                                                   \
+	void OnSolverUpdate()                                                                                                              \
+	{                                                                                                                                  \
+		par.PushUB(sys_sol, sys_ub, *this);                                                                                              \
+	}                                                                                                                                  \
+                                                                                                                                     \
+	void OnSolverInit()                                                                                                                \
+	{                                                                                                                                  \
+		Greedy G(t1, t2, d, k, dag); G.Solve("");                                                                                        \
+		G.GetSolution(K, sys_sol, sys_ub);                                                                                               \
+	}                                                                                                                                  \
+                                                                                                                                     \
+	bool OnNodeStart()                                                                                                                 \
+	{                                                                                                                                  \
+		pulled = 0;                                                                                                                      \
+		return true;                                                                                                                     \
+	}                                                                                                                                  \
+                                                                                                                                     \
+	bool OnSolverFinish()                                                                                                              \
+	{                                                                                                                                  \
+		par.PullUB(sys_sol, sys_ub, *this);                                                                                              \
+		return !par.Finished();                                                                                                          \
+	}                                                                                                                                  \
+                                                                                                                                     \
+	bool OnNodeFinish(BnBNode* node, bool flag)                                                                                        \
+	{                                                                                                                                  \
+		if (!flag || pulled) return true;                                                                                                \
+                                                                                                                                     \
+		map<size_t, bool> M;                                                                                                             \
+		for (int i = 0; i < x.size(); ++i)                                                                                               \
+			if (node->IsVarFixed(i)) M[i] = node->var_ub(i);                                                                               \
+                                                                                                                                     \
+		Greedy T(t1, t2, d, k, K, M); T.Solve(""); double f = -T.GetSolution();                                                          \
+		if (f < sys_ub)                                                                                                                  \
+		{                                                                                                                                \
+			T.GetSolution(K, sys_sol, sys_ub);                                                                                             \
+			OnSolverUpdate();                                                                                                              \
+			return true;		                                                                                                               \
+		}                                                                                                                                \
+    return f * (1 + GREEDYTOL) < sys_ub;                                                                                             \
+	}                                                                                                                                  \
+                                                                                                                                     \
+	void OnNodeInit(BnBNode* node, int index, double val)                                                                              \
+	{                                                                                                                                  \
+		if (val != 1) return;                                                                                                            \
+		size_t m, n;                                                                                                                     \
+                                                                                                                                     \
+		for (size_t i = 0; i < t1.GetNumNodes(); ++i)                                                                                    \
+			for (size_t j = 0; j < t2.GetNumNodes(); ++j)                                                                                  \
+				if (K[i][j] == index) m = i, n = j;                                                                                          \
+                                                                                                                                     \
+		for (size_t i = 0; i < t1.GetNumNodes(); ++i)                                                                                    \
+			for (size_t j = 0; j < t2.GetNumNodes(); ++j)                                                                                  \
+				if (K[i][j] != -1 && !node->IsVarFixed(K[i][j]) && ((m == i && n != j || m != i && n == j) || !IsNotInConflict(m, i, n, j))) \
+					node->FixVar(K[i][j], 0);                                                                                                  \
+	}                                                                                                                                  \
+                                                                                                                                     \
+	ParallelSolver& par;                                                                                                               \
+	bool pulled;                                                                                                                       \
 };
 
-PAR_CLASS(BnBBFMF, BFBnBSolver, 0.5 - abs(0.5 - x(i)))
-PAR_CLASS(BnBBFLF, BFBnBSolver, abs(0.5 - x(i)))
-PAR_CLASS(BnBBFWF, BFBnBSolver, c(i) * x(i))
-PAR_CLASS(BnBBFF,  BFBnBSolver, x(i))
+PAR_CLASS(BnBBFMF, BFBnBSolver, { return 0.5 - abs(0.5 - x(i)); })
+PAR_CLASS(BnBBFLF, BFBnBSolver, { return abs(0.5 - x(i)); })
+PAR_CLASS(BnBBFWF, BFBnBSolver, { return c(i) * x(i); })
+PAR_CLASS(BnBBFF,  BFBnBSolver, { return x(i); })
+PAR_CLASS(BnBBFA,  BFBnBSolver, ;)
 
-PAR_CLASS(BnBDFMF, DFBnBSolver, 0.5 - abs(0.5 - x(i)))
-PAR_CLASS(BnBDFLF, DFBnBSolver, abs(0.5 - x(i)))
-PAR_CLASS(BnBDFWF, DFBnBSolver, c(i) * x(i))
-PAR_CLASS(BnBDFF,  DFBnBSolver, x(i))
+PAR_CLASS(BnBDFMF, DFBnBSolver, { return 0.5 - abs(0.5 - x(i)); })
+PAR_CLASS(BnBDFLF, DFBnBSolver, { return abs(0.5 - x(i)); })
+PAR_CLASS(BnBDFWF, DFBnBSolver, { return c(i) * x(i); })
+PAR_CLASS(BnBDFF,  DFBnBSolver, { return x(i); })
+PAR_CLASS(BnBDFA,  DFBnBSolver, ;)
 
-PAR_CLASS(BnBHMF, HybridBnBSolver, 0.5 - abs(0.5 - x(i)))
-PAR_CLASS(BnBHLF, HybridBnBSolver, abs(0.5 - x(i)))
-PAR_CLASS(BnBHWF, HybridBnBSolver, c(i) * x(i))
-PAR_CLASS(BnBHF,  HybridBnBSolver, x(i))
-                                                                                                   
-#define PAR_CLASS_AGGRESSIVE(X, P)                                                                 \
-class X : public P																																					       \
-{																																														       \
-	public:																																										       \
-                                                                                                   \
-	X(Graph& t1, Graph& t2, string dist, double k, bool dag, ParallelSolver& par) :                  \
-		P(t1, t2, dist, k, dag), par(par)                                                              \
-	{                                                                                                \
-	}                                                                                                \
-                                                                                                   \
-	protected:                                                                                       \
-                                                                                                   \
-	double VarScore       (int i, BnBNode* node);                                                    \
-	                                                                                                 \
-	void   OnNodeStart    ()      { finished = par.Finished(); par.PullUB(sys_sol, sys_ub, *this); } \
-	void   OnUpdateUB     ()      { par.PushUB(sys_sol, sys_ub, *this); }                            \
-	void   OnSolverFinish ()      { par.PullUB(sys_sol, sys_ub, *this); }                            \
-                                                                                                   \
-	ParallelSolver& par;                                                                             \
-};
-
-PAR_CLASS_AGGRESSIVE(BnBHA,  HybridBnBSolver)
-PAR_CLASS_AGGRESSIVE(BnBDFA, DFBnBSolver)
-PAR_CLASS_AGGRESSIVE(BnBBFA, BFBnBSolver)
+PAR_CLASS(BnBHMF, HybridBnBSolver, { return 0.5 - abs(0.5 - x(i)); })
+PAR_CLASS(BnBHLF, HybridBnBSolver, { return abs(0.5 - x(i)); })
+PAR_CLASS(BnBHWF, HybridBnBSolver, { return c(i) * x(i); })
+PAR_CLASS(BnBHF,  HybridBnBSolver, { return x(i); })
+PAR_CLASS(BnBHA,  HybridBnBSolver, ;)
 
 #endif

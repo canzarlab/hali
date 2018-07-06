@@ -9,12 +9,6 @@
     (at your option) any later version.
 
 		./hali inputs/a0 inputs/a999 align 2 s 1 0 0.001 2
-
-		lineSearch.cpp ima static varijable...
-		
-		7BnBBFLF:    -364
-    TOTAL TIME:  2294.79 secs
-    SOLUTION:     453
 */
 
 #include "BnG.h"
@@ -23,7 +17,7 @@
 #include <iomanip>
 
 #define PGTOL 0.1 
-#define NUMTOL 0.01
+#define NUMTOL 0.005
 
 BnBNode::BnBNode(vector<ET>& Triplets, size_t rows, size_t cols) : Triplets(Triplets), rows(rows), cols(cols), warm(nullptr), obj(1)
 {
@@ -57,19 +51,17 @@ bool BnBNode::IsVarFixed(size_t index)
 void BnBNode::FixVar(size_t index, double val)
 {
 	var_lb(index) = var_ub(index) = val;
-	#if DEBUG == 1
-	debug_varid  = index;
-	debug_varval = val;  
-	#endif
 }
 
 GenericBnBSolver::GenericBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag) : 
-  LP(t1, t2, dist, k, dag), sys_ub(666), min_c(0), finished(0), G(Greedy(t1, t2, dist, k, dag)) // TODO This is not very generic.
+  LP(t1, t2, dist, k, dag), sys_ub(666), finished(0)
 {	
 }
 
 void GenericBnBSolver::Solve(string filename)
-{	
+{
+	this->filename = filename;
+	
 	#if DEBUG == 1	
 	if (debug_file == "")
 	  debug_log = ofstream(filename + ".log");
@@ -86,24 +78,22 @@ void GenericBnBSolver::Solve(string filename)
 	Timer T; T.start();
 	#endif
 
-  // TODO This is not very generic. Crashes if greedy finds optimal solution.
-  G.Solve(""); 
-  sys_ub = -G.GetSolution();
+	sys_sol.conservativeResizeLike(Vector::Zero(nr_cols));
+	OnSolverInit();
 
 	PushNode(InitNodeFrom(nullptr));
-
-	while (!OpenEmpty() && !finished)
+	while (!OpenEmpty())
 	{
-		BnBNode* open = EvalOpen();
+		BnBNode* open = EvalOpen();	
+
 		if (open != nullptr) 
 		{
 			vector<BnBNode*>* V = EvalBranch(open);
-			
-			#if DEBUG == 1	
+			#if DEBUG == 1
 			if (V != nullptr)
-			  debug_log << "fixed: " << V->front()->debug_varid << " (" << V->front()->debug_varval << " <- " << open->sol(V->front()->debug_varid) << ") in node " << open->debug_nodeid << endl << endl;
-			#endif	
-	
+		    debug_log << "fixed: " << V->front()->debug_varid << " (" << V->front()->debug_varval << " <- " << open->sol(V->front()->debug_varid) << ") in node " << open->debug_nodeid << endl << endl;
+			#endif
+
 			if (V != nullptr)
 				PushAll(V);	
 			else if (sys_ub > open->obj)
@@ -113,7 +103,7 @@ void GenericBnBSolver::Solve(string filename)
 				#if DEBUG == 1	
 				debug_log << "BOUND " << sys_ub << " (" << open->debug_nodeid << ")" << endl << endl;
 				#endif			
-				OnUpdateUB();
+				OnSolverUpdate();
 			}	
 
 			delete open;
@@ -123,16 +113,11 @@ void GenericBnBSolver::Solve(string filename)
 	T.stop();
 	#endif
 
-  if (sys_sol.size() != nr_rows) // TODO Parallel fix.
-    G.WriteSolution(filename + "_G");
-  else if (!finished)
+  if (OnSolverFinish())
 	{
-		OnSolverFinish();
-
 		x = sys_sol;
 		for (size_t i = 0; i < x.size(); ++i)
 			x(i) = round(x(i));	
-
 		if (filename != "") 
 			WriteSolution(filename);	 
 	}
@@ -150,7 +135,10 @@ BnBNode* GenericBnBSolver::InitNodeFrom(BnBNode* node)
 {
 	BnBNode* newnode;
 	if (node == nullptr)
+	{
 		newnode = new BnBNode(Triplets, nr_rows, nr_cols);
+		newnode->warm = new Vector(sys_sol); 	
+	}	
 	else
 		newnode = new BnBNode(node);
 	#if DEBUG == 1
@@ -176,11 +164,10 @@ bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 	debug_log << "best: " << -sys_ub << endl;
 	#endif
 
+	if (!OnNodeStart(node)) return false;
+
 	while(1)
 	{
-		OnNodeStart();
-		if (finished) return false;
-
 	  SpMat A(nr_rows, nr_cols);
 	  A.setFromTriplets(Triplets.begin(), Triplets.end());
 	  Vector b = Vector::Ones(nr_rows);   	
@@ -198,9 +185,14 @@ bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 		#if DEBUG == 1	
 		Timer debug_T; debug_T.start();		
 		#endif
-		OnNodeStart();
-		if (finished) return false;
-	  SolverStatus status = solver.solve();	
+		if (!OnNodeLP(node))
+		{ 
+			#if DEBUG == 1	
+			debug_log << "ABORT" << endl << endl;
+			#endif
+			return false;
+		}	  
+		SolverStatus status = solver.solve();	
 		#if DEBUG == 1	
 		debug_T.stop();
 		debug_genocnt++;	
@@ -233,6 +225,16 @@ bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 		
 		if ((LP::cf == 1 && Add<1>()) || (LP::cf == 2 && (Add<1>() + Add<2>())))
 			continue;
+
+		if (!OnNodeFinish(node, true))
+		{
+			#if DEBUG == 1	
+			debug_log << "geno calls: " << debug_node_genocnt << endl;
+			debug_log << "geno time: " << debug_node_genotime << endl;
+			debug_log << "GREEDY CUT: " << -solver.f() << endl << endl;
+			#endif
+			return false;
+		}
 
 		node->Triplets = Triplets;
 		node->rows     = nr_rows;
@@ -277,7 +279,7 @@ vector<BnBNode*>* GenericBnBSolver::EvalBranch(BnBNode* node)
     bool flag = 1;
 		for (size_t k = 0; flag && k < t1.GetNumNodes(); ++k)	  	
 			for (size_t j = 0; flag && j < t2.GetNumNodes(); ++j)
-				if (K[k][j] != -1 && node->IsVarFixed(K[k][j]))						  	
+				if (K[k][j] != -1 && node->IsVarFixed(K[k][j]) && node->var_ub(K[k][j]) != 0)						  	
 					flag = IsNotInConflict(vp[i].first, k, vp[i].second, j);					
     if (flag) p = 1 + K[vp[i].first][vp[i].second];
   }
@@ -287,7 +289,7 @@ vector<BnBNode*>* GenericBnBSolver::EvalBranch(BnBNode* node)
 		vector<BnBNode*>* V = new vector<BnBNode*>;
 		bool b0 = !p; 
 		p = (b0) ? K[vp[0].first][vp[0].second] : p - 1; 
-		if (node->sol(p) > 0.5)
+		if (CheckFix(node->sol(p)))
 		{
 		  if (!b0) V->push_back(MakeNode(node, p, 1));
 		  V->push_back(MakeNode(node, p, 0));		
@@ -307,6 +309,11 @@ BnBNode* GenericBnBSolver::MakeNode(BnBNode* parent, size_t index, double val)
 {
 	BnBNode* node = InitNodeFrom(parent);
 	node->FixVar(index, val);
+	#if DEBUG == 1
+	node->debug_varid  = index;
+	node->debug_varval = val;  
+	#endif
+	OnNodeInit(node, index, val);
 	return node;
 }
 
@@ -396,11 +403,12 @@ BnBNode* DFBnBSolver::EvalOpen()
 		{
 			Open.pop_back();
 			if (rt->obj == 1 && !SolveNode(rt, PGTOL, NUMTOL)) rt->obj = 2;
-			if (lt->obj > rt->obj) swap(lt, rt);
+			if (lt->obj < rt->obj) swap(lt, rt); // if (lt->obj > rt->obj) swap(lt, rt);
 			if (rt->obj < 1) Open.push_back(rt); 		
 		}		
 	}
-	return (lt->obj < 1 || SolveNode(lt, PGTOL, NUMTOL)) ? lt : nullptr;
+	return (lt->obj == 2 || (lt->obj == 1 && !SolveNode(lt, PGTOL, NUMTOL))) ? nullptr : lt;
+	// return (lt->obj < 1 || SolveNode(lt, PGTOL, NUMTOL)) ? lt : nullptr;
 }
 
 // ================= Hybrid BNB SOLVER ==================== //
@@ -432,11 +440,11 @@ BnBNode* HybridBnBSolver::EvalOpen() // TODO this is horrible.
 			{
 				Open.pop_back();
 				if (rt->obj == 1 && !SolveNode(rt, PGTOL, NUMTOL)) rt->obj = 2;
-				if (lt->obj > rt->obj) swap(lt, rt);
+				if (lt->obj < rt->obj) swap(lt, rt);
 				if (rt->obj < 1) Open.push_back(rt); 		
 			}		
 		}
-		return (lt->obj < 1 || SolveNode(lt, PGTOL, NUMTOL)) ? lt : nullptr;
+		return (lt->obj == 2 || (lt->obj == 1 && !SolveNode(lt, PGTOL, NUMTOL))) ? nullptr : lt;
 	}
 	else
 	{
