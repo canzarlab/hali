@@ -17,7 +17,7 @@
 #include <iomanip>
 
 #define PGTOL 0.1 
-#define NUMTOL 0.005
+#define NUMTOL 0.0125
 
 BnBNode::BnBNode(vector<ET>& Triplets, size_t rows, size_t cols) : Triplets(Triplets), rows(rows), cols(cols), warm(nullptr), obj(1)
 {
@@ -182,16 +182,16 @@ bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 	  solver.setParameter("pgtol", pgtol); 
 	  solver.setParameter("constraintsTol", 1e-4);
 
-		#if DEBUG == 1	
-		Timer debug_T; debug_T.start();		
-		#endif
 		if (!OnNodeLP(node))
 		{ 
 			#if DEBUG == 1	
 			debug_log << "ABORT" << endl << endl;
 			#endif
 			return false;
-		}	  
+		}
+		#if DEBUG == 1	
+		Timer debug_T; debug_T.start();		
+		#endif	  
 		SolverStatus status = solver.solve();	
 		#if DEBUG == 1	
 		debug_T.stop();

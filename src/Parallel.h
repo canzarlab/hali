@@ -20,7 +20,7 @@
 #include "BnG.h"
 
 #define MAX_THREADS 15
-#define GREEDYTOL 0.075
+#define GREEDYTOL 0.1
 
 class ParallelSolver
 {
@@ -82,7 +82,7 @@ class X : public P																																					                         
 	                                                                                                                                   \
 	bool OnNodeLP(BnBNode* node)                                                                                                       \
 	{                                                                                                                                  \
-		if (par.PullUB(sys_sol, sys_ub, *this)) pulled = 1;                                                                              \
+		par.PullUB(sys_sol, sys_ub, *this);                                                                                              \
 		return !par.Finished();                                                                                                          \
 	}                          																																																		     \
 	                                                                                                                                   \
@@ -94,13 +94,7 @@ class X : public P																																					                         
 	void OnSolverInit()                                                                                                                \
 	{                                                                                                                                  \
 		Greedy G(t1, t2, d, k, dag); G.Solve("");                                                                                        \
-		G.GetSolution(K, sys_sol, sys_ub);                                                                                               \
-	}                                                                                                                                  \
-                                                                                                                                     \
-	bool OnNodeStart()                                                                                                                 \
-	{                                                                                                                                  \
-		pulled = 0;                                                                                                                      \
-		return true;                                                                                                                     \
+		G.GetSolution(K, sys_sol, sys_ub); grd_lb = sys_ub;                                                                              \
 	}                                                                                                                                  \
                                                                                                                                      \
 	bool OnSolverFinish()                                                                                                              \
@@ -111,20 +105,20 @@ class X : public P																																					                         
                                                                                                                                      \
 	bool OnNodeFinish(BnBNode* node, bool flag)                                                                                        \
 	{                                                                                                                                  \
-		if (!flag || pulled) return true;                                                                                                \
+		if (!flag) return true;                                                                                                          \
                                                                                                                                      \
 		map<size_t, bool> M;                                                                                                             \
 		for (int i = 0; i < x.size(); ++i)                                                                                               \
-			if (node->IsVarFixed(i)) M[i] = node->var_ub(i);                                                                               \
+			if (node->IsVarFixed(i)) M[i] = node->var_ub(i); else if (1 - x(i) < 0.01) M[i] = 1;                                           \
                                                                                                                                      \
-		Greedy T(t1, t2, d, k, K, M); T.Solve(""); double f = -T.GetSolution();                                                          \
-		if (f < sys_ub)                                                                                                                  \
+		Greedy T(t1, t2, d, k, K, M); T.Solve(""); double f = -T.GetSolution(); grd_lb = min(grd_lb, f);                                 \
+		if (f < sys_ub * 1.001)                                                                                                          \
 		{                                                                                                                                \
 			T.GetSolution(K, sys_sol, sys_ub);                                                                                             \
 			OnSolverUpdate();                                                                                                              \
 			return true;		                                                                                                               \
 		}                                                                                                                                \
-    return f * (1 + GREEDYTOL) < sys_ub;                                                                                             \
+    return f * (1 + GREEDYTOL) < grd_lb;                                                                                             \
 	}                                                                                                                                  \
                                                                                                                                      \
 	void OnNodeInit(BnBNode* node, int index, double val)                                                                              \
@@ -143,7 +137,7 @@ class X : public P																																					                         
 	}                                                                                                                                  \
                                                                                                                                      \
 	ParallelSolver& par;                                                                                                               \
-	bool pulled;                                                                                                                       \
+	double grd_lb;                                                                                                                     \
 };
 
 PAR_CLASS(BnBBFMF, BFBnBSolver, { return 0.5 - abs(0.5 - x(i)); })

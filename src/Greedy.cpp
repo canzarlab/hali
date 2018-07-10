@@ -27,19 +27,19 @@ Greedy::Greedy(Graph& t1, Graph& t2, string d, double k, bool dag) : Solver(t1, 
     sort(E.begin(), E.end(), [](const iid& a, const iid& b){return get<2>(a) > get<2>(b);});
 }
 
-Greedy::Greedy(Graph& t1, Graph& t2, string d, double k, vvi& K, map<size_t, bool>& M) : Solver(t1, t2, d, k, false), A(t1.GetNumNodes(), vd(t2.GetNumNodes()))
+Greedy::Greedy(Graph& t1, Graph& t2, string d, double k, vvi& K, map<size_t, bool>& N) : Solver(t1, t2, d, k, false), A(t1.GetNumNodes(), vd(t2.GetNumNodes()))
 {
     vb P(t1.GetNumNodes());
     DFSLeft(t1.GetRoot(), P, [&](newick_node* nodel, newick_node* noder, double w)
     {
-        if (w != 0.0 && nodel->parent && nodel->child && noder->parent && noder->child)
+        if (w != 0.0 && (dag || nodel->parent) && (dag || nodel->child) && (dag || noder->parent) && (dag || noder->child))
 				{
-						auto e = M.find(K[nodel->taxoni][noder->taxoni]);
-						if (e == M.end())
+						auto e = N.find(K[nodel->taxoni][noder->taxoni]);
+						if (e == N.end())
             	E.emplace_back(nodel->taxoni, noder->taxoni, w);
 						else if (e->second)
 						{
-							this->M.emplace_back(nodel->taxoni, noder->taxoni, 1);
+							this->M.emplace_back(nodel->taxoni, noder->taxoni, w);
 							A[nodel->taxoni][noder->taxoni] = w;		
 						}
 				}

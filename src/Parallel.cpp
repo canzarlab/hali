@@ -10,10 +10,7 @@
 
 		./hali data0/a1 data0/a1 tmp_outs/test 2 s 1 0 0 10
 		
-    ./hali random_trees_data/tree_50_leaves_instances/uniform_tree_50_leaves_0.tree random_trees_data/tree_50_leaves_instances/uniform_tree_50_leaves_5000.tree outs/TEST 2 s 1 0 0 25 2>/dev/null 
-		60s, 308
-    
-		treba 316-318 
+    ./hali random_trees_data/tree_50_leaves_instances/uniform_tree_50_leaves_505.tree random_trees_data/tree_50_leaves_instances/uniform_tree_50_leaves_5505.tree outs/TEST 2 s 1 0 0 15 2>/dev/null 
 */
 
 #include "Parallel.h"
@@ -133,9 +130,9 @@ bool ParallelSolver::PushUB(Vector& var, double val, GenericBnBSolver& solver)
 {
 	bool f = false;
 	thr_block.lock();
-	if (val < sys_ub)
+	if (val < sys_ub * 1.001)
 	{
-	  #if DEBUG == 1
+	  #if DEBUG == 1 
 		solver.debug_log << "push: " << val << " > " << sys_ub << endl;
 		#endif
 		sys_ub  = val;
@@ -150,7 +147,7 @@ bool ParallelSolver::PullUB(Vector& var, double& val, GenericBnBSolver& solver)
 {
 	bool f = false;
 	thr_block.lock();
-	if (val > sys_ub)
+	if (val > sys_ub * 0.999)
 	{
 	  #if DEBUG == 1
 		solver.debug_log << "pull: " << val << " < " << sys_ub << endl;
