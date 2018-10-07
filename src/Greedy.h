@@ -10,7 +10,7 @@
 */
 #ifndef GREEDY_H
 #define GREEDY_H
-
+#include "read_csv.h"
 #include "Solver.h"
 #include "Geno.h"
 #include <tuple>

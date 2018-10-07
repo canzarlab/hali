@@ -30,7 +30,7 @@ void LP::MatchingConstraints()
     int n = t1.GetNumNodes(), m = t2.GetNumNodes();
     DFSLeft(t1.GetRoot(), P, [&](newick_node* nodel, newick_node* noder, double w)
     {
-        if (w != 0 && (dag || (nodel->parent && nodel->child && noder->parent && noder->child)))
+        if (w != 0) //  && (dag || nodel->parent) && (dag || nodel->child) && (dag || noder->parent) && (dag || noder->child)
         {
             int i = nodel->taxoni, j = noder->taxoni;
             int col = i * m + j - cnt;
@@ -97,7 +97,7 @@ bool LP::SolveLP()
     PackingJRF simpleJRF(A, b, c1, warm_x, y);
     AugmentedLagrangian solver(simpleJRF, 15);
     solver.setParameter("verbose", false);
-    solver.setParameter("pgtol", 1e-1); // should influence running time a lot
+    solver.setParameter("pgtol", 1e-2); // should influence running time a lot
     solver.setParameter("constraintsTol", 1e-3);
     Timer timeGeno;
     timeGeno.start();

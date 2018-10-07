@@ -9,15 +9,24 @@
     (at your option) any later version.
 */
 #include "Solver.h"
+#include "read_csv.h"
 #include <iostream>
 
 Solver::Solver(Graph& t1, Graph& t2, string d, double k, bool dag) : t1(t1), t2(t2), d(d), k(k), dag(dag)
 {
+    if (d == "e"){
+    CSVReader reader("cost_matrix.csv");
+	cost_matrix = reader.getDoubleData();
+    }
 }
 
 void Solver::PrintScore(double weight)
 {
-    if (dag)
+    if (d == "e")
+    {
+    	cout << ">>>>>>>>>>>>>>>>>>>>>> Optimal value:" << weight << "." << endl;
+    }
+    else if (dag)
         cout << weight << " ";
     else
         cout << ((d == "j") ? JaccardDist(weight) : SymdifDist(weight)) << " ";

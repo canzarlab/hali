@@ -35,7 +35,7 @@ Solver* MakeSolver(Graph& t1, Graph& t2, int argc, char** argv)
     var_eps = (argc == 9) ? 0 : stod(argv[7 + 2 * (argc == 12)]);
 
     assert(LP::cf >= 0 && LP::cf <= 2);
-    assert(d == "j" || d == "s");
+    assert(d == "j" || d == "s" || d == "e");
     assert(s >= 0 && s <= 9);
 
     if (s == 0)
@@ -101,7 +101,7 @@ int main(int argc, char** argv)
 		  var_eps = (argc == 9) ? 0 : stod(argv[7 + 2 * (argc == 12)]);
 
 		  assert(LP::cf >= 0 && LP::cf <= 2);
-		  assert(d == "j" || d == "s");
+		  assert(d == "j" || d == "s" || d == "e");
 
 			ParallelSolver(*t1, *t2, d, k, argc == 9, s - 9).Solve(argv[3 + (argc == 9) + 2 * (argc == 12)]);
 		}		

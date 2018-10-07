@@ -13,6 +13,8 @@
 
 #include <list>
 #include <string>
+#include <vector>
+#include <assert.h>
 using namespace std;
 
 typedef list<string> ls;
@@ -21,5 +23,6 @@ extern double var_eps;
 
 double JaccardSim(const ls& L1, const ls& L2, double k);
 double SymdifSim(const ls& L1, const ls& L2);
+double EditDistance(const string & L1, const string & L2, std::vector<std::vector<double>> & cost_matrix);
 
 #endif

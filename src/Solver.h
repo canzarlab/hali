@@ -44,6 +44,7 @@ private:
     double TumorDist(double weight) const;
     double SymdifDist(double weight) const;
     double JaccardDist(double weight) const;
+    std::vector<std::vector<double>> cost_matrix;
 };
 
 template <class F>
@@ -65,8 +66,10 @@ void Solver::DFSRight(newick_node* nodel, newick_node* noder, vb& Q, F f)
     Q[noder->taxoni] = true;
     if (d == "j")
         f(nodel, noder, JaccardSim(t1.clade[nodel], t2.clade[noder], k));
-    else
+    else if (d == "s")
         f(nodel, noder, SymdifSim(t1.clade[nodel], t2.clade[noder]));
+    else
+    	f(nodel, noder, EditDistance(*t1.clade[nodel].begin(), *t2.clade[noder].begin(), cost_matrix));
 
     for (newick_child* child = noder->child; child; child = child->next)
         if (!Q[child->node->taxoni])
