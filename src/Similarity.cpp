@@ -37,6 +37,8 @@ double EditDistance(const string & L1, const string & L2, std::vector<std::vecto
 {
     int i = stoi(L1);
     int j = stoi(L2);
+    int n = (int) cost_matrix.size();
+    int m = (int) cost_matrix[0].size();
     assert(i < cost_matrix.size() && j < cost_matrix[0].size());
-    return cost_matrix[i][j];
+    return (cost_matrix[i][m-1] + cost_matrix[n-1][j] - cost_matrix[i][j]);
 }

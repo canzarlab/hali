@@ -11,12 +11,25 @@
 #include "Solver.h"
 #include "read_csv.h"
 #include <iostream>
+#include <fstream>
 
 Solver::Solver(Graph& t1, Graph& t2, string d, double k, bool dag) : t1(t1), t2(t2), d(d), k(k), dag(dag)
 {
     if (d == "e"){
-    CSVReader reader("cost_matrix.csv");
-	cost_matrix = reader.getDoubleData();
+        std::string fileName = "cost_matrix.csv";
+        std::ifstream f(fileName.c_str());
+        if (f.good())
+        {
+            CSVReader reader("cost_matrix.csv");
+            cost_matrix = reader.getDoubleData();
+        }
+        else
+        {
+            std::cout << "PLEASE INPUT WEIGHT(COST) MATRIX DIRECTORY:"; 
+            std::cin >> fileName;
+            CSVReader reader(fileName);
+            cost_matrix = reader.getDoubleData();
+        }
     }
 }
 
@@ -24,7 +37,14 @@ void Solver::PrintScore(double weight)
 {
     if (d == "e")
     {
-    	cout << ">>>>>>>>>>>>>>>>>>>>>> Optimal value:" << weight << "." << endl;
+    	double optVal = -weight;
+        int n = (int) cost_matrix.size();
+        int m = (int) cost_matrix[0].size();
+        for (int i=0; i < n-1; ++i)
+            optVal += cost_matrix[i][m-1];
+        for (int j=0; j < m-1; ++j)
+            optVal += cost_matrix[n-1][j];
+        cout << ">>>>>>>>>>>>>>>>>>>>>> Optimal value:" << optVal << "." << endl;
     }
     else if (dag)
         cout << weight << " ";
