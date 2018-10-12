@@ -13,14 +13,16 @@
 #include <iostream>
 #include <fstream>
 
+extern std::string costMatrixFileName;
+
 Solver::Solver(Graph& t1, Graph& t2, string d, double k, bool dag) : t1(t1), t2(t2), d(d), k(k), dag(dag)
 {
     if (d == "e"){
-        std::string fileName = "cost_matrix.csv";
+        std::string fileName = costMatrixFileName;  // use file name from main function. 
         std::ifstream f(fileName.c_str());
         if (f.good())
         {
-            CSVReader reader("cost_matrix.csv");
+            CSVReader reader(costMatrixFileName);
             cost_matrix = reader.getDoubleData();
         }
         else

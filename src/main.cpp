@@ -21,6 +21,9 @@
 
 #include <iostream>
 
+// global varialbe for cost matrix name 
+std::string costMatrixFileName;
+
 int Solver::cf;
 bool Solver::tt;
 
@@ -78,14 +81,23 @@ pair<Graph*, Graph*> MakeGraphs(int argc, char** argv)
 
 int main(int argc, char** argv)
 {
-    if (argc < 9 || argc > 12)
+    if (argc < 9 || argc > 13)
     {
         cout << "tree usage: " << argv[0] << " <filename.newick> <filename.newick> <align> <constraints> <weightfunc> <k> <vareps> <coneps> <solver>" << endl;
         cout << "dag usage: " << argv[0] << " <yeastnet> <mapping> <go> <align> <constraints> <weightfunc> <k> <solver>" << endl;
         cout << "tree usage (2): " << argv[0] << " <tree> <map> <tree> <map> <align> <constraints> <weightfunc> <k> <vareps> <coneps> <solver>" << endl;
         return EXIT_FAILURE;
     }
-
+    
+    // change the parser for cell hali inputs. 
+    if (argc == 13){
+        costMatrixFileName = argv[5];
+        argc--;
+        for (int i = 5; i < 14; ++i){
+            argv[i] = argv[i+1];
+        }
+    }
+    
     Timer T;
     T.start();
     Graph *t1, *t2;
@@ -93,15 +105,15 @@ int main(int argc, char** argv)
 		if (stoi(argv[argc - 1]) > 9)
 		{
 			int s = stoi(argv[argc - 1]);
-		  Solver::cf = stoi(argv[4 + (argc == 9) + 2 * (argc == 12)]);
-		  Solver::tt = argc == 12;
-		  string d = argv[5 + (argc == 9) + 2 * (argc == 12)];
-		  double k = stod(argv[6 + (argc == 9) + 2 * (argc == 12)]);
-		  double c = (s != 2) ? 0 : stod(argv[8 + 2 * (argc == 12)]);
-		  var_eps = (argc == 9) ? 0 : stod(argv[7 + 2 * (argc == 12)]);
+            Solver::cf = stoi(argv[4 + (argc == 9) + 2 * (argc == 12)]);
+            Solver::tt = argc == 12;
+            string d = argv[5 + (argc == 9) + 2 * (argc == 12)];
+            double k = stod(argv[6 + (argc == 9) + 2 * (argc == 12)]);
+            double c = (s != 2) ? 0 : stod(argv[8 + 2 * (argc == 12)]);
+            var_eps = (argc == 9) ? 0 : stod(argv[7 + 2 * (argc == 12)]);
 
-		  assert(LP::cf >= 0 && LP::cf <= 2);
-		  assert(d == "j" || d == "s" || d == "e");
+            assert(LP::cf >= 0 && LP::cf <= 2);
+            assert(d == "j" || d == "s" || d == "e");
 
 			ParallelSolver(*t1, *t2, d, k, argc == 9, s - 9).Solve(argv[3 + (argc == 9) + 2 * (argc == 12)]);
 		}		

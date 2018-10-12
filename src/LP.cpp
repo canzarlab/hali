@@ -97,7 +97,7 @@ bool LP::SolveLP()
     PackingJRF simpleJRF(A, b, c1, warm_x, y);
     AugmentedLagrangian solver(simpleJRF, 15);
     solver.setParameter("verbose", false);
-    solver.setParameter("pgtol", 1e-2); // should influence running time a lot
+    solver.setParameter("pgtol", 1e-3); // should influence running time a lot
     solver.setParameter("constraintsTol", 1e-4);
     Timer timeGeno;
     timeGeno.start();
