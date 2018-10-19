@@ -30,7 +30,7 @@ class ParallelSolver
 	ParallelSolver(Graph& t1, Graph& t2, string d, double k, bool dag, int nthreads);
   
 	// Solves the model and writes it down to "filename".
-  void Solve(string filename);
+  std::vector<std::pair<int, int>> Solve(string filename);
 
 	// Updates the best upper bound and solution with regards to locking.
 	bool PushUB(Vector& var, double  val, GenericBnBSolver& solver);

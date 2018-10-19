@@ -131,4 +131,17 @@ void LP::WriteSolution(string fileName)
     for (auto& t : Triplets)
         trp_file << t.row() << " " << t.col() << " " << t.value() << '\n';
     PrintScore(weight);
+    // print solution to get_solution
+    get_solution.clear();
+    for (size_t i = 0; i < K.size(); i++)
+    {
+        for (size_t j = 0; j < K[i].size(); j++)
+        {
+            if (K[i][j] != -1 && x(K[i][j]) > 0.99)
+            {
+                get_solution.push_back(std::make_pair(stoi(n1[i]->taxon), stoi(n2[j]->taxon)));
+            }
+        }
+    }
+    
 }

@@ -16,16 +16,16 @@
 
 #include <iomanip>
 
-#define PGTOL 0.1 
-#define NUMTOL 0.0125
+#define PGTOL 0.01 
+#define NUMTOL 0.0125 // 0.0125
 
 BnBNode::BnBNode(vector<ET>& Triplets, size_t rows, size_t cols) : Triplets(Triplets), rows(rows), cols(cols), warm(nullptr), obj(1)
 {
 	var_lb.conservativeResizeLike(Vector::Zero(cols));
 	var_ub.conservativeResizeLike(Vector::Ones(cols));
-	#if DEBUG == 1	
+// 	#if DEBUG == 1	
 	debug_depth = 0;
-	#endif
+// 	#endif
 }
 
 BnBNode::BnBNode(BnBNode* node) : Triplets(node->Triplets), rows(node->rows), cols(node->cols), obj(1)
@@ -33,9 +33,9 @@ BnBNode::BnBNode(BnBNode* node) : Triplets(node->Triplets), rows(node->rows), co
 	warm = new Vector(node->sol);
 	var_lb = node->var_lb;
 	var_ub = node->var_ub;
-	#if DEBUG == 1	
+// 	#if DEBUG == 1	
 	debug_depth = 1 + node->debug_depth;
-	#endif
+// 	#endif
 }
 
 BnBNode::~BnBNode()
@@ -165,6 +165,10 @@ bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 	#endif
 
 	if (!OnNodeStart(node)) return false;
+    
+    int count_run = 0;
+    int max_runs = std::max(5, 15 + (int) (node->debug_depth)); 
+//     int max_runs = 200000;
 
 	while(1)
 	{
@@ -223,8 +227,10 @@ bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 
 		x = Vector::ConstMapType(solver.x(), nr_cols); 
 		
-		if ((LP::cf == 1 && Add<1>()) || (LP::cf == 2 && (Add<1>() + Add<2>())))
-			continue;
+		if (((LP::cf == 1 && Add<1>()) || (LP::cf == 2 && (Add<1>() + Add<2>()))) && count_run < max_runs){
+			count_run++;
+            continue;
+        }
 
 		if (!OnNodeFinish(node, true))
 		{

@@ -93,7 +93,7 @@ void ParallelSolver::Callback(string filename, GenericBnBSolver* solver)
 	thr_cond.notify_all();
 }
 
-void ParallelSolver::Solve(string filename)
+std::vector<std::pair<int, int>> ParallelSolver::Solve(string filename)
 {
 	GenericBnBSolver* S[thr_num];
 	thread T[thr_num];
@@ -108,11 +108,20 @@ void ParallelSolver::Solve(string filename)
 	unique_lock<mutex> lock{m};
 	thr_cond.wait(lock, [&] { return thr_val != thread::id{}; });
 
+    std::vector<std::pair<int, int>> sols;
+    for (int i = 0; i < thr_num; ++i)
+	{
+		if (S[i]->get_solution.empty() == false){
+            sols = S[i]->get_solution;
+        }
+	}
+    
 	for (int i = 0; i < thr_num; ++i)
 	{
 		T[i].join();
 		delete S[i];
 	}
+	return sols;
 }
 
 /*

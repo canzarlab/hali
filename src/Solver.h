@@ -22,6 +22,8 @@ public:
     virtual ~Solver() {}
     virtual void Solve(string filename) = 0;
     virtual void WriteSolution(string fileName) = 0;
+    std::vector<std::pair<int, int>> get_solution;
+//     double optVal;
 
     static int cf;
     static bool tt;

@@ -14,6 +14,7 @@
 #include <fstream>
 
 extern std::string costMatrixFileName;
+extern double var_eps;
 
 Solver::Solver(Graph& t1, Graph& t2, string d, double k, bool dag) : t1(t1), t2(t2), d(d), k(k), dag(dag)
 {
@@ -39,7 +40,7 @@ void Solver::PrintScore(double weight)
 {
     if (d == "e")
     {
-    	double optVal = -weight;
+        double optVal = -weight;
         int n = (int) cost_matrix.size();
         int m = (int) cost_matrix[0].size();
         for (int i=0; i < n-1; ++i)

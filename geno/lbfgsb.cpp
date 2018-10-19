@@ -463,7 +463,7 @@ SolverStatus LBFGSB::solve() {
   }
   projectedGradient();
   if (_projectedGradient.lpNorm<Eigen::Infinity>() < _tol) {
-    std::clog << "already optimal" << std::endl;
+//     std::clog << "already optimal" << std::endl;
     return SOLVED;
   }
 

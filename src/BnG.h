@@ -57,8 +57,8 @@ class BnBNode
 	Vector     sol;      // Stores the solution vector x after the node has been evaluated.
 	double     obj;      // Stores the objective value after the node has been evaluated.
 
-	#if DEBUG == 1	
 	size_t     debug_depth;
+	#if DEBUG == 1	
 	size_t     debug_nodeid;
 	size_t     debug_parent;	
 	size_t     debug_varid;
