@@ -8,7 +8,9 @@
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-		./hali inputs/a0 inputs/a999 align 2 s 1 0 0.001 2
+		Example run:
+		./hali data/1.tree data/2.tree outs/align 2 j 1 0.25 0 7
+    84.7252
 */
 
 #include "BnG.h"
@@ -18,6 +20,7 @@
 
 #define PGTOL 0.1 
 #define NUMTOL 0.0125
+#define THREADS 4
 
 BnBNode::BnBNode(vector<ET>& Triplets, size_t rows, size_t cols) : Triplets(Triplets), rows(rows), cols(cols), warm(nullptr), obj(1)
 {
@@ -54,7 +57,7 @@ void BnBNode::FixVar(size_t index, double val)
 }
 
 GenericBnBSolver::GenericBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag) : 
-  LP(t1, t2, dist, k, dag), sys_ub(666), finished(0)
+  LP(t1, t2, dist, k, dag), sys_ub(666), finished(0), thr_no(THREADS)
 {	
 }
 
@@ -84,30 +87,28 @@ void GenericBnBSolver::Solve(string filename)
 	PushNode(InitNodeFrom(nullptr));
 	while (!OpenEmpty())
 	{
-		BnBNode* open = EvalOpen();	
-
-		if (open != nullptr) 
+		for (auto& it : EvalOpen())
 		{
-			vector<BnBNode*>* V = EvalBranch(open);
+			vector<BnBNode*>* V = EvalBranch(it);
 			#if DEBUG == 1
 			if (V != nullptr)
-		    debug_log << "fixed: " << V->front()->debug_varid << " (" << V->front()->debug_varval << " <- " << open->sol(V->front()->debug_varid) << ") in node " << open->debug_nodeid << endl << endl;
+				debug_log << "fixed: " << V->front()->debug_varid << " (" << V->front()->debug_varval << " <- " << it->sol(V->front()->debug_varid) << ") in node " << it->debug_nodeid << endl << endl;
 			#endif
 
 			if (V != nullptr)
-				PushAll(V);	
-			else if (sys_ub > open->obj)
+				PushAll(V);
+			else if (sys_ub > it->obj)
 			{
-				sys_sol = open->sol; 
-				sys_ub  = open->obj; 
+				sys_sol = it->sol;
+				sys_ub  = it->obj; 		
 				#if DEBUG == 1	
-				debug_log << "BOUND " << sys_ub << " (" << open->debug_nodeid << ")" << endl << endl;
+				debug_log << "BOUND " << sys_ub << " (" << it->debug_nodeid << ")" << endl << endl;
 				#endif			
 				OnSolverUpdate();
-			}	
-
-			delete open;
-		}
+			}
+			delete it;
+			
+		} 		
 	}
 	#if DEBUG == 1	
 	T.stop();
@@ -142,18 +143,17 @@ BnBNode* GenericBnBSolver::InitNodeFrom(BnBNode* node)
 	else
 		newnode = new BnBNode(node);
 	#if DEBUG == 1
+	debug_lock.lock();
 	newnode->debug_nodeid = debug_nodecnt++;
 	newnode->debug_parent = (node == nullptr) ? 0 : node->debug_nodeid;	
+	debug_lock.unlock();
 	#endif
 	return newnode;
 }
 
 bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 {
-	Triplets = node->Triplets;
-	nr_rows  = node->rows;
-	nr_cols  = node->cols;
-	x        = (node->warm) ? *(node->warm) : Vector::Zero(nr_cols);
+	Vector x = (node->warm) ? *(node->warm) : Vector::Zero(nr_cols);
 
 	#if DEBUG == 1	
 	size_t debug_node_genocnt  = 0;
@@ -168,10 +168,10 @@ bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 
 	while(1)
 	{
-	  SpMat A(nr_rows, nr_cols);
-	  A.setFromTriplets(Triplets.begin(), Triplets.end());
-	  Vector b = Vector::Ones(nr_rows);   	
-		Vector y = Vector::Zero(nr_rows);		
+	  SpMat A(node->rows, node->cols);
+	  A.setFromTriplets(node->Triplets.begin(), node->Triplets.end());
+	  Vector b = Vector::Ones(node->rows);   	
+		Vector y = Vector::Zero(node->rows);		
 		Vector d = -c;					
 
 	  BranchingJRF simpleJRF(A, b, d, x, y);
@@ -221,10 +221,13 @@ bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 			return false;
 		} 
 
-		x = Vector::ConstMapType(solver.x(), nr_cols); 
-		
-		if ((LP::cf == 1 && Add<1>()) || (LP::cf == 2 && (Add<1>() + Add<2>())))
+		x = Vector::ConstMapType(solver.x(), node->cols); 	
+
+		if ((LP::cf == 1 && Add<1>(node->Triplets, x, node->rows)) || (LP::cf == 2 && (Add<1>(node->Triplets, x, node->rows) + Add<2>(node->Triplets, x, node->rows))))
 			continue;
+		
+		node->obj = solver.f();		
+		node->sol = x;
 
 		if (!OnNodeFinish(node, true))
 		{
@@ -235,12 +238,6 @@ bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 			#endif
 			return false;
 		}
-
-		node->Triplets = Triplets;
-		node->rows     = nr_rows;
-		node->cols     = nr_cols;
-		node->obj      = solver.f();		
-		node->sol      = x;
 
     break;
 	}
@@ -268,7 +265,7 @@ vector<BnBNode*>* GenericBnBSolver::EvalBranch(BnBNode* node)
 	  for (size_t j = 0; j < t2.GetNumNodes(); ++j)
 			if (K[i][j] != -1 && IsVarFrac(node->sol(K[i][j])) && !node->IsVarFixed(K[i][j]))				
 			  vp.emplace_back(i, j);				
-  
+
   sort(vp.begin(), vp.end(), [this, node](pair<size_t, size_t>& p, pair<size_t, size_t>& q)
   {
     return VarScore(K[p.first][p.second], node) > VarScore(K[q.first][q.second], node);  
@@ -324,7 +321,7 @@ void GenericBnBSolver::PushAll(vector<BnBNode*>* Nodes)
 }
 
 // ================= TMP\TEST BNB SOLVER ==================== // 
-
+/*
 TestBnBSolver::TestBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag) : GenericBnBSolver(t1, t2, dist, k, dag)
 {	
 }
@@ -344,7 +341,7 @@ BnBNode* TestBnBSolver::EvalOpen()
 	BnBNode* node = Open.top(); Open.pop();
 	return SolveNode(node, PGTOL, NUMTOL) ? node : nullptr;
 }
-
+*/
 // ================= BF BNB SOLVER ==================== // 
 
 BFBnBSolver::BFBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag) : GenericBnBSolver(t1, t2, dist, k, dag)
@@ -361,19 +358,61 @@ bool BFBnBSolver::OpenEmpty()
 	return !Open.size();
 }
 
-BnBNode* BFBnBSolver::EvalOpen()
+void BFBnBSolver::ThreadCallback(vector<BnBNode*>* thr_vec)
 {
-	for (auto& it : Open)
-		if (it->obj == 1 && !SolveNode(it, PGTOL, NUMTOL))
+	for (auto& it : *thr_vec)
+		if (!SolveNode(it, PGTOL, NUMTOL))
 			it->obj = 2;
+}
+
+vector<BnBNode*> BFBnBSolver::EvalOpen()
+{
+	/*
+		1. Solve nodes in open with up to thr_no threads.
+		2. When all threads are finished pick the best node and return.
+
+		Old code for reference:
+
+		for (auto& it : Open)
+    	if (it->obj == 1 && !SolveNode(it, PGTOL, NUMTOL))
+				it->obj = 2;
+
+		sort(Open.begin(), Open.end(), [](BnBNode*& l, BnBNode*& r)
+		{ 
+			return l->obj < r->obj; //return l->obj > r->obj; 
+		});
+
+		BnBNode* node = Open.back(); Open.pop_back();		
+		return (node->obj < 1) ? node : nullptr;
+	*/
+	thread thr_obj[thr_no];	
+	vector<BnBNode*> thr_vec[thr_no];
+	size_t k = 0;	
+
+	for (auto& it : Open)
+		if (it->obj == 1) 
+			thr_vec[k % thr_no].push_back(it), ++k;
+	k = min(k, thr_no);
+
+	for (size_t i = 0; i < k; ++i)
+		thr_obj[i] = thread(&BFBnBSolver::ThreadCallback, this, &thr_vec[i]); 
+
+	for (size_t i = 0; i < k; ++i)
+		thr_obj[i].join();
 
 	sort(Open.begin(), Open.end(), [](BnBNode*& l, BnBNode*& r)
 	{ 
-		return l->obj < r->obj; //return l->obj > r->obj; 
+		return l->obj < r->obj; 
 	});
 
-	BnBNode* node = Open.back(); Open.pop_back();		
-	return (node->obj < 1) ? node : nullptr;
+	while (Open.size() && Open.back()->obj > 0)
+		Open.pop_back();
+
+	vector<BnBNode*> v; 
+	for (size_t i = 0; Open.size() && i < thr_no; ++i)
+		v.push_back(Open.back()), Open.pop_back();
+
+	return v;
 }
 
 // ================= DF BNB SOLVER ==================== //
@@ -392,9 +431,10 @@ bool DFBnBSolver::OpenEmpty()
 	return !Open.size();
 }
 
-BnBNode* DFBnBSolver::EvalOpen()
+vector<BnBNode*> DFBnBSolver::EvalOpen()
 {
 	BnBNode* lt = Open.back(); Open.pop_back();
+
 	if (Open.size() > 1)
 	{
 		BnBNode* rt = Open.back(); 
@@ -407,8 +447,11 @@ BnBNode* DFBnBSolver::EvalOpen()
 			if (rt->obj < 1) Open.push_back(rt); 		
 		}		
 	}
-	return (lt->obj == 2 || (lt->obj == 1 && !SolveNode(lt, PGTOL, NUMTOL))) ? nullptr : lt;
-	// return (lt->obj < 1 || SolveNode(lt, PGTOL, NUMTOL)) ? lt : nullptr;
+
+	vector<BnBNode*> v;
+	if (!(lt->obj == 2 || (lt->obj == 1 && !SolveNode(lt, PGTOL, NUMTOL))))
+		v.push_back(lt);
+	return v;
 }
 
 // ================= Hybrid BNB SOLVER ==================== //
@@ -427,38 +470,69 @@ bool HybridBnBSolver::OpenEmpty()
 	return !Open.size();
 }
 
-BnBNode* HybridBnBSolver::EvalOpen() // TODO this is horrible.
+void HybridBnBSolver::ThreadCallback(vector<BnBNode*>* thr_vec)
+{
+	for (auto& it : *thr_vec)
+		if (!SolveNode(it, PGTOL, NUMTOL))
+			it->obj = 2;
+}
+
+vector<BnBNode*> HybridBnBSolver::EvalOpen()
 {
 	if (!GetObjective())
 	{
 		BnBNode* lt = Open.back(); Open.pop_back();
+
 		if (Open.size() > 1)
 		{
 			BnBNode* rt = Open.back(); 
 			if (lt->obj == 1 && !SolveNode(lt, PGTOL, NUMTOL)) lt->obj = 2;
-			if (lt->warm == rt->warm)
+			if (lt->warm == rt->warm) // TODO this is horrible.
 			{
 				Open.pop_back();
 				if (rt->obj == 1 && !SolveNode(rt, PGTOL, NUMTOL)) rt->obj = 2;
-				if (lt->obj < rt->obj) swap(lt, rt);
+				if (lt->obj < rt->obj) swap(lt, rt); // if (lt->obj > rt->obj) swap(lt, rt);
 				if (rt->obj < 1) Open.push_back(rt); 		
 			}		
 		}
-		return (lt->obj == 2 || (lt->obj == 1 && !SolveNode(lt, PGTOL, NUMTOL))) ? nullptr : lt;
+
+		vector<BnBNode*> v;
+		if (!(lt->obj == 2 || (lt->obj == 1 && !SolveNode(lt, PGTOL, NUMTOL))))
+			v.push_back(lt);
+		return v;
+		//return (lt->obj == 2 || (lt->obj == 1 && !SolveNode(lt, PGTOL, NUMTOL))) ? nullptr : lt;
 	}
 	else
 	{
+		thread thr_obj[thr_no];	
+		vector<BnBNode*> thr_vec[thr_no];
+		size_t k = 0;	
+
 		for (auto& it : Open)
-			if (it->obj == 1 && !SolveNode(it, PGTOL, NUMTOL))
-				it->obj = 2;
+			if (it->obj == 1) 
+				thr_vec[k % thr_no].push_back(it), ++k;
+		k = min(k, thr_no);
+
+		for (size_t i = 0; i < k; ++i)
+			thr_obj[i] = thread(&HybridBnBSolver::ThreadCallback, this, &thr_vec[i]); 
+
+		for (size_t i = 0; i < k; ++i)
+			thr_obj[i].join();
 
 		sort(Open.begin(), Open.end(), [](BnBNode*& l, BnBNode*& r)
 		{ 
-			return l->obj < r->obj; //return l->obj > r->obj; 
+			return l->obj < r->obj; 
 		});
 
-		BnBNode* node = Open.back(); Open.pop_back();		
-		return (node->obj < 1) ? node : nullptr;
+		while (Open.size() && Open.back()->obj > 0)
+			Open.pop_back();
+
+		vector<BnBNode*> v; 
+		for (size_t i = 0; Open.size() && i < thr_no; ++i)
+			v.push_back(Open.back()), Open.pop_back();
+
+		return v;
+		//return (node->obj < 1) ? node : nullptr;
 	}
 }
 

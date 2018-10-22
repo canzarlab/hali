@@ -106,6 +106,7 @@ class X : public P																																					                         
 	bool OnNodeFinish(BnBNode* node, bool flag)                                                                                        \
 	{                                                                                                                                  \
 		if (!flag) return true;                                                                                                          \
+		Vector& x = node->sol;                                                                                                           \
                                                                                                                                      \
 		map<size_t, bool> M;                                                                                                             \
 		for (int i = 0; i < x.size(); ++i)                                                                                               \
@@ -140,22 +141,22 @@ class X : public P																																					                         
 	double grd_lb;                                                                                                                     \
 };
 
-PAR_CLASS(BnBBFMF, BFBnBSolver, { return 0.5 - abs(0.5 - x(i)); })
-PAR_CLASS(BnBBFLF, BFBnBSolver, { return abs(0.5 - x(i)); })
-PAR_CLASS(BnBBFWF, BFBnBSolver, { return c(i) * x(i); })
-PAR_CLASS(BnBBFF,  BFBnBSolver, { return x(i); })
+PAR_CLASS(BnBBFMF, BFBnBSolver, { return 0.5 - abs(0.5 - node->sol(i)); })
+PAR_CLASS(BnBBFLF, BFBnBSolver, { return abs(0.5 - node->sol(i)); })
+PAR_CLASS(BnBBFWF, BFBnBSolver, { return c(i) * node->sol(i); })
+PAR_CLASS(BnBBFF,  BFBnBSolver, { return node->sol(i); })
 PAR_CLASS(BnBBFA,  BFBnBSolver, ;)
 
-PAR_CLASS(BnBDFMF, DFBnBSolver, { return 0.5 - abs(0.5 - x(i)); })
-PAR_CLASS(BnBDFLF, DFBnBSolver, { return abs(0.5 - x(i)); })
-PAR_CLASS(BnBDFWF, DFBnBSolver, { return c(i) * x(i); })
-PAR_CLASS(BnBDFF,  DFBnBSolver, { return x(i); })
+PAR_CLASS(BnBDFMF, DFBnBSolver, { return 0.5 - abs(0.5 - node->sol(i)); })
+PAR_CLASS(BnBDFLF, DFBnBSolver, { return abs(0.5 - node->sol(i)); })
+PAR_CLASS(BnBDFWF, DFBnBSolver, { return c(i) * node->sol(i); })
+PAR_CLASS(BnBDFF,  DFBnBSolver, { return node->sol(i); })
 PAR_CLASS(BnBDFA,  DFBnBSolver, ;)
 
-PAR_CLASS(BnBHMF, HybridBnBSolver, { return 0.5 - abs(0.5 - x(i)); })
-PAR_CLASS(BnBHLF, HybridBnBSolver, { return abs(0.5 - x(i)); })
-PAR_CLASS(BnBHWF, HybridBnBSolver, { return c(i) * x(i); })
-PAR_CLASS(BnBHF,  HybridBnBSolver, { return x(i); })
+PAR_CLASS(BnBHMF, HybridBnBSolver, { return 0.5 - abs(0.5 - node->sol(i)); })
+PAR_CLASS(BnBHLF, HybridBnBSolver, { return abs(0.5 - node->sol(i)); })
+PAR_CLASS(BnBHWF, HybridBnBSolver, { return c(i) * node->sol(i); })
+PAR_CLASS(BnBHF,  HybridBnBSolver, { return node->sol(i); })
 PAR_CLASS(BnBHA,  HybridBnBSolver, ;)
 
 #endif

@@ -23,6 +23,9 @@
 #include <fstream>
 #include <cmath>
 
+#include <thread>
+#include <mutex>
+
 /*
 	Class BnBNode
 
@@ -94,6 +97,10 @@ class GenericBnBSolver : public LP
 	Vector GetSolution()  { return sys_sol; } // Returns the current solution (copy).
 	double GetObjective() { return sys_ub; }  // Returns the current objective function value.
 
+	// Threading interface.
+	int  GetNoThreads()      { return thr_no; }
+	void SetNoThreads(int n) { thr_no = n;    }
+
 	protected:
 
 	// Creates a BnBNode using current solver data and a designated parent node. 
@@ -112,14 +119,14 @@ class GenericBnBSolver : public LP
 	virtual bool              OpenEmpty      ()                           { return true; }	
 
 	// Evaluate the Open set and decide which node to branch.	
-	virtual BnBNode*          EvalOpen       ()                           { return nullptr; }
+	virtual vector<BnBNode*>  EvalOpen       ()                           { return vector<BnBNode*>(); }
 
 	// Branch the node and return a vector of children nodes.
 	// Return nullptr when there is nothing to branch into.
 	virtual vector<BnBNode*>* EvalBranch     (BnBNode* node);
 	
 	// Fractionallity of the variable. For the 'most fractional' approach,
-	// please replace 'c(i)' with '0.5 - abs(0.5 - x(i))'.
+	// please replace 'c(i)' with '0.5 - abs(0.5 - node->sol(i))'.
 	virtual double            VarScore       (int i, BnBNode* node)       { return c(i); }
 
 	// Initialize a node from a parent node and fix variable at index to val.
@@ -150,6 +157,8 @@ class GenericBnBSolver : public LP
 	Vector sys_sol;  // Stores the best current solution.
 	string filename; // Solution file name.
 
+	size_t thr_no;   // Max number of active threads.
+
 	private:
 
 	// Pushes all nodes to the Open set.
@@ -160,6 +169,7 @@ class GenericBnBSolver : public LP
 	#if DEBUG == 1
 	public: 
 	
+	mutex	   debug_lock;
 	ofstream debug_log;
 	string   debug_file;
 	size_t   debug_nodecnt;
@@ -174,7 +184,7 @@ class GenericBnBSolver : public LP
 	class TestBnBSolver
 	
 	Example on how to create BnB solvers using the generic solver. It is equivallent to hali option 2. 
-*/
+
 class TestBnBSolver : public GenericBnBSolver
 {
 	public:
@@ -186,10 +196,11 @@ class TestBnBSolver : public GenericBnBSolver
 	// Override when neccessary.
 	void              PushNode   (BnBNode* node) override;
 	bool              OpenEmpty  ()              override;
-	BnBNode*          EvalOpen   ()              override;
+	vector<BnBNode*>  EvalOpen   ()              override;
 
 	stack<BnBNode*> Open; // Open set defined as a stack.
 };
+*/
 
 /*
 	class BFBnBSolver
@@ -204,9 +215,11 @@ class BFBnBSolver : public GenericBnBSolver
 
 	protected:
 
+	void ThreadCallback(vector<BnBNode*>* thr_vec);
+
 	void              PushNode   (BnBNode* node) override;
 	bool              OpenEmpty  ()              override;
-	BnBNode*          EvalOpen   ()              override;
+	vector<BnBNode*>  EvalOpen   ()              override;
 
 	vector<BnBNode*> Open; 
 };
@@ -226,7 +239,7 @@ class DFBnBSolver : public GenericBnBSolver
 
 	void              PushNode   (BnBNode* node) override;
 	bool              OpenEmpty  ()              override;
-	BnBNode*          EvalOpen   ()              override;
+	vector<BnBNode*>  EvalOpen   ()              override;
 
 	vector<BnBNode*> Open; 
 };
@@ -247,9 +260,13 @@ class HybridBnBSolver : public GenericBnBSolver
 
 	void              PushNode   (BnBNode* node) override;
 	bool              OpenEmpty  ()              override;
-	BnBNode*          EvalOpen   ()              override;
+	vector<BnBNode*>  EvalOpen   ()              override;
 
 	vector<BnBNode*> Open; 
+
+	private:
+
+	void ThreadCallback(vector<BnBNode*>* thr_vec);
 };
 
 #endif

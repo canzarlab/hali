@@ -47,7 +47,7 @@ Solver* MakeSolver(Graph& t1, Graph& t2, int argc, char** argv)
     else if (s == 3)
         return new LPCP(t1, t2, d, k, argc == 9);
     else if (s == 4)
-        return new TestBnBSolver(t1, t2, d, k, argc == 9);
+        return new DFBnBSolver(t1, t2, d, k, argc == 9); // was test, to delete
     else if (s == 5)
         return new LPInt(t1, t2, d, k, argc == 9);
 		else if (s == 6) 
