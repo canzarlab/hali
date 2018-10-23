@@ -11,6 +11,8 @@
 #ifndef LP_H
 #define LP_H
 
+#include<iostream>
+
 #include "Solver.h"
 #include "Geno.h"
 #include "IndependentSetConstraint.h"
@@ -31,6 +33,8 @@ public:
 protected:
     template<class T> int Add();
     template<int N> int Add();
+		template<class T> int Add(vector<ET>& Triplets, Vector& x, size_t& nr_rows);
+    template<int N> int Add(vector<ET>& Triplets, Vector& x, size_t& nr_rows);
     virtual bool SolveLP();
     void MatchingConstraints();
 
@@ -62,6 +66,26 @@ int LP::Add()
     if (N == 1)
         return Add<CrossingConstraint>();
     return (dag ? Add<AntichainConstraint>() : Add<IndependentSetConstraint>());
+}
+
+template<class T>
+int LP::Add(vector<ET>& Triplets, Vector& x, size_t& nr_rows)
+{
+    int row_old = nr_rows;
+    T c12(Triplets, t1, t2, K, x, false);
+    nr_rows += c12.AddTriplets(nr_rows);
+    T c21(Triplets, t2, t1, K, x, true);
+    nr_rows += c21.AddTriplets(nr_rows);
+    return nr_rows - row_old;
+}
+
+template<int N>
+int LP::Add(vector<ET>& Triplets, Vector& x, size_t& nr_rows)
+{
+    static_assert(N == 1 || N == 2, "invalid constraint");
+    if (N == 1)
+        return Add<CrossingConstraint>(Triplets, x, nr_rows);
+    return (dag ? Add<AntichainConstraint>() : Add<IndependentSetConstraint>(Triplets, x, nr_rows));
 }
 
 #endif

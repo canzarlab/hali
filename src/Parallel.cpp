@@ -11,6 +11,8 @@
 		./hali data0/a1 data0/a1 tmp_outs/test 2 s 1 0 0 10
 		
     ./hali random_trees_data/tree_50_leaves_instances/uniform_tree_50_leaves_505.tree random_trees_data/tree_50_leaves_instances/uniform_tree_50_leaves_5505.tree outs/TEST 2 s 1 0 0 15 2>/dev/null 
+
+		./hali random_trees_data/tree_50_leaves_instances/uniform_tree_50_leaves_958.tree random_trees_data/tree_50_leaves_instances/uniform_tree_50_leaves_5958.tree outs/TEST 2 s 1 0 0 15 2>/dev/null
 */
 
 #include "Parallel.h"
@@ -80,7 +82,9 @@ void ParallelSolver::Callback(string filename, GenericBnBSolver* solver)
   #if DEBUG == 1
   solver->debug_file = filename + '_' + typeid(*solver).name();
   #endif
+
 	solver->Solve("");	
+
 	if (!sol && filename != "") 
 	{
 		thr_slock.lock(); 
