@@ -93,7 +93,7 @@ void ParallelSolver::Callback(string filename, GenericBnBSolver* solver)
 	thr_cond.notify_all();
 }
 
-std::vector<std::pair<int, int>> ParallelSolver::Solve(string filename)
+std::vector<std::pair<int, int>> ParallelSolver::Solve(string filename, double & optVal)
 {
 	GenericBnBSolver* S[thr_num];
 	thread T[thr_num];
@@ -113,6 +113,7 @@ std::vector<std::pair<int, int>> ParallelSolver::Solve(string filename)
 	{
 		if (S[i]->get_solution.empty() == false){
             sols = S[i]->get_solution;
+            optVal = S[i]->moptVal;
         }
 	}
     

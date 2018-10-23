@@ -167,8 +167,8 @@ bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 	if (!OnNodeStart(node)) return false;
     
     int count_run = 0;
-    int max_runs = std::max(5, 15 + (int) (node->debug_depth)); 
-//     int max_runs = 200000;
+//     int max_runs = std::max(5, 15 + (int) (node->debug_depth)); 
+    int max_runs = 200000;
 
 	while(1)
 	{

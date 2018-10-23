@@ -40,19 +40,25 @@ void Solver::PrintScore(double weight)
 {
     if (d == "e")
     {
-        double optVal = -weight;
+        double optVal2 = -weight;
         int n = (int) cost_matrix.size();
         int m = (int) cost_matrix[0].size();
         for (int i=0; i < n-1; ++i)
-            optVal += cost_matrix[i][m-1];
+            optVal2 += cost_matrix[i][m-1];
         for (int j=0; j < m-1; ++j)
-            optVal += cost_matrix[n-1][j];
-        cout << ">>>>>>>>>>>>>>>>>>>>>> Optimal value:" << optVal << "." << endl;
+            optVal2 += cost_matrix[n-1][j];
+        cout << ">>>>>>>>>>>>>>>>>>>>>> Optimal value:" << optVal2 << "." << endl;
+        moptVal = optVal2;
+//         return optVal2;
     }
-    else if (dag)
+    else if (dag){
         cout << weight << " ";
-    else
+//         return weight;
+    }
+    else{
         cout << ((d == "j") ? JaccardDist(weight) : SymdifDist(weight)) << " ";
+//         return ((d == "j") ? JaccardDist(weight) : SymdifDist(weight));
+    }
 }
 
 int Solver::GetMax(newick_node* node, int& hmax) const

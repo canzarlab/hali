@@ -20,6 +20,7 @@
 #include "Parallel.h"
 
 #include <iostream>
+#include <fstream>
 using namespace std;
 // global varialbe for cost matrix name 
 std::string costMatrixFileName;
@@ -78,7 +79,9 @@ pair<Graph*, Graph*> MakeGraphs(int argc, char** argv)
     return {MakeDAG(argv[1], argv[2], s), MakeDAG(argv[3], nullptr, s)};
 }
 
-void runHali(int argc, char** argv){
+void runHali(int argc, char** argv, std::ofstream& myfile){
+    
+//     "t1, t2, penalty(DTW:0, Aver:1, Max: 2), OPT, conflicts, runtime, optSols\n"
     
     for (int i=0; i < argc; ++i){
         cout << argv[i] << " ";
@@ -87,12 +90,12 @@ void runHali(int argc, char** argv){
     }
     cout << "\n";
     
-    Timer T;
-    T.start();
     Graph *t1, *t2;
     tie(t1, t2) = MakeGraphs(argc, argv);
     if (stoi(argv[argc - 1]) > 9)
     {
+        Timer T;
+        T.start();
         int s = stoi(argv[argc - 1]);
         Solver::cf = stoi(argv[4 + (argc == 9) + 2 * (argc == 12)]);
         Solver::tt = argc == 12;
@@ -126,7 +129,10 @@ void runHali(int argc, char** argv){
         assert(LP::cf >= 0 && LP::cf <= 2);
         assert(d == "j" || d == "s" || d == "e");
         double optVal = 0.0;
-        std::vector<std::pair<int, int>> hali_sol = ParallelSolver(*t1, *t2, d, k, argc == 9, s - 9).Solve(argv[3 + (argc == 9) + 2 * (argc == 12)]);
+        std::vector<std::pair<int, int>> hali_sol = ParallelSolver(*t1, *t2, d, k, argc == 9, s - 9).Solve(argv[3 + (argc == 9) + 2 * (argc == 12)], optVal);
+        T.stop();
+        cout << "TIME: " << T.secs() << " secs" << endl;
+        
         int false_align = 0;
         for (auto &u: hali_sol){
             if (u.first != u.second){
@@ -135,6 +141,11 @@ void runHali(int argc, char** argv){
         }
         cout << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> OPT: "<< optVal <<" Total number of false alignments: " << false_align << endl;
         cout << "=============================================================================\n";
+        myfile << optVal << ","<<false_align<< "," << T.secs() << ",";
+        for (auto &u: hali_sol){
+            myfile << u.first << "|"<< u.second << "|";
+        }
+        myfile << endl;
     }		
     else
     {
@@ -144,8 +155,6 @@ void runHali(int argc, char** argv){
         delete t1;
         delete t2;
     } 
-    T.stop();
-    cout << "TIME: " << T.secs() << " secs" << endl;
 }
 int main(int uargc, char** uargv)
 {
@@ -157,9 +166,14 @@ int main(int uargc, char** uargv)
     int max_instances = stoi(uargv[1]);
     
     int argc = 12;
-    char* argv[12] = {"./hali", "t1.tree", "t1.map", "t2.tree", "t2.map", "t_output", "2", "e", "0", "0.2", "0.01", "35"};
+    char* argv[12] = {"./hali", "t1.tree", "t1.map", "t2.tree", "t2.map", "t_output", "2", "e", "0", "0.02", "0.01", "35"};
     Timer T;
     T.start();
+    // write the results to a file
+    string outFileName = "hali_overall_results.csv";
+    std::ofstream myfile;
+    myfile.open (outFileName);
+    myfile << "t1, t2, penalty(DTW:0 Aver:1 Max: 2), OPT, conflicts, runtime (s), optSols\n";
     
     // change the parser for cell hali inputs. 
     for (int i = 0; i < max_instances; ++i)
@@ -168,17 +182,17 @@ int main(int uargc, char** uargv)
         {
             cout << "Compute Hali for tree:" << i << " and " << "tree:"<<j<< endl; 
             //inputs
-            std::string t1Name = "t_"+to_string(i)+".tree";
-            std::string t2Name = "t_"+to_string(j)+".tree";
-            std::string t1Map  = "t_"+to_string(i)+".map";
-            std::string t2Map  = "t_"+to_string(j)+".map";
-            std::string dtwCostName = "dtw_cost_matrix_"+to_string(i)+"_"+to_string(j)+".csv";
-            std::string maxCostName = "max_cost_matrix_"+to_string(i)+"_"+to_string(j)+".csv";
-            std::string averCostName = "aver_cost_matrix_"+to_string(i)+"_"+to_string(j)+".csv";
+            std::string t1Name = "input/t_"+to_string(i)+".tree";
+            std::string t2Name = "input/t_"+to_string(j)+".tree";
+            std::string t1Map  = "input/t_"+to_string(i)+".map";
+            std::string t2Map  = "input/t_"+to_string(j)+".map";
+            std::string dtwCostName = "input/dtw_cost_matrix_"+to_string(i)+"_"+to_string(j)+".csv";
+            std::string maxCostName = "input/max_cost_matrix_"+to_string(i)+"_"+to_string(j)+".csv";
+            std::string averCostName = "input/aver_cost_matrix_"+to_string(i)+"_"+to_string(j)+".csv";
             // outputs
-            std::string dtwOut = "dtw_output_"+to_string(i)+"_"+to_string(j)+".csv";
-            std::string maxOut = "max_output_"+to_string(i)+"_"+to_string(j)+".csv";
-            std::string averOut = "aver_output_"+to_string(i)+"_"+to_string(j)+".csv";
+            std::string dtwOut = "results/dtw_output_"+to_string(i)+"_"+to_string(j)+".csv";
+            std::string maxOut = "results/max_output_"+to_string(i)+"_"+to_string(j)+".csv";
+            std::string averOut = "results/aver_output_"+to_string(i)+"_"+to_string(j)+".csv";
             
             argv[1] = const_cast<char*>(t1Name.c_str());
             argv[2] = const_cast<char*>(t1Map.c_str());
@@ -187,20 +201,26 @@ int main(int uargc, char** uargv)
             cout << "DTW:\n";
             argv[5] = const_cast<char*>(dtwOut.c_str());
             costMatrixFileName = dtwCostName;
-            runHali(argc, argv);
+            myfile << i<<","<< j << "," << 0 << ",";
+            runHali(argc, argv, myfile);
             
             cout << "Average:\n";
             argv[5] = const_cast<char*>(averOut.c_str());
             costMatrixFileName = averCostName;
-            runHali(argc, argv);
+            myfile << i<<","<< j << "," << 1 << ",";
+            runHali(argc, argv,  myfile);
             
             cout << "Maximum:\n";
             argv[5] = const_cast<char*>(maxOut.c_str());
             costMatrixFileName = maxCostName;
-            runHali(argc, argv);
+            myfile << i<<","<< j << "," << 2 << ",";
+            runHali(argc, argv, myfile);
             cout << "===========================================***************************************==================================\n\n";
         }
     }
+    
+    myfile.close();
+    
     T.stop();
     cout << "TIME: " << T.secs() << " secs" << endl;
 }
