@@ -198,25 +198,19 @@ void EditDist(Graph& g1, Graph& g2)
 
     vvvi P;
     GenPerms(n2, 0, {}, P);
-    vector<newick_node*> trees;
+    int m = numeric_limits<int>::max();
     for (int i = 0; i < P.size(); ++i)
     {
         newick_node* nroot = new newick_node(n2[0]->taxon);
         MakeTree(n2[0], nroot, 0, P[i]);
-        trees.push_back(nroot);
-    }
-
-    int m = numeric_limits<int>::max();
-    for (int i = 0; i < P.size(); ++i)
-    {
         print_tree(t1.GetRoot(), cout);
         cout << ' ';
-        print_tree(trees[i], cout);
+        print_tree(nroot, cout);
         cout << ' ';
-        int nm = OrderedEditDist(t1, trees[i], t2.GetNumNodes());
+        int nm = OrderedEditDist(t1, nroot, t2.GetNumNodes());
         m = min(m, nm);
         cout << nm << endl;
-        DeallocTree(trees[i]);
+        DeallocTree(nroot);
     }
     cout << "MIN: " << m << endl;
 }
