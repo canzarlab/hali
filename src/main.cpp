@@ -21,6 +21,7 @@
 
 #include <iostream>
 #include <numeric>
+
 int Solver::cf;
 bool Solver::tt;
 
@@ -30,6 +31,8 @@ typedef vector<vvi> vvvi;
 typedef vector<vvvi> vvvvi;
 typedef vector<string> vs;
 typedef vector<vs> vvs;
+typedef tuple<int, int, int, int> i4;
+typedef map<i4, pair<vector<i4>, int>> bt_map;
 
 int GetNumTrees(newick_node* root, vn& N)
 {
@@ -95,12 +98,18 @@ int CalcSubtreeSizes(newick_node* root, map<newick_node*, int>& S)
     return S[root] = s;
 }
 
-int Distance(vvvvi& DP, vvi& T1, vvi& T2, vvs& L1, vvs& L2, int n, int m, int i, int j, int k, int l)
+int Distance(vvvvi& DP, bt_map& P, vvi& T1, vvi& T2, vvs& L1, vvs& L2, int n, int m, int i, int j, int k, int l)
 {
     if (i + j == n)
+    {
+        P[{i, j, k, l}] = {{}, -1};
         return m - k - l;
+    }
     if (k + l == m)
+    {
+        P[{i, j, k, l}] = {{}, -1};
         return n - i - j;
+    }
 
     int p = n - T1[i][j + 1] - j, q = m - T2[k][l + 1] - l;
     int x = i ? p + 1 : p + 2, y = i ? j : j - 1;
@@ -122,6 +131,12 @@ int Distance(vvvvi& DP, vvi& T1, vvi& T2, vvs& L1, vvs& L2, int n, int m, int i,
     int c = DP[x][y][xx][yy];
     int d = L1[i][j + 1] != L2[k][l + 1];
     int mm = min(min(o, a), b + c + d);
+    if (mm == b + c + d)
+        P[{i, j, k, l}] = {{{x, y, xx, yy}, {i, j + T1[i][j + 1], k, l + T2[k][l + 1]}}, 0};
+    else if (mm == o)
+        P[{i, j, k, l}] = {{{i, j + 1, k, l}}, 1};
+    else
+        P[{i, j, k, l}] = {{{i, j, k, l + 1}}, 2};
     return mm;
 }
 
@@ -156,20 +171,15 @@ void GenTables(newick_node* root, int n, vvs& L, vvi& T)
                 L[i][j] = node->taxon, T[i][j] = S[node];
 }
 
-int OrderedEditDist(Tree& t1, newick_node* t2, int m)
+int OrderedEditDist(bt_map& P, vvs& L1, vvs& L2, vvi& T1, vvi& T2, int n, int m)
 {
-    int n = t1.GetNumNodes();
-    vvs L1(n + 1, vs(n + 1)), L2(m + 1, vs(m + 1));
-    vvi T1(n + 1, vi(n + 1, 1)), T2(m + 1, vi(m + 1, 1));
-    GenTables(t1.GetRoot(), n, L1, T1);
-    GenTables(t2, m, L2, T2);
     vvvvi DP(n + 1, vvvi(n + 1, vvi(m + 1, vi(m + 1, -1))));
     for (int i = n; i >= 0; --i)
         for (int j = n; j >= 0; --j)
             for (int k = m; k >= 0; --k)
                 for (int l = m; l >= 0; --l)
                     if (i + j <= n && k + l <= m)
-                        DP[i][j][k][l] = Distance(DP, T1, T2, L1, L2, n, m, i, j, k, l);
+                        DP[i][j][k][l] = Distance(DP, P, T1, T2, L1, L2, n, m, i, j, k, l);
 
     return DP[0][0][0][0];
 }
@@ -179,6 +189,16 @@ void DeallocTree(newick_node* root)
     for (newick_child* child = root->child; child; child = child->next)
         DeallocTree(child->node);
     delete root;
+}
+
+void dfs(bt_map& BP, vvs& L1, vvs& L2, i4 r)
+{
+    int i = get<0>(r), j = get<1>(r);
+    int k = get<2>(r), l = get<3>(r);
+    if (BP[r].second != -1)
+        cout << L1[i][j + 1] << ' ' << L2[k][l + 1] << " | " << BP[r].second << endl;
+    for (i4 p : BP[r].first)
+        dfs(BP, L1, L2, p);
 }
 
 void EditDist(Graph& g1, Graph& g2)
@@ -191,21 +211,26 @@ void EditDist(Graph& g1, Graph& g2)
 
     vvvi P;
     GenPerms(n2, 0, {}, P);
-    int m = numeric_limits<int>::max();
+    bt_map BP;
+    vvs BL1, BL2;
+    int mm = numeric_limits<int>::max();
     for (int i = 0; i < P.size(); ++i)
     {
         newick_node* nroot = new newick_node(n2[0]->taxon);
         MakeTree(n2[0], nroot, 0, P[i]);
-        print_tree(t1.GetRoot(), cout);
-        cout << ' ';
-        print_tree(nroot, cout);
-        cout << ' ';
-        int nm = OrderedEditDist(t1, nroot, t2.GetNumNodes());
-        m = min(m, nm);
-        cout << nm << endl;
+        int n = n1.size(), m = n2.size();
+        vvs L1(n + 1, vs(n + 1)), L2(m + 1, vs(m + 1));
+        vvi T1(n + 1, vi(n + 1, 1)), T2(m + 1, vi(m + 1, 1));
+        GenTables(t1.GetRoot(), n, L1, T1);
+        GenTables(t2.GetRoot(), m, L2, T2);
+        bt_map NP;
+        int nm = OrderedEditDist(NP, L1, L2, T1, T2, n, m);
+        if (nm < mm)
+            mm = nm, BP = NP, BL1 = L1, BL2 = L2;
         DeallocTree(nroot);
     }
-    cout << "MIN: " << m << endl;
+    dfs(BP, BL1, BL2, {0, 0, 0, 0});
+    clog << "MIN: " << mm << endl;
 }
 
 Solver* MakeSolver(Graph& t1, Graph& t2, int argc, char** argv)
@@ -300,5 +325,5 @@ int main(int argc, char** argv)
         delete t2;
     }
     T.stop();
-    cout << "TIME: " << T.secs() << " secs" << endl;
+    clog << "TIME: " << T.secs() << " secs" << endl;
 }
