@@ -157,8 +157,8 @@ void GenTables(newick_node* root, int n, vvs& L, vvi& T)
 {
     map<newick_node*, int> S;
     CalcSubtreeSizes(root, S);
-    for (int i = 0; i < n; ++i)
-        for (int j = 0; j < n; ++j)
+    for (int i = 0; i <= n; ++i)
+        for (int j = 0; j <= n; ++j)
             if (newick_node* node = (i + j <= n ? GetLastRemoved(root, i, j) : nullptr))
                 L[i][j] = node->taxon, T[i][j] = S[node];
 }
@@ -166,7 +166,7 @@ void GenTables(newick_node* root, int n, vvs& L, vvi& T)
 int OrderedEditDist(Tree& t1, newick_node* t2, int m)
 {
     int n = t1.GetNumNodes();
-    vvs L1(n, vs(n)), L2(m, vs(m));
+    vvs L1(n + 1, vs(n + 1)), L2(m + 1, vs(m + 1));
     vvi T1(n + 1, vi(n + 1, 1)), T2(m + 1, vi(m + 1, 1));
     GenTables(t1.GetRoot(), n, L1, T1);
     GenTables(t2, m, L2, T2);
