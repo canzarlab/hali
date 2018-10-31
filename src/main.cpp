@@ -127,7 +127,7 @@ int hack5(vvvvi& DP, vvi& T1, vvi& T2, vvs& L1, vvs& L2, int n, int m, int i, in
     int a = DP[i][j][k][l + 1] + 1;
     int b = DP[i][j + T1[i][j + 1]][k][l + T2[k][l + 1]];
     int c = DP[x][y][xx][yy];
-    int d = L1[i][j] != L2[k][l];
+    int d = L1[i][j + 1] != L2[k][l + 1];
     int mm = min(min(o, a), b + c + d);
     return mm;
 }
