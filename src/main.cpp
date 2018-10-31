@@ -95,7 +95,7 @@ int CalcSubtreeSizes(newick_node* root, map<newick_node*, int>& S)
     return S[root] = s;
 }
 
-int hack5(vvvvi& DP, vvi& T1, vvi& T2, vvs& L1, vvs& L2, int n, int m, int i, int j, int k, int l)
+int Distance(vvvvi& DP, vvi& T1, vvi& T2, vvs& L1, vvs& L2, int n, int m, int i, int j, int k, int l)
 {
     if (i + j == n)
         return m - k - l;
@@ -176,7 +176,7 @@ int OrderedEditDist(Tree& t1, newick_node* t2, int m)
             for (int k = m; k >= 0; --k)
                 for (int l = m; l >= 0; --l)
                     if (i + j <= n && k + l <= m)
-                        DP[i][j][k][l] = hack5(DP, T1, T2, L1, L2, n, m, i, j, k, l);
+                        DP[i][j][k][l] = Distance(DP, T1, T2, L1, L2, n, m, i, j, k, l);
 
     return DP[0][0][0][0];
 }
