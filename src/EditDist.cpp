@@ -181,18 +181,20 @@ void DeallocTree(newick_node* root)
     delete root;
 }
 
-void PrintMatching(bt_map& BP, vvs& L1, vvs& L2, i4 r)
+void PrintMatching(bt_map& BP, vvs& L1, vvs& L2, i4 r, bool swp)
 {
     int i = get<0>(r), j = get<1>(r);
     int k = get<2>(r), l = get<3>(r);
+    if (BP[r].second == -1) return;
+    string x = L1[i][j + 1], y = L2[k][l + 1];
     if (BP[r].second == 0)
-        cout << "MATCH " << L1[i][j + 1] << ' ' << L2[k][l + 1] << endl;
+        cout << "MATCH " << (swp ? y : x) << ' ' << (swp ? x : y) << endl;
     else if (BP[r].second == 1)
-        cout << "DEL " << L1[i][j + 1] << endl;
+        cout << (!swp ? "DEL " : "INS ") << x << endl;
     else if (BP[r].second == 2)
-        cout << "INS " << L2[k][l + 1] << endl;
+        cout << (!swp ? "INS " : "DEL ") << y << endl;
     for (i4 p : BP[r].first)
-        PrintMatching(BP, L1, L2, p);
+        PrintMatching(BP, L1, L2, p, swp);
 }
 
 void EditDist(Graph& g1, Graph& g2)
@@ -200,8 +202,9 @@ void EditDist(Graph& g1, Graph& g2)
     vn n1, n2;
     int k1 = GetNumTrees(g1.GetRoot(), n1), k2 = GetNumTrees(g2.GetRoot(), n2);
     Tree& t1 = (Tree&)(k1 >= k2 ? g1 : g2), &t2 = (Tree&)(k1 >= k2 ? g2 : g1);
+    bool swp = false;
     if (k2 > k1)
-        swap(n1, n2);
+        swap(n1, n2), swp = true;
 
     vvvi P;
     GenPerms(n2, 0, {}, P);
@@ -223,6 +226,6 @@ void EditDist(Graph& g1, Graph& g2)
             mm = nm, BP = NP, BL1 = L1, BL2 = L2;
         DeallocTree(nroot);
     }
-    PrintMatching(BP, BL1, BL2, {0, 0, 0, 0});
+    PrintMatching(BP, BL1, BL2, {0, 0, 0, 0}, swp);
     clog << "DIST: " << mm << endl;
 }
