@@ -116,6 +116,13 @@ int hack5(vvvvi& DP, vvi& T1, vvi& T2, vvs& L1, vvs& L2, int n, int m, int i, in
     assert(DP[x][y][xx][yy] != -1);
     assert(!L1[i][j].empty() && !L2[k][l].empty());
 
+    clog << i << ' ' << j << ' ' << k << ' ' << l << endl << string(7, '=') << endl;
+    clog << i << ' ' << j + 1 << ' ' << k << ' ' << l << endl;
+    clog << i << ' ' << j << ' ' << k << ' ' << l + 1 << endl;
+    clog << i << ' ' << j + T1[i][j + 1] << ' ' << k << ' ' << l + T2[k][l + 1] << endl;
+    clog << x << ' ' << y << ' ' << xx << ' ' << yy << endl;
+    clog << endl;
+
     int o = DP[i][j + 1][k][l] + 1;
     int a = DP[i][j][k][l + 1] + 1;
     int b = DP[i][j + T1[i][j + 1]][k][l + T2[k][l + 1]];
