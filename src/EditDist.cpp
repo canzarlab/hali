@@ -36,7 +36,7 @@ int GetNumTrees(newick_node* root, vn& N)
     return s * f;
 }
 
-void GenPerms(vn& v, int k, vvi S, vvvi& P)
+void GenPerms(vn& v, int k, vvi& S, vvvi& P)
 {
     if (k == v.size())
     {
@@ -59,11 +59,11 @@ void GenPerms(vn& v, int k, vvi S, vvvi& P)
 
 int MakeTree(newick_node* root, newick_node* nroot, int k, vvi& I)
 {
-    vector<newick_node*> c;
+    vn c;
     for (newick_child* child = root->child; child; child = child->next)
         c.push_back(child->node);
 
-    vector<newick_node*> nc;
+    vn nc;
     newick_child** childptr = &nroot->child;
     vi J(I[k].size());
     for (int i = 0; i < I[k].size(); ++i)
@@ -108,12 +108,6 @@ int Distance(vvvvi& DP, bt_map& P, vvi& T1, vvi& T2, vvs& L1, vvs& L2, int n, in
         x = 1, y = 0;
     if (k == 0 && l == 0)
         xx = 1, yy = 0;
-
-    assert(DP[i][j + 1][k][l] != -1);
-    assert(DP[i][j][k][l + 1] != -1);
-    assert(DP[i][j + T1[i][j + 1]][k][l + T2[k][l + 1]] != -1);
-    assert(DP[x][y][xx][yy] != -1);
-    assert(!L1[i][j].empty() && !L2[k][l].empty());
 
     int o = DP[i][j + 1][k][l] + 1;
     int a = DP[i][j][k][l + 1] + 1;
@@ -188,11 +182,11 @@ void PrintMatching(bt_map& BP, vvs& L1, vvs& L2, i4 r, bool swp)
     if (BP[r].second == -1) return;
     string x = L1[i][j + 1], y = L2[k][l + 1];
     if (BP[r].second == 0)
-        cout << "MATCH " << (swp ? y : x) << ' ' << (swp ? x : y) << endl;
+        cout << "MATCH " << (swp ? y : x) << ' ' << (swp ? x : y) << '\n';
     else if (BP[r].second == 1)
-        cout << (!swp ? "DEL " : "INS ") << x << endl;
+        cout << (!swp ? "DEL " : "INS ") << x << '\n';
     else if (BP[r].second == 2)
-        cout << (!swp ? "INS " : "DEL ") << y << endl;
+        cout << (!swp ? "INS " : "DEL ") << y << '\n';
     for (i4 p : BP[r].first)
         PrintMatching(BP, L1, L2, p, swp);
 }
@@ -207,7 +201,8 @@ void EditDist(Graph& g1, Graph& g2)
         swap(n1, n2), swp = true;
 
     vvvi P;
-    GenPerms(n2, 0, {}, P);
+    vvi S;
+    GenPerms(n2, 0, S, P);
     bt_map BP;
     vvs BL1, BL2;
     int mm = numeric_limits<int>::max();
