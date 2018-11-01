@@ -93,7 +93,10 @@ newick_node* load_tree(const char* filename)
 {
     ifstream File(filename);
     if (!File)
+    {
+        cout << "Cannot read " << filename << endl;
         return nullptr;
+    }
 
     int Size;
     File.seekg(0, ios::end);

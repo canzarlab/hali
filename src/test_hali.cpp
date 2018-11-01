@@ -27,6 +27,8 @@ std::string costMatrixFileName;
 int Solver::cf;
 bool Solver::tt;
 
+void EditDist(Graph& g1, Graph& g2);
+
 Solver* MakeSolver(Graph& t1, Graph& t2, int argc, char** argv)
 {
     int s = stoi(argv[argc - 1]);
@@ -46,7 +48,7 @@ Solver* MakeSolver(Graph& t1, Graph& t2, int argc, char** argv)
     else if (s == 1)
         return new LP(t1, t2, d, k, argc == 9);
     else if (s == 2)
-        return new BnB(t1, t2, d, k, argc == 9, c);
+        EditDist(t1, t2);
     else if (s == 3)
         return new LPCP(t1, t2, d, k, argc == 9);
     else if (s == 4)
