@@ -14,6 +14,7 @@
 #include <cassert>
 #include <algorithm>
 #include "Graph.h"
+#include "read_csv.h"
 
 typedef vector<int> vi;
 typedef vector<vi> vvi;
@@ -88,8 +89,14 @@ int CalcSubtreeSizes(newick_node* root, map<newick_node*, int>& S)
     return S[root] = s;
 }
 
-int Distance(vvvvi& DP, bt_map& P, vvi& T1, vvi& T2, vvs& L1, vvs& L2, int n, int m, int i, int j, int k, int l)
+int Distance(vvvvi& DP, bt_map& P, vvi& T1, vvi& T2, vvs& L1, vvs& L2, int n, int m, int i, int j, int k, int l, vector<vector<double>> & cost_matrix)
 {
+    cout << "Labels: " << L1[i][j+1] << ", " << L2[k][l+1]<< endl;
+    int del_i = 5;
+    int insert_j = 5; //TODO
+    int numrows = (int) cost_matrix.size();
+    int numcols = (int) cost_matrix[0].size();
+    
     if (i + j == n)
     {
         P[{i, j, k, l}] = {{}, -1};
@@ -109,11 +116,11 @@ int Distance(vvvvi& DP, bt_map& P, vvi& T1, vvi& T2, vvs& L1, vvs& L2, int n, in
     if (k == 0 && l == 0)
         xx = 1, yy = 0;
 
-    int o = DP[i][j + 1][k][l] + 1;
-    int a = DP[i][j][k][l + 1] + 1;
+    int o = DP[i][j + 1][k][l] + (int)  cost_matrix[del_i][numcols-1];  //TODO
+    int a = DP[i][j][k][l + 1] + (int) cost_matrix[numrows-1][insert_j];
     int b = DP[i][j + T1[i][j + 1]][k][l + T2[k][l + 1]];
     int c = DP[x][y][xx][yy];
-    int d = L1[i][j + 1] != L2[k][l + 1];
+    int d = (int) cost_matrix[del_i][insert_j];
     int mm = min(min(o, a), b + c + d);
     if (mm == b + c + d)
         P[{i, j, k, l}] = {{{x, y, xx, yy}, {i, j + T1[i][j + 1], k, l + T2[k][l + 1]}}, 0};
@@ -155,7 +162,7 @@ void GenTables(newick_node* root, int n, vvs& L, vvi& T)
                 L[i][j] = node->taxon, T[i][j] = S[node];
 }
 
-int OrderedEditDist(bt_map& P, vvs& L1, vvs& L2, vvi& T1, vvi& T2, int n, int m)
+int OrderedEditDist(bt_map& P, vvs& L1, vvs& L2, vvi& T1, vvi& T2, int n, int m, vector<vector<double>> & cost_matrix)
 {
     vvvvi DP(n + 1, vvvi(n + 1, vvi(m + 1, vi(m + 1, -1))));
     for (int i = n; i >= 0; --i)
@@ -163,7 +170,7 @@ int OrderedEditDist(bt_map& P, vvs& L1, vvs& L2, vvi& T1, vvi& T2, int n, int m)
             for (int k = m; k >= 0; --k)
                 for (int l = m; l >= 0; --l)
                     if (i + j <= n && k + l <= m)
-                        DP[i][j][k][l] = Distance(DP, P, T1, T2, L1, L2, n, m, i, j, k, l);
+                        DP[i][j][k][l] = Distance(DP, P, T1, T2, L1, L2, n, m, i, j, k, l, cost_matrix);
 
     return DP[0][0][0][0];
 }
@@ -191,12 +198,18 @@ void PrintMatching(bt_map& BP, vvs& L1, vvs& L2, i4 r, bool swp)
         PrintMatching(BP, L1, L2, p, swp);
 }
 
-void EditDist(Graph& g1, Graph& g2)
+void EditDist(Graph& g1, Graph& g2, string & fileName)
 {
     vn n1, n2;
     int k1 = GetNumTrees(g1.GetRoot(), n1), k2 = GetNumTrees(g2.GetRoot(), n2);
     Tree& t1 = (Tree&)(k1 >= k2 ? g1 : g2), &t2 = (Tree&)(k1 >= k2 ? g2 : g1);
     bool swp = false;
+    
+    // read data.
+    std::ifstream f(fileName.c_str());
+    CSVReader reader(fileName);
+    vector<vector<double>> cost_matrix = reader.getDoubleData();
+        
     if (k2 > k1)
         swap(n1, n2), swp = true;
 
@@ -216,7 +229,7 @@ void EditDist(Graph& g1, Graph& g2)
         GenTables(t1.GetRoot(), n, L1, T1);
         GenTables(t2.GetRoot(), m, L2, T2);
         bt_map NP;
-        int nm = OrderedEditDist(NP, L1, L2, T1, T2, n, m);
+        int nm = OrderedEditDist(NP, L1, L2, T1, T2, n, m, cost_matrix);
         if (nm < mm)
             mm = nm, BP = NP, BL1 = L1, BL2 = L2;
         DeallocTree(nroot);

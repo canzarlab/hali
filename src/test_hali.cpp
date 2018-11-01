@@ -27,7 +27,7 @@ std::string costMatrixFileName;
 int Solver::cf;
 bool Solver::tt;
 
-void EditDist(Graph& g1, Graph& g2);
+void EditDist(Graph& g1, Graph& g2, string & fileName);
 
 Solver* MakeSolver(Graph& t1, Graph& t2, int argc, char** argv)
 {
@@ -48,7 +48,7 @@ Solver* MakeSolver(Graph& t1, Graph& t2, int argc, char** argv)
     else if (s == 1)
         return new LP(t1, t2, d, k, argc == 9);
     else if (s == 2)
-        EditDist(t1, t2);
+        EditDist(t1, t2, costMatrixFileName);
     else if (s == 3)
         return new LPCP(t1, t2, d, k, argc == 9);
     else if (s == 4)
@@ -152,7 +152,7 @@ void runHali(int argc, char** argv, std::ofstream& myfile){
     else
     {
         Solver* solver = MakeSolver(*t1, *t2, argc, argv);
-    	solver->Solve(argv[3 + (argc == 9) + 2 * (argc == 12)]);
+        if (solver) solver->Solve(argv[3 + (argc == 9) + 2 * (argc == 12)]);
         delete solver;
         delete t1;
         delete t2;
@@ -172,7 +172,7 @@ int main(int uargc, char** uargv)
     int max_instances = stoi(uargv[1]);
     
     int argc = 12;
-    char* argv[12] = {"./hali", "t1.tree", "t1.map", "t2.tree", "t2.map", "t_output", "2", "e", "0", "0.02", "0.01", "30"};
+    char* argv[12] = {"./hali", "t1.tree", "t1.map", "t2.tree", "t2.map", "t_output", "2", "e", "0", "0.02", "0.01", "2"};
     Timer T;
     T.start();
     // write the results to a file
