@@ -18,9 +18,9 @@
 
 #include <iomanip>
 
-#define PGTOL 0.1 
-#define NUMTOL 0.0125
-#define THREADS 10
+#define PGTOL 0.01 
+#define NUMTOL 0.00125
+#define THREADS 4
 
 BnBNode::BnBNode(vector<ET>& Triplets, size_t rows, size_t cols) : Triplets(Triplets), rows(rows), cols(cols), warm(nullptr), obj(1)
 {
@@ -80,35 +80,40 @@ void GenericBnBSolver::Solve(string filename)
 	#if DEBUG == 1	
 	Timer T; T.start();
 	#endif
-
+    
 	sys_sol.conservativeResizeLike(Vector::Zero(nr_cols));
 	OnSolverInit();
 
 	PushNode(InitNodeFrom(nullptr));
 	while (!OpenEmpty())
 	{
-		for (auto& it : EvalOpen())
+        for (auto& it : EvalOpen())
 		{
-			vector<BnBNode*>* V = EvalBranch(it);
-			#if DEBUG == 1
-			if (V != nullptr)
-				debug_log << "fixed: " << V->front()->debug_varid << " (" << V->front()->debug_varval << " <- " << it->sol(V->front()->debug_varid) << ") in node " << it->debug_nodeid << endl << endl;
-			#endif
+            if (cumtime <  ((double) nr_cols)/14.0)
+            {
+                vector<BnBNode*>* V = EvalBranch(it);
+                #if DEBUG == 1
+                if (V != nullptr)
+                    debug_log << "fixed: " << V->front()->debug_varid << " (" << V->front()->debug_varval << " <- " << it->sol(V->front()->debug_varid) << ") in node " << it->debug_nodeid << endl << endl;
+                #endif
 
-			if (V != nullptr)
-				PushAll(V);
-			else if (sys_ub > it->obj)
-			{
-				sys_sol = it->sol;
-				sys_ub  = it->obj; 		
-				#if DEBUG == 1	
-				debug_log << "BOUND " << sys_ub << " (" << it->debug_nodeid << ")" << endl << endl;
-				#endif			
-				OnSolverUpdate();
-			}
+                if (V != nullptr)
+                    PushAll(V);
+                else if (sys_ub > it->obj)
+                {
+                    sys_sol = it->sol;
+                    sys_ub  = it->obj; 		
+                    #if DEBUG == 1	
+                    debug_log << "BOUND " << sys_ub << " (" << it->debug_nodeid << ")" << endl << endl;
+                    #endif			
+                    OnSolverUpdate();
+                }
+            }
 			delete it;
-			
-		} 		
+		}
+		
+		if (cumtime >  ((double) nr_cols)/14.0)
+            break;
 	}
 	#if DEBUG == 1	
 	T.stop();
@@ -167,12 +172,16 @@ bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 	if (!OnNodeStart(node)) return false;
     
     int count_run = 0;
-//     int max_runs = std::max(5, 15 + (int) (node->debug_depth)); 
+//     int max_runs = std::max(5, 10 + ((int) (node->debug_depth))*5); 
     int max_runs = 200000;
 
 	while(1)
 	{
-	  SpMat A(node->rows, node->cols);
+	  Timer Tt;
+      Tt.start();
+      
+        count_run++;
+        SpMat A(node->rows, node->cols);
 	  A.setFromTriplets(node->Triplets.begin(), node->Triplets.end());
 	  Vector b = Vector::Ones(node->rows);   	
 		Vector y = Vector::Zero(node->rows);		
@@ -226,9 +235,14 @@ bool GenericBnBSolver::SolveNode(BnBNode* node, double pgtol, double numtol)
 		} 
 
 		x = Vector::ConstMapType(solver.x(), node->cols); 	
-
-		if ((LP::cf == 1 && Add<1>(node->Triplets, x, node->rows)) || (LP::cf == 2 && (Add<1>(node->Triplets, x, node->rows) + Add<2>(node->Triplets, x, node->rows))))
-			continue;
+        
+        Tt.stop();
+        cumtime += Tt.secs();
+		if (cumtime <  ((double) nr_cols)/15.0 &&((LP::cf == 1 && Add<1>(node->Triplets, x, node->rows)) 
+        || (LP::cf == 2 && (Add<1>(node->Triplets, x, node->rows) + Add<2>(node->Triplets, x, node->rows)))))
+        {  
+                continue;
+        }
 		
 		node->obj = solver.f();		
 		node->sol = x;
@@ -352,6 +366,13 @@ BFBnBSolver::BFBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag) 
 {	
 }
 
+BFBnBSolver::~BFBnBSolver()
+{
+    for (auto & it: Open){
+        delete it;
+    }
+}
+
 void BFBnBSolver::PushNode(BnBNode* node)
 {
 	Open.push_back(node);
@@ -425,6 +446,13 @@ DFBnBSolver::DFBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag) 
 {	
 }
 
+DFBnBSolver::~DFBnBSolver()
+{
+    for (auto & it: Open){
+        delete it;
+    }
+}
+
 void DFBnBSolver::PushNode(BnBNode* node)
 {
 	Open.push_back(node);
@@ -462,6 +490,13 @@ vector<BnBNode*> DFBnBSolver::EvalOpen()
 
 HybridBnBSolver::HybridBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag) : GenericBnBSolver(t1, t2, dist, k, dag)
 {	
+}
+
+HybridBnBSolver::~HybridBnBSolver()
+{
+    for (auto & it: Open){
+        delete it;
+    }
 }
 
 void HybridBnBSolver::PushNode(BnBNode* node)

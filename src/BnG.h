@@ -12,7 +12,7 @@
 #ifndef BNG_H
 #define BNG_H
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include "LP.h"
 #include "Greedy.h"
@@ -158,6 +158,8 @@ class GenericBnBSolver : public LP
 	string filename; // Solution file name.
 
 	size_t thr_no;   // Max number of active threads.
+	
+	double cumtime = 0.0; // stored runtime. 
 
 	private:
 
@@ -212,6 +214,8 @@ class BFBnBSolver : public GenericBnBSolver
 	public:
 
 	BFBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag);
+    
+    ~BFBnBSolver();
 
 	protected:
 
@@ -234,6 +238,8 @@ class DFBnBSolver : public GenericBnBSolver
 	public:
 
 	DFBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag);
+    
+    ~DFBnBSolver();
 
 	protected:
 
@@ -255,6 +261,8 @@ class HybridBnBSolver : public GenericBnBSolver
 	public:
 
 	HybridBnBSolver(Graph& t1, Graph& t2, string dist, double k, bool dag);
+    
+    ~HybridBnBSolver();
 
 	protected:
 

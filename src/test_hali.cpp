@@ -50,7 +50,7 @@ Solver* MakeSolver(Graph& t1, Graph& t2, int argc, char** argv)
     else if (s == 3)
         return new LPCP(t1, t2, d, k, argc == 9);
     else if (s == 4)
-        return new TestBnBSolver(t1, t2, d, k, argc == 9);
+        return new DFBnBSolver(t1, t2, d, k, argc == 9); // was test, to delete
     else if (s == 5)
         return new LPInt(t1, t2, d, k, argc == 9);
 		else if (s == 6) 
@@ -92,10 +92,10 @@ void runHali(int argc, char** argv, std::ofstream& myfile){
     
     Graph *t1, *t2;
     tie(t1, t2) = MakeGraphs(argc, argv);
+    Timer T;
+    T.start();
     if (stoi(argv[argc - 1]) > 9)
     {
-        Timer T;
-        T.start();
         int s = stoi(argv[argc - 1]);
         Solver::cf = stoi(argv[4 + (argc == 9) + 2 * (argc == 12)]);
         Solver::tt = argc == 12;
@@ -150,10 +150,14 @@ void runHali(int argc, char** argv, std::ofstream& myfile){
     else
     {
         Solver* solver = MakeSolver(*t1, *t2, argc, argv);
-        solver->Solve(argv[3 + (argc == 9) + 2 * (argc == 12)]);
+    	solver->Solve(argv[3 + (argc == 9) + 2 * (argc == 12)]);
         delete solver;
         delete t1;
         delete t2;
+        T.stop();
+        cout << "TIME: " << T.secs() << " secs" << endl;
+        myfile << 0.0 << ","<< 0.0 << "," << T.secs() << "\n";
+        
     } 
 }
 int main(int uargc, char** uargv)
@@ -166,7 +170,7 @@ int main(int uargc, char** uargv)
     int max_instances = stoi(uargv[1]);
     
     int argc = 12;
-    char* argv[12] = {"./hali", "t1.tree", "t1.map", "t2.tree", "t2.map", "t_output", "2", "e", "0", "0.02", "0.01", "35"};
+    char* argv[12] = {"./hali", "t1.tree", "t1.map", "t2.tree", "t2.map", "t_output", "2", "e", "0", "0.02", "0.01", "30"};
     Timer T;
     T.start();
     // write the results to a file

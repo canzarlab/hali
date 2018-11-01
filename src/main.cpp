@@ -114,8 +114,8 @@ int main(int argc, char** argv)
 
             assert(LP::cf >= 0 && LP::cf <= 2);
             assert(d == "j" || d == "s" || d == "e");
-
-			ParallelSolver(*t1, *t2, d, k, argc == 9, s - 9).Solve(argv[3 + (argc == 9) + 2 * (argc == 12)]);
+            double optVal =0.0;
+			ParallelSolver(*t1, *t2, d, k, argc == 9, s - 9).Solve(argv[3 + (argc == 9) + 2 * (argc == 12)], optVal);
 		}		
 		else
 		{
