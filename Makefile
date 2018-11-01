@@ -6,7 +6,7 @@ CFLAGS = -O2 -std=c++11 -pthread -m64 #-DEIGEN_USE_MKL_ALL -I$(MKLROOT)/include
 INCL = -I.
 VPATH = src
 BINARIES = hali filter bgen conflicts convert
-GENO_OBJS = test_hali.o geno/augmentedLagrangian.o geno/lbfgsb.o geno/lineSearch.o
+GENO_OBJS = main.o geno/augmentedLagrangian.o geno/lbfgsb.o geno/lineSearch.o
 TEST_BINARIES = 
 HEADERS = 
 

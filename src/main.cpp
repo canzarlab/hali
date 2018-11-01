@@ -27,7 +27,7 @@ std::string costMatrixFileName;
 int Solver::cf;
 bool Solver::tt;
 
-void EditDist(Graph& g1, Graph& g2, string &fileName);
+void EditDist(Graph& g1, Graph& g2, string &fileName, string & outFileName);
 
 Solver* MakeSolver(Graph& t1, Graph& t2, int argc, char** argv)
 {
@@ -43,13 +43,15 @@ Solver* MakeSolver(Graph& t1, Graph& t2, int argc, char** argv)
     assert(LP::cf >= 0 && LP::cf <= 2);
     assert(d == "j" || d == "s" || d == "e");
     assert(s >= 0 && s <= 9);
+    
+    string outFileName = argv[5];
 
     if (s == 0)
         return new Greedy(t1, t2, d, k, dag);
     else if (s == 1)
         return new LP(t1, t2, d, k, dag);
     else if (s == 2)
-        EditDist(t1, t2, costMatrixFileName);
+        EditDist(t1, t2, costMatrixFileName, outFileName);
     else if (s == 3)
         return new LPCP(t1, t2, d, k, dag);
     else if (s == 4)
@@ -127,7 +129,7 @@ int main(int argc, char** argv)
     if (solver) solver->Solve(argv[3 + (argc == 9) + 2 * (argc == 12)]);
         delete solver;
         delete t1;
-    delete t2;
+        delete t2;
     } 
     T.stop();
     cout << "TIME: " << T.secs() << " secs" << endl;

@@ -210,18 +210,18 @@ int main(int uargc, char** uargv)
             myfile << i<<","<< j << "," << 0 << ",";
             runHali(argc, argv, myfile);
             
-            cout << "Average:\n";
-            argv[5] = const_cast<char*>(averOut.c_str());
-            costMatrixFileName = averCostName;
-            myfile << i<<","<< j << "," << 1 << ",";
-            runHali(argc, argv,  myfile);
-            
-            cout << "Maximum:\n";
-            argv[5] = const_cast<char*>(maxOut.c_str());
-            costMatrixFileName = maxCostName;
-            myfile << i<<","<< j << "," << 2 << ",";
-            runHali(argc, argv, myfile);
-            cout << "===========================================***************************************==================================\n\n";
+//             cout << "Average:\n";
+//             argv[5] = const_cast<char*>(averOut.c_str());
+//             costMatrixFileName = averCostName;
+//             myfile << i<<","<< j << "," << 1 << ",";
+//             runHali(argc, argv,  myfile);
+//             
+//             cout << "Maximum:\n";
+//             argv[5] = const_cast<char*>(maxOut.c_str());
+//             costMatrixFileName = maxCostName;
+//             myfile << i<<","<< j << "," << 2 << ",";
+//             runHali(argc, argv, myfile);
+//             cout << "===========================================***************************************==================================\n\n";
         }
     }
     
