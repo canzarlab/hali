@@ -92,7 +92,7 @@ int Distance(vvvvi& DP, bt_map& P, vvi& T1, vvi& T2, vvs& L1, vvs& L2, int n, in
 {
     if (i + j == n)
     {
-        P[{i, j, k, l}] = {{}, -1};
+        P[{i, j, k, l}] = {{}, -2};
         return m - k - l;
     }
     if (k + l == m)
@@ -177,16 +177,32 @@ void DeallocTree(newick_node* root)
 
 void PrintMatching(bt_map& BP, vvs& L1, vvs& L2, i4 r, bool swp)
 {
-    int i = get<0>(r), j = get<1>(r);
-    int k = get<2>(r), l = get<3>(r);
-    if (BP[r].second == -1) return;
-    string x = L1[i][j + 1], y = L2[k][l + 1];
-    if (BP[r].second == 0)
-        cout << "MATCH " << (swp ? y : x) << ' ' << (swp ? x : y) << '\n';
-    else if (BP[r].second == 1)
-        cout << (!swp ? "DEL " : "INS ") << x << '\n';
-    else if (BP[r].second == 2)
-        cout << (!swp ? "INS " : "DEL ") << y << '\n';
+    int i, j, k, l, op = BP[r].second;
+    tie(i, j, k, l) = r;
+    int n = L1.size() - 1, m = L2.size() - 1;
+    switch (op)
+    {
+        case -2:
+            for (int nl = l + 1; nl <= m - k; ++nl)
+                cout << (!swp ? "INS " : "DEL ") << L2[k][nl] << '\n';
+            break;
+        case -1:
+            for (int nj = j + 1; nj <= n - i; ++nj)
+                cout << (!swp ? "DEL " : "INS ") << L1[i][nj] << '\n';
+            break;
+        case 0:
+        {
+            string x = L1[i][j + 1], y = L2[k][l + 1];
+            cout << "MATCH " << (swp ? y : x) << ' ' << (swp ? x : y) << '\n';
+            break;
+        }
+        case 1:
+            cout << (!swp ? "DEL " : "INS ") << L1[i][j + 1] << '\n';
+            break;
+        case 2:
+            cout << (!swp ? "INS " : "DEL ") << L2[k][l + 1] << '\n';
+            break;
+    }
     for (i4 p : BP[r].first)
         PrintMatching(BP, L1, L2, p, swp);
 }
