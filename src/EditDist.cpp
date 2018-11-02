@@ -96,7 +96,7 @@ int CalcSubtreeSizes(newick_node* root, map<newick_node*, int>& S)
     return S[root] = s;
 }
 
-int Distance(vvvvi& DP, vvvvi& P, vvi& T1, vvi& T2, vvs& L1, vvs& L2, int n, int m, int i, int j, int k, int l)
+int Distance(vvvvi& DP, vvvvi& P, vvi& T1, vvi& T2, vvs& L1, vvs& L2, vvi& D1, vvi& D2, int n, int m, int i, int j, int k, int l)
 {
     if (i + j == n)
     {
@@ -108,19 +108,12 @@ int Distance(vvvvi& DP, vvvvi& P, vvi& T1, vvi& T2, vvs& L1, vvs& L2, int n, int
         P[i][j][k][l] = DEL_TREE;
         return n - i - j;
     }
-
-    int p = n - T1[i][j + 1] - j, q = m - T2[k][l + 1] - l;
-    int x = i ? p + 1 : p + 2, y = i ? j : j - 1;
-    int xx = k ? q + 1 : q + 2, yy = k ? l : l - 1;
-    if (i == 0 && j == 0)
-        x = 1, y = 0;
-    if (k == 0 && l == 0)
-        xx = 1, yy = 0;
-
+    int p = D1[i][j + 1], q = D2[k][l + 1];
+    int x = n - p - T1[i][j + 1], y = m - q - T2[k][l + 1];
     int o = DP[i][j + 1][k][l] + 1;
     int a = DP[i][j][k][l + 1] + 1;
     int b = DP[i][j + T1[i][j + 1]][k][l + T2[k][l + 1]];
-    int c = DP[x][y][xx][yy];
+    int c = DP[p + 1][x][q + 1][y];
     int d = L1[i][j + 1] != L2[k][l + 1];
     int mm = min(min(o, a), b + c + d);
     if (mm == b + c + d)
@@ -132,12 +125,14 @@ int Distance(vvvvi& DP, vvvvi& P, vvi& T1, vvi& T2, vvs& L1, vvs& L2, int n, int
     return mm;
 }
 
-newick_node* GetLastRemoved(newick_node* root, int i, int j)
+newick_node* GetLastRemoved(newick_node* root, map<newick_node*, int>& R, int i, int j)
 {
     list<newick_node*> D(1, root);
+    int ii = 0;
     while (i--)
     {
         root = D.front();
+        R[root] = ii++;
         D.pop_front();
         auto it = D.begin();
         for (newick_child* child = root->child; child; child = child->next)
@@ -153,17 +148,17 @@ newick_node* GetLastRemoved(newick_node* root, int i, int j)
     return root;
 }
 
-void GenTables(newick_node* root, int n, vvs& L, vvi& T)
+void GenTables(newick_node* root, int n, vvs& L, vvi& T, vvi& D)
 {
-    map<newick_node*, int> S;
+    map<newick_node*, int> S, R;
     CalcSubtreeSizes(root, S);
-    for (int i = 0; i <= n; ++i)
+    for (int i = n; i >= 0; --i)
         for (int j = 0; j <= n; ++j)
-            if (newick_node* node = (i + j <= n ? GetLastRemoved(root, i, j) : nullptr))
-                L[i][j] = node->taxon, T[i][j] = S[node];
+            if (newick_node* node = (i + j && i + j <= n ? GetLastRemoved(root, R, i, j) : nullptr))
+                L[i][j] = node->taxon, T[i][j] = S[node], D[i][j] = R[node];
 }
 
-int OrderedEditDist(vvvvi& P, vvs& L1, vvs& L2, vvi& T1, vvi& T2, int n, int m)
+int OrderedEditDist(vvvvi& P, vvs& L1, vvs& L2, vvi& T1, vvi& T2, vvi& D1, vvi& D2, int n, int m)
 {
     vvvvi DP(n + 1, vvvi(n + 1, vvi(m + 1, vi(m + 1, -1))));
     for (int i = n; i >= 0; --i)
@@ -171,7 +166,7 @@ int OrderedEditDist(vvvvi& P, vvs& L1, vvs& L2, vvi& T1, vvi& T2, int n, int m)
             for (int k = m; k >= 0; --k)
                 for (int l = m; l >= 0; --l)
                     if (i + j <= n && k + l <= m)
-                        DP[i][j][k][l] = Distance(DP, P, T1, T2, L1, L2, n, m, i, j, k, l);
+                        DP[i][j][k][l] = Distance(DP, P, T1, T2, L1, L2, D1, D2, n, m, i, j, k, l);
 
     return DP[0][0][0][0];
 }
@@ -183,7 +178,7 @@ void DeallocTree(newick_node* root)
     delete root;
 }
 
-void PrintMatching(vvvvi& BP, vvs& L1, vvs& L2, vvi& T1, vvi& T2, i4 r, bool swp)
+void PrintMatching(vvvvi& BP, vvs& L1, vvs& L2, vvi& T1, vvi& T2, vvi& D1, vvi& D2, i4 r, bool swp)
 {
     int i, j, k, l;
     tie(i, j, k, l) = r;
@@ -201,26 +196,20 @@ void PrintMatching(vvvvi& BP, vvs& L1, vvs& L2, vvi& T1, vvi& T2, i4 r, bool swp
         case MATCH:
         {
             string xs = L1[i][j + 1], ys = L2[k][l + 1];
-            int p = n - T1[i][j + 1] - j, q = m - T2[k][l + 1] - l;
-            int x = i ? p + 1 : p + 2, y = i ? j : j - 1;
-            int xx = k ? q + 1 : q + 2, yy = k ? l : l - 1;
-            if (i == 0 && j == 0)
-                x = 1, y = 0;
-            if (k == 0 && l == 0)
-                xx = 1, yy = 0;
-
+            int p = D1[i][j + 1], q = D2[k][l + 1];
+            int x = n - p - T1[i][j + 1], y = m - q - T2[k][l + 1];
             cout << "MATCH " << (swp ? ys : xs) << ' ' << (swp ? xs : ys) << '\n';
-            PrintMatching(BP, L1, L2, T1, T2, {i, j + T1[i][j + 1], k, l + T2[k][l + 1]}, swp);
-            PrintMatching(BP, L1, L2, T1, T2, {x, y, xx, yy}, swp);
+            PrintMatching(BP, L1, L2, T1, T2, D1, D2, {i, j + T1[i][j + 1], k, l + T2[k][l + 1]}, swp);
+            PrintMatching(BP, L1, L2, T1, T2, D1, D2, {p + 1, x, q + 1, y}, swp);
             break;
         }
         case DEL_NODE:
             cout << (!swp ? "DEL " : "INS ") << L1[i][j + 1] << '\n';
-            PrintMatching(BP, L1, L2, T1, T2, {i, j + 1, k, l}, swp);
+            PrintMatching(BP, L1, L2, T1, T2, D1, D2, {i, j + 1, k, l}, swp);
             break;
         case INS_NODE:
             cout << (!swp ? "INS " : "DEL ") << L2[k][l + 1] << '\n';
-            PrintMatching(BP, L1, L2, T1, T2, {i, j, k, l + 1}, swp);
+            PrintMatching(BP, L1, L2, T1, T2, D1, D2, {i, j, k, l + 1}, swp);
             break;
     }
 }
@@ -239,7 +228,7 @@ void EditDist(Graph& g1, Graph& g2)
     GenPerms(n2, 0, S, P);
     vvvvi BP;
     vvs BL1, BL2;
-    vvi BT1, BT2;
+    vvi BT1, BT2, BD1, BD2;
     int mm = numeric_limits<int>::max();
     for (int i = 0; i < P.size(); ++i)
     {
@@ -248,14 +237,20 @@ void EditDist(Graph& g1, Graph& g2)
         int n = n1.size(), m = n2.size();
         vvs L1(n + 1, vs(n + 1)), L2(m + 1, vs(m + 1));
         vvi T1(n + 1, vi(n + 1, 1)), T2(m + 1, vi(m + 1, 1));
-        GenTables(t1.GetRoot(), n, L1, T1);
-        GenTables(t2.GetRoot(), m, L2, T2);
+        vvi D1(n + 1, vi(n + 1, -1)), D2(m + 1, vi(m + 1, -1));
+        GenTables(t1.GetRoot(), n, L1, T1, D1);
+        GenTables(t2.GetRoot(), m, L2, T2, D2);
         vvvvi NP(n + 1, vvvi(n + 1, vvi(m + 1, vi(m + 1, -1))));
-        int nm = OrderedEditDist(NP, L1, L2, T1, T2, n, m);
+        int nm = OrderedEditDist(NP, L1, L2, T1, T2, D1, D2, n, m);
         if (nm < mm)
-            mm = nm, BP = NP, BL1 = L1, BL2 = L2, BT1 = T1, BT2 = T2;
+        {
+            mm = nm, BP = move(NP);
+            BL1 = move(L1), BL2 = move(L2);
+            BT1 = move(T1), BT2 = move(T2);
+            BD1 = move(D1), BD2 = move(D2);
+        }
         DeallocTree(nroot);
     }
-    PrintMatching(BP, BL1, BL2, BT1, BT2, {0, 0, 0, 0}, swp);
+    PrintMatching(BP, BL1, BL2, BT1, BT2, BD1, BD2, {0, 0, 0, 0}, swp);
     clog << "DIST: " << mm << endl;
 }
