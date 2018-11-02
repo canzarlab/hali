@@ -14,6 +14,7 @@
 #include <cassert>
 #include <algorithm>
 #include "Graph.h"
+#include "read_csv.h"
 
 typedef vector<int> vi;
 typedef vector<vi> vvi;
@@ -96,25 +97,39 @@ int CalcSubtreeSizes(newick_node* root, map<newick_node*, int>& S)
     return S[root] = s;
 }
 
-int Distance(vvvvi& DP, vvvvi& P, vvi& T1, vvi& T2, vvs& L1, vvs& L2, vvi& D1, vvi& D2, int n, int m, int i, int j, int k, int l)
+int Distance(vvvvi& DP, vvvvi& P, vvi& T1, vvi& T2, vvs& L1, vvs& L2, vvi& D1, vvi& D2, int n, int m, int i, int j, int k, int l, vector<vector<int>> & cost_matrix)
 {
     if (i + j == n)
     {
         P[i][j][k][l] = INS_TREE;
-        return m - k - l;
+        int cost = 0;
+        for (int iter = l+1; iter <= m-k; ++iter)
+        {
+            int index = stoi(L2[k][iter]);
+            cost += cost_matrix[n][index];
+        }
+        return cost;
     }
     if (k + l == m)
     {
         P[i][j][k][l] = DEL_TREE;
-        return n - i - j;
+        int cost = 0;
+        for (int iter = j+1; iter <= n-i; ++iter)
+        {
+            int index = stoi(L1[i][iter]);
+            cost += cost_matrix[index][m];
+        }
+        return cost;
     }
+    int del_i = stoi(L1[i][j+1]);
+    int insert_j = stoi(L2[k][l+1]);
     int p = D1[i][j + 1], q = D2[k][l + 1];
     int x = n - p - T1[i][j + 1], y = m - q - T2[k][l + 1];
-    int o = DP[i][j + 1][k][l] + 1;
-    int a = DP[i][j][k][l + 1] + 1;
+    int o = DP[i][j + 1][k][l] + cost_matrix[del_i][m];
+    int a = DP[i][j][k][l + 1] + cost_matrix[n][insert_j];
     int b = DP[i][j + T1[i][j + 1]][k][l + T2[k][l + 1]];
     int c = DP[p + 1][x][q + 1][y];
-    int d = L1[i][j + 1] != L2[k][l + 1];
+    int d = cost_matrix[del_i][insert_j];
     int mm = min(min(o, a), b + c + d);
     if (mm == b + c + d)
         P[i][j][k][l] = MATCH;
@@ -158,7 +173,7 @@ void GenTables(newick_node* root, int n, vvs& L, vvi& T, vvi& D)
                 L[i][j] = node->taxon, T[i][j] = S[node], D[i][j] = R[node];
 }
 
-int OrderedEditDist(vvvvi& P, vvs& L1, vvs& L2, vvi& T1, vvi& T2, vvi& D1, vvi& D2, int n, int m)
+int OrderedEditDist(vvvvi& P, vvs& L1, vvs& L2, vvi& T1, vvi& T2, vvi& D1, vvi& D2, int n, int m, vector<vector<int>> & cost_matrix)
 {
     vvvvi DP(n + 1, vvvi(n + 1, vvi(m + 1, vi(m + 1, -1))));
     for (int i = n; i >= 0; --i)
@@ -166,7 +181,7 @@ int OrderedEditDist(vvvvi& P, vvs& L1, vvs& L2, vvi& T1, vvi& T2, vvi& D1, vvi& 
             for (int k = m; k >= 0; --k)
                 for (int l = m; l >= 0; --l)
                     if (i + j <= n && k + l <= m)
-                        DP[i][j][k][l] = Distance(DP, P, T1, T2, L1, L2, D1, D2, n, m, i, j, k, l);
+                        DP[i][j][k][l] = Distance(DP, P, T1, T2, L1, L2, D1, D2, n, m, i, j, k, l, cost_matrix);
 
     return DP[0][0][0][0];
 }
@@ -178,7 +193,7 @@ void DeallocTree(newick_node* root)
     delete root;
 }
 
-void PrintMatching(vvvvi& BP, vvs& L1, vvs& L2, vvi& T1, vvi& T2, vvi& D1, vvi& D2, i4 r, bool swp)
+void PrintMatching(vvvvi& BP, vvs& L1, vvs& L2, vvi& T1, vvi& T2, vvi& D1, vvi& D2, i4 r, bool swp, std::ofstream& myfile)
 {
     int i, j, k, l;
     tie(i, j, k, l) = r;
@@ -199,29 +214,60 @@ void PrintMatching(vvvvi& BP, vvs& L1, vvs& L2, vvi& T1, vvi& T2, vvi& D1, vvi& 
             int p = D1[i][j + 1], q = D2[k][l + 1];
             int x = n - p - T1[i][j + 1], y = m - q - T2[k][l + 1];
             cout << "MATCH " << (swp ? ys : xs) << ' ' << (swp ? xs : ys) << '\n';
-            PrintMatching(BP, L1, L2, T1, T2, D1, D2, {i, j + T1[i][j + 1], k, l + T2[k][l + 1]}, swp);
-            PrintMatching(BP, L1, L2, T1, T2, D1, D2, {p + 1, x, q + 1, y}, swp);
+            myfile << (swp ? ys : xs) << ',' << (swp ? xs : ys) << '\n';
+            PrintMatching(BP, L1, L2, T1, T2, D1, D2, {i, j + T1[i][j + 1], k, l + T2[k][l + 1]}, swp, myfile);
+            PrintMatching(BP, L1, L2, T1, T2, D1, D2, {p + 1, x, q + 1, y}, swp, myfile);
             break;
         }
         case DEL_NODE:
             cout << (!swp ? "DEL " : "INS ") << L1[i][j + 1] << '\n';
-            PrintMatching(BP, L1, L2, T1, T2, D1, D2, {i, j + 1, k, l}, swp);
+            PrintMatching(BP, L1, L2, T1, T2, D1, D2, {i, j + 1, k, l}, swp, myfile);
             break;
         case INS_NODE:
             cout << (!swp ? "INS " : "DEL ") << L2[k][l + 1] << '\n';
-            PrintMatching(BP, L1, L2, T1, T2, D1, D2, {i, j, k, l + 1}, swp);
+            PrintMatching(BP, L1, L2, T1, T2, D1, D2, {i, j, k, l + 1}, swp, myfile);
             break;
     }
 }
 
-void EditDist(Graph& g1, Graph& g2)
+void EditDist(Graph& g1, Graph& g2, string & fileName, string & outFileName)
 {
     vn n1, n2;
     int k1 = GetNumTrees(g1.GetRoot(), n1), k2 = GetNumTrees(g2.GetRoot(), n2);
     Tree& t1 = (Tree&)(k1 >= k2 ? g1 : g2), &t2 = (Tree&)(k1 >= k2 ? g2 : g1);
     bool swp = false;
+
+    // read data.
+    std::ifstream f(fileName.c_str());
+    CSVReader reader(fileName);
+    vector<vector<double>> cost_matrix = reader.getDoubleData();
+    vector<vector<int>> scale_cost_matrix;
+    double scale = 1000.0;
     if (k2 > k1)
+    {
         swap(n1, n2), swp = true;
+        for (int j=0; j < (int) cost_matrix[0].size(); ++j)
+        {
+            vector<int> temp;
+            for(int i=0; i < (int) cost_matrix.size(); ++i)
+            {
+                temp.push_back((int) (scale*cost_matrix[i][j]));
+            }
+            scale_cost_matrix.push_back(temp);
+        }
+    }
+    else
+    {
+        for (int i=0; i < (int) cost_matrix.size(); ++i)
+        {
+            vector<int> temp;
+            for(int j=0; j < (int) cost_matrix[0].size(); ++j)
+            {
+                temp.push_back((int) (scale*cost_matrix[i][j]));
+            }
+            scale_cost_matrix.push_back(temp);
+        }
+    }
 
     vvvi P;
     vvi S;
@@ -241,7 +287,7 @@ void EditDist(Graph& g1, Graph& g2)
         GenTables(t1.GetRoot(), n, L1, T1, D1);
         GenTables(t2.GetRoot(), m, L2, T2, D2);
         vvvvi NP(n + 1, vvvi(n + 1, vvi(m + 1, vi(m + 1, -1))));
-        int nm = OrderedEditDist(NP, L1, L2, T1, T2, D1, D2, n, m);
+        int nm = OrderedEditDist(NP, L1, L2, T1, T2, D1, D2, n, m, scale_cost_matrix);
         if (nm < mm)
         {
             mm = nm, BP = move(NP);
@@ -251,6 +297,9 @@ void EditDist(Graph& g1, Graph& g2)
         }
         DeallocTree(nroot);
     }
-    PrintMatching(BP, BL1, BL2, BT1, BT2, BD1, BD2, {0, 0, 0, 0}, swp);
+    std::ofstream myfile;
+    myfile.open (outFileName);
+    PrintMatching(BP, BL1, BL2, BT1, BT2, BD1, BD2, {0, 0, 0, 0}, swp, myfile);
+    myfile.close();
     clog << "DIST: " << mm << endl;
 }
